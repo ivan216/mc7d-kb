@@ -2750,6 +2750,7 @@ namespace _3dedit
 
         private void m_lbMacros_MouseDoubleClick(object sender,MouseEventArgs e) {
             m_macroName=(string)m_lbMacros.SelectedItem;
+            if(m_macroName==null) return;
             appMacro(false);
         }
 
