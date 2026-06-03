@@ -857,6 +857,11 @@ namespace _3dedit {
 			// is not the form, if so, cancel the resize
 			if (m_hWnd.ParentForm.WindowState == System.Windows.Forms.FormWindowState.Minimized)
 				e.Cancel = true;
+			// Cancel the automatic device reset when the render area has collapsed to
+			// zero in either dimension (e.g. the splitter dragged over the 3D view).
+			// A zero-sized backbuffer is invalid and makes Device.Reset throw.
+			if (m_hWnd.ClientSize.Width == 0 || m_hWnd.ClientSize.Height == 0)
+				e.Cancel = true;
 		}
 
 		//-----------------------------------------------------------------------------
