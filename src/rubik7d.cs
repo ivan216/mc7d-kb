@@ -440,10 +440,11 @@ namespace _3dedit
             this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.trk_faceSep);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Right;
+            this.panel1.AutoScroll = true;
             this.panel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.panel1.Location = new System.Drawing.Point(777, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(220, 684);
+            this.panel1.Size = new System.Drawing.Size(223, 684);
             this.panel1.TabIndex = 19;
             // 
             // m_RunByClick
@@ -1190,9 +1191,7 @@ namespace _3dedit
             // 
             // panel2
             // 
-            this.panel2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel2.Controls.Add(this.statusStrip1);
             this.panel2.Controls.Add(this.menuStrip1);
             this.panel2.Location = new System.Drawing.Point(0, 0);
@@ -1666,9 +1665,9 @@ namespace _3dedit
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(997, 684);
-            this.Controls.Add(this.panel2);
-            this.Controls.Add(this.btnTogglePanel);
             this.Controls.Add(this.panel1);
+            this.Controls.Add(this.btnTogglePanel);
+            this.Controls.Add(this.panel2);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
             this.Text = "MC7D";
