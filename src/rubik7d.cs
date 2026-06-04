@@ -370,7 +370,7 @@ namespace _3dedit
             this.btnTogglePanel.Size = new System.Drawing.Size(6, 50);
             this.btnTogglePanel.TabIndex = 18;
             this.btnTogglePanel.TabStop = false;
-            this.btnTogglePanel.Text = "‹";
+            this.btnTogglePanel.Text = "›";
             this.btnTogglePanel.UseVisualStyleBackColor = true;
             this.btnTogglePanel.Click += new System.EventHandler(this.btnTogglePanel_Click);
             //
