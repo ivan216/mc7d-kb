@@ -22,7 +22,10 @@ namespace _3dedit
     public class Form1:System.Windows.Forms.Form {
         public string VERSION = "v0.8.4";
 
-		private System.Windows.Forms.Splitter splitter1;
+		private System.Windows.Forms.Button btnTogglePanel;
+		private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem mi_ShowSidePanel;
+		private bool m_panelCollapsed = false;
 		private System.Windows.Forms.Panel panel1;
 		private System.Windows.Forms.Panel panel2;
         private _3dedit.DXControl dxControl2;
@@ -216,7 +219,9 @@ namespace _3dedit
 		/// the contents of this method with the code editor.
 		/// </summary>
 		private void InitializeComponent() {
-            this.splitter1 = new System.Windows.Forms.Splitter();
+            this.btnTogglePanel = new System.Windows.Forms.Button();
+            this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mi_ShowSidePanel = new System.Windows.Forms.ToolStripMenuItem();
             this.panel1 = new System.Windows.Forms.Panel();
             this.m_RunByClick = new System.Windows.Forms.CheckBox();
             this.m_cbQuickMacro = new System.Windows.Forms.CheckBox();
@@ -355,18 +360,22 @@ namespace _3dedit
             this.statusStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // splitter1
-            // 
-            this.splitter1.Dock = System.Windows.Forms.DockStyle.Right;
-            this.splitter1.Location = new System.Drawing.Point(774, 0);
-            this.splitter1.Name = "splitter1";
-            this.splitter1.Size = new System.Drawing.Size(3, 684);
-            this.splitter1.TabIndex = 18;
-            this.splitter1.TabStop = false;
-            // 
+            //
+            // btnTogglePanel
+            //
+            this.btnTogglePanel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTogglePanel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold);
+            this.btnTogglePanel.Location = new System.Drawing.Point(754, 312);
+            this.btnTogglePanel.Name = "btnTogglePanel";
+            this.btnTogglePanel.Size = new System.Drawing.Size(6, 50);
+            this.btnTogglePanel.TabIndex = 18;
+            this.btnTogglePanel.TabStop = false;
+            this.btnTogglePanel.Text = "›";
+            this.btnTogglePanel.UseVisualStyleBackColor = true;
+            this.btnTogglePanel.Click += new System.EventHandler(this.btnTogglePanel_Click);
+            //
             // panel1
-            // 
+            //
             this.panel1.Controls.Add(this.m_RunByClick);
             this.panel1.Controls.Add(this.m_cbQuickMacro);
             this.panel1.Controls.Add(this.label13);
@@ -430,10 +439,11 @@ namespace _3dedit
             this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.trk_faceSep);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Right;
+            this.panel1.AutoScroll = true;
             this.panel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.panel1.Location = new System.Drawing.Point(777, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(220, 684);
+            this.panel1.Size = new System.Drawing.Size(223, 684);
             this.panel1.TabIndex = 19;
             // 
             // m_RunByClick
@@ -1180,9 +1190,7 @@ namespace _3dedit
             // 
             // panel2
             // 
-            this.panel2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel2.Controls.Add(this.statusStrip1);
             this.panel2.Controls.Add(this.menuStrip1);
             this.panel2.Location = new System.Drawing.Point(0, 0);
@@ -1252,6 +1260,7 @@ namespace _3dedit
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
             this.editToolStripMenuItem,
+            this.viewToolStripMenuItem,
             this.puzzleToolStripMenuItem,
             this.macroToolStripMenuItem,
             this.helpToolStripMenuItem});
@@ -1328,9 +1337,26 @@ namespace _3dedit
             this.editToolStripMenuItem.Name = "editToolStripMenuItem";
             this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
             this.editToolStripMenuItem.Text = "Edit";
-            // 
+            //
+            // viewToolStripMenuItem
+            //
+            this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mi_ShowSidePanel});
+            this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
+            this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
+            this.viewToolStripMenuItem.Text = "View";
+            //
+            // mi_ShowSidePanel
+            //
+            this.mi_ShowSidePanel.Checked = true;
+            this.mi_ShowSidePanel.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.mi_ShowSidePanel.Name = "mi_ShowSidePanel";
+            this.mi_ShowSidePanel.Size = new System.Drawing.Size(165, 22);
+            this.mi_ShowSidePanel.Text = "Show Side Panel";
+            this.mi_ShowSidePanel.Click += new System.EventHandler(this.mi_ShowSidePanel_Click);
+            //
             // mi_Reset
-            // 
+            //
             this.mi_Reset.Name = "mi_Reset";
             this.mi_Reset.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.R)));
             this.mi_Reset.Size = new System.Drawing.Size(165, 22);
@@ -1657,11 +1683,13 @@ namespace _3dedit
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(997, 684);
             this.Controls.Add(this.panel2);
-            this.Controls.Add(this.splitter1);
             this.Controls.Add(this.panel1);
+            this.Controls.Add(this.btnTogglePanel);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
             this.Text = "MC7D";
+            this.Load += new System.EventHandler(this.Form1_Load);
+            this.Resize += new System.EventHandler(this.Form1_Resize);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
@@ -2750,6 +2778,7 @@ namespace _3dedit
 
         private void m_lbMacros_MouseDoubleClick(object sender,MouseEventArgs e) {
             m_macroName=(string)m_lbMacros.SelectedItem;
+            if(m_macroName==null) return;
             appMacro(false);
         }
 
@@ -2886,6 +2915,48 @@ namespace _3dedit
 
         private void aboutToolStripMenuItem_Click(object sender,EventArgs e) {
             MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen");
+        }
+
+        private void btnTogglePanel_Click(object sender, EventArgs e) {
+            SetPanelCollapsed(!m_panelCollapsed);
+        }
+        private void mi_ShowSidePanel_Click(object sender, EventArgs e) {
+            SetPanelCollapsed(!m_panelCollapsed);
+        }
+        private void SetPanelCollapsed(bool collapsed) {
+            m_panelCollapsed = collapsed;
+            panel1.Visible = !collapsed;
+            btnTogglePanel.Text = collapsed ? "‹" : "›";
+            mi_ShowSidePanel.Checked = !collapsed;
+
+            // Update button position
+            UpdateToggleButtonPosition();
+
+            // Force layout refresh to ensure 3D area resizes correctly
+            panel2.PerformLayout();
+            this.PerformLayout();
+        }
+
+        private void Form1_Load(object sender, EventArgs e) {
+            // Initialize button position on form load
+            UpdateToggleButtonPosition();
+        }
+
+        private void Form1_Resize(object sender, EventArgs e) {
+            // Update button position when window resizes
+            UpdateToggleButtonPosition();
+        }
+
+        private void UpdateToggleButtonPosition() {
+            int buttonY = (this.ClientSize.Height - btnTogglePanel.Height) / 2;
+            if (m_panelCollapsed) {
+                // Place at the very right edge of client area
+                btnTogglePanel.Location = new System.Drawing.Point(this.ClientSize.Width - btnTogglePanel.Width, buttonY);
+            } else {
+                // Place on top of panel1's left edge, shifted left by 1px for better alignment
+                btnTogglePanel.Location = new System.Drawing.Point(panel1.Location.X - 1, buttonY);
+            }
+            btnTogglePanel.BringToFront();
         }
 
         private void startExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
