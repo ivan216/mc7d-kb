@@ -504,6 +504,13 @@ namespace _3dedit {
             return RotateCubeByFacet(f0);
         }
 
+        public bool RotateCubeByStickerInverse(int st) { // visible - inverse operation
+            int f0=GetStickerFace(StkMap[st]);
+            // Inverse operation: rotate by the opposite face
+            int f0_inverse = -f0;
+            return RotateCubeByFacet(f0_inverse);
+        }
+
         public bool RotateCubeByFacet(int f0)
         {
             int d0 = GetFaceDir(f0);

@@ -524,7 +524,7 @@ namespace _3dedit
             this.m_lbMacros.Size = new System.Drawing.Size(110, 147);
             this.m_lbMacros.Sorted = true;
             this.m_lbMacros.TabIndex = 12;
-            this.m_lbMacros.MouseClick += new System.Windows.Forms.MouseEventHandler(this.m_lbMacros_MouseClick);
+            this.m_lbMacros.MouseDown += new System.Windows.Forms.MouseEventHandler(this.m_lbMacros_MouseDown);
             this.m_lbMacros.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.m_lbMacros_MouseDoubleClick);
             // 
             // label9
@@ -1955,6 +1955,14 @@ namespace _3dedit
                             RedrawClickStatus();
                             return;
                         }
+                    case EAction.ActionCtrlRightClick: {
+                            bool rr=Cube.RotateCubeByStickerInverse(stk);
+                            if(rr) {
+                                Redraw();
+                                return;
+                            }
+                            return;
+                        }
                     case EAction.ActionShiftClick: {
                             Cube.FindOtherStickers(stk);
                             AltHighlight=true;
@@ -2759,12 +2767,19 @@ namespace _3dedit
             foreach(string s in str) m_lbMacros.Items.Add(s);
         }
 
-        private void m_lbMacros_MouseClick(object sender,MouseEventArgs e) {
+        private void m_lbMacros_MouseDown(object sender,MouseEventArgs e) {
+            int index=m_lbMacros.IndexFromPoint(e.Location);
+            if(index!=ListBox.NoMatches) {
+                m_lbMacros.SelectedIndex=index;
+            }
             m_macroName=(string)m_lbMacros.SelectedItem;
             if(m_macroName==null) return;
             if(m_RunByClick.Checked) {
-                m_macroName=(string)m_lbMacros.SelectedItem;
-                appMacro(false);
+                if(e.Button==MouseButtons.Left) {
+                    appMacro(false);
+                } else if(e.Button==MouseButtons.Right) {
+                    appMacro(true);
+                }
                 return;
             }
 
@@ -2777,6 +2792,8 @@ namespace _3dedit
         }
 
         private void m_lbMacros_MouseDoubleClick(object sender,MouseEventArgs e) {
+            // Note: This method is currently not effectively used due to MouseDown handling
+            if(m_RunByClick.Checked) return;
             m_macroName=(string)m_lbMacros.SelectedItem;
             if(m_macroName==null) return;
             appMacro(false);

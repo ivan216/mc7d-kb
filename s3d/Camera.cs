@@ -565,7 +565,8 @@ namespace _3dedit{
 				case EAction.ActionClick:
 				case EAction.ActionShiftClick:
 				case EAction.ActionCtrlShiftClick:
-				case EAction.ActionCtrlClick:{
+				case EAction.ActionCtrlClick:
+				case EAction.ActionCtrlRightClick:{
 					scene.DirAndOrig(out vec,out shft,pt.X,pt.Y);
 					vec.Normalize();
 					proc(action,ref shft,ref vec,0);
