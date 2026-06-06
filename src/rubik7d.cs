@@ -1955,6 +1955,14 @@ namespace _3dedit
                             RedrawClickStatus();
                             return;
                         }
+                    case EAction.ActionCtrlRightClick: {
+                            bool rr=Cube.RotateCubeByStickerInverse(stk);
+                            if(rr) {
+                                Redraw();
+                                return;
+                            }
+                            return;
+                        }
                     case EAction.ActionShiftClick: {
                             Cube.FindOtherStickers(stk);
                             AltHighlight=true;

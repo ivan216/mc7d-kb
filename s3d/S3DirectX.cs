@@ -41,7 +41,8 @@ namespace _3dedit {
 		ActionClick=10,
 		ActionCtrlClick=11,
 		ActionShiftClick=12,
-		ActionCtrlShiftClick=13
+		ActionCtrlShiftClick=13,
+		ActionCtrlRightClick=14
 };
 
 	public delegate void OnAction(EAction action, ref Vector3 pt, ref Vector3 vec,double ang); // rotate, slide, click, moveto (for camera) 
@@ -388,8 +389,8 @@ namespace _3dedit {
 			EAction act=EAction.ActionClick;
 			bool ert=(e.Button==MouseButtons.Right);
 			if(kk.qCtrl){
-				act=EAction.ActionCtrlClick;
-				if(ert) act=EAction.ActionCtrlShiftClick;
+				if(ert) act=EAction.ActionCtrlRightClick;
+				else act=EAction.ActionCtrlClick;
 			}else if(ert) act=EAction.ActionShiftClick;
 			Camera.ProcessMouseMove(this,act,tg,pt,0,0,proc);
 		}
