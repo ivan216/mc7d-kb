@@ -20,7 +20,6 @@ namespace _3dedit {
         int nstk;
         byte[] stkNcol;
         BitArray hmask;
-        bool[] NColMask;
 
         public CubeObj() { }
 
@@ -29,7 +28,7 @@ namespace _3dedit {
             Meshes=null;
         }
 
-        public void SetCoords(byte[] _col,int[] _map,float[,] _coord,byte[] _stkNcol,BitArray _hmask,bool []_ncmask,int _nstk) {
+        public void SetCoords(byte[] _col,int[] _map,float[,] _coord,byte[] _stkNcol,BitArray _hmask,int []_ncmask,int _nstk) {
             Dispose();
             col=_col;
             map=_map;
@@ -37,7 +36,7 @@ namespace _3dedit {
             nstk=_nstk;
             stkNcol=_stkNcol;
             hmask=_hmask;
-            NColMask=_ncmask;
+            // NColMask no longer used - keeping parameter for compatibility
         }
 
 
@@ -57,7 +56,6 @@ namespace _3dedit {
             int p=0;
             for(int a=0;a<nstk;a++) {
                 int mm=map[a];
-                if(!NColMask[stkNcol[mm]]) continue;
                 int c=(int)Colors[col[mm]];
                 if(!hmask[mm]) c&=smask;
 
@@ -124,8 +122,6 @@ namespace _3dedit {
             double[,] M=new double[8,3];
             bool[] S=new bool[12];
             for(int i=0;i<nstk;i++) {
-                if(!NColMask[stkNcol[map[i]]]) continue;
-
                 double dx=coord[i,24]-pt.X,dy=coord[i,25]-pt.Y,dz=coord[i,26]-pt.Z;
                 double l=dx*dir.X+dy*dir.Y+dz*dir.Z;
                 if(l<0 || l>dmin) continue;
@@ -141,7 +137,7 @@ namespace _3dedit {
                 }
                 if((S[0]&&S[2]&&!S[3]&&!S[1]) || (S[0]&&S[5]&&!S[8]&&!S[4]) || (S[1]&&S[6]&&!S[9]&&!S[4])||
                     (S[8]&&S[10]&&!S[11]&&!S[9]) || (S[3]&&S[7]&&!S[11]&&!S[6]) || (S[2]&&S[7]&&!S[10]&&!S[5])||
-                    (!S[0]&&!S[2]&&S[3]&&S[1]) || (!S[0]&&!S[5]&&S[8]&&S[4]) || (!S[1]&&!S[6]&&S[9]&&S[4])||    
+                    (!S[0]&&!S[2]&&S[3]&&S[1]) || (!S[0]&&!S[5]&&S[8]&&S[4]) || (!S[1]&&!S[6]&&S[9]&&S[4])||
                     (!S[8]&&!S[10]&&S[11]&&S[9]) || (!S[3]&&!S[7]&&S[11]&&S[6]) || (!S[2]&&!S[7]&&S[10]&&S[5])) {
                     res=i; dmin=l;
                 }
