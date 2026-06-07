@@ -119,6 +119,7 @@ namespace _3dedit
         private CheckBox cb_Show7C;
         private CheckBox cb_Show4C;
         private CheckBox cb_HighlightByColors;
+        private Button btn_ResetHighlightSelection;
         private Label label9;
         private Label label10;
         private ListBox m_lbMacros;
@@ -240,6 +241,7 @@ namespace _3dedit
             this.cb_Show7C = new System.Windows.Forms.CheckBox();
             this.cb_Show4C = new System.Windows.Forms.CheckBox();
             this.cb_HighlightByColors = new System.Windows.Forms.CheckBox();
+            this.btn_ResetHighlightSelection = new System.Windows.Forms.Button();
             this.label8 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.m_trkFullUndoSpeed = new System.Windows.Forms.TrackBar();
@@ -393,6 +395,7 @@ namespace _3dedit
             this.panel1.Controls.Add(this.cb_Show7C);
             this.panel1.Controls.Add(this.cb_Show4C);
             this.panel1.Controls.Add(this.cb_HighlightByColors);
+            this.panel1.Controls.Add(this.btn_ResetHighlightSelection);
             this.panel1.Controls.Add(this.label8);
             this.panel1.Controls.Add(this.label7);
             this.panel1.Controls.Add(this.m_trkFullUndoSpeed);
@@ -654,7 +657,17 @@ namespace _3dedit
             this.cb_HighlightByColors.UseVisualStyleBackColor = true;
             this.cb_HighlightByColors.CheckedChanged += new System.EventHandler(this.cb_HighlightByColors_CheckedChanged);
             this.cb_HighlightByColors.CheckStateChanged += new System.EventHandler(this.cb_HighlightByColors_CheckedChanged);
-            // 
+            //
+            // btn_ResetHighlightSelection
+            //
+            this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(130, 394);
+            this.btn_ResetHighlightSelection.Name = "btn_ResetHighlightSelection";
+            this.btn_ResetHighlightSelection.Size = new System.Drawing.Size(75, 23);
+            this.btn_ResetHighlightSelection.TabIndex = 10;
+            this.btn_ResetHighlightSelection.Text = "Reset Filters";
+            this.btn_ResetHighlightSelection.UseVisualStyleBackColor = true;
+            this.btn_ResetHighlightSelection.Click += new System.EventHandler(this.btn_ResetHighlightSelection_Click);
+            //
             // label8
             // 
             this.label8.AutoSize = true;
@@ -2748,6 +2761,48 @@ namespace _3dedit
             }
         }
         private void cb_HighlightByColors_CheckedChanged(object sender,EventArgs e) {
+            ProcessHighLights();
+            Redraw();
+        }
+
+        private void btn_ResetHighlightSelection_Click(object sender, EventArgs e) {
+            // Reset all color filters to gray (indeterminate)
+            for (int i = 1; i <= 14; i++) {
+                FaceMask[i] = 0;
+            }
+
+            // Reset all show cubies filters to gray (indeterminate)
+            for (int i = 1; i <= 7; i++) {
+                NColMask[i] = 0;
+            }
+
+            // Update UI checkboxes to indeterminate state
+            m_setgeom = true;
+            cb_Col1.CheckState = CheckState.Indeterminate;
+            cb_Col2.CheckState = CheckState.Indeterminate;
+            cb_Col3.CheckState = CheckState.Indeterminate;
+            cb_Col4.CheckState = CheckState.Indeterminate;
+            cb_Col5.CheckState = CheckState.Indeterminate;
+            cb_Col6.CheckState = CheckState.Indeterminate;
+            cb_Col7.CheckState = CheckState.Indeterminate;
+            cb_Col8.CheckState = CheckState.Indeterminate;
+            cb_Col9.CheckState = CheckState.Indeterminate;
+            cb_Col10.CheckState = CheckState.Indeterminate;
+            cb_Col11.CheckState = CheckState.Indeterminate;
+            cb_Col12.CheckState = CheckState.Indeterminate;
+            cb_Col13.CheckState = CheckState.Indeterminate;
+            cb_Col14.CheckState = CheckState.Indeterminate;
+
+            cb_Show1C.CheckState = CheckState.Indeterminate;
+            cb_Show2C.CheckState = CheckState.Indeterminate;
+            cb_Show3C.CheckState = CheckState.Indeterminate;
+            cb_Show4C.CheckState = CheckState.Indeterminate;
+            cb_Show5C.CheckState = CheckState.Indeterminate;
+            cb_Show6C.CheckState = CheckState.Indeterminate;
+            cb_Show7C.CheckState = CheckState.Indeterminate;
+            m_setgeom = false;
+
+            // Refresh highlighting
             ProcessHighLights();
             Redraw();
         }
