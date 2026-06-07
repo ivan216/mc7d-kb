@@ -282,6 +282,9 @@ namespace _3dedit
                             case "Twist2c":
                                 action = new Twist2c();
                                 break;
+                            case "Twist3c":
+                                action = new Twist3c();
+                                break;
                             case "Layer":
                                 action = new Layer();
                                 break;
@@ -760,6 +763,211 @@ namespace _3dedit
                 layerInput.MouseWheel += (object sender, MouseEventArgs e) => ((HandledMouseEventArgs)e).Handled = true;
 
                 return new Control[] { layerInput };
+            }
+        }
+
+        public class Twist3c : IAction
+        {
+            public Axis axis;
+            public bool negative;
+
+            public Twist3c()
+            {
+                this.axis = Axis.X;
+                this.negative = false;
+            }
+            public Twist3c(Axis axis, bool negative)
+            {
+                this.axis = axis;
+                this.negative = negative;
+            }
+
+            public void OnKeyDown(ref Cube7D Cube, ref bool redraw, ref bool didTwist)
+            {
+                var t3c = Cube.partialTwist3c;
+
+                // Step 1: Set grip axis
+                if (t3c.step == 0)
+                {
+                    // Validate dimension
+                    if (Cube.D < this.axis.idx)
+                    {
+                        // Invalid axis for current dimension, ignore
+                        return;
+                    }
+
+                    t3c.gripAxis = this.axis;
+
+                    // Get layer mask from LayerOverrides (ignore current Gripped state)
+                    int baseMask;
+                    if (Cube.LayerOverrides.Count == 0)
+                    {
+                        // No layer key pressed, default to layer 1
+                        baseMask = 1;
+                    }
+                    else
+                    {
+                        // Combine all layer overrides with OR
+                        baseMask = 0;
+                        foreach (var layer in Cube.LayerOverrides)
+                        {
+                            baseMask |= layer.layerMask;
+                        }
+                    }
+
+                    // The negative flag in Twist3c controls direction from user perspective:
+                    // negative=false means positive direction, negative=true means negative direction
+                    //
+                    // For the Grip class:
+                    // - Non-inverted axes (W,Y,Z,U,T): layerMask sign directly controls direction
+                    // - Inverted axes (X,V): layerMask sign is reversed (1 means negative, -1 means positive in Cube.Grip)
+                    //
+                    // So for Twist3c, we set layerMask to match the user's expectation:
+                    // - negative=false: use positive layerMask (1, 2, 4, etc.)
+                    // - negative=true: use negative layerMask (-1, -2, -4, etc.)
+                    // The Grip.NormLayerMask() will handle axis inversion automatically
+
+                    t3c.gripLayerMask = this.negative ? -baseMask : baseMask;
+
+                    t3c.step = 1;
+                    // Signal Form to clear mouse click state
+                    t3c.needClearMouseClicks = true;
+                    redraw = true;
+                }
+                // Step 2: Set fromAxis
+                else if (t3c.step == 1)
+                {
+                    // Validate dimension
+                    if (Cube.D < this.axis.idx)
+                    {
+                        // Invalid axis, reset
+                        t3c.Reset();
+                        redraw = true;
+                        return;
+                    }
+
+                    t3c.fromAxis = this.axis;
+                    // Accumulate negative count
+                    if (this.negative)
+                    {
+                        t3c.negativeCount++;
+                    }
+                    t3c.step = 2;
+                    redraw = true;
+                }
+                // Step 3: Set toAxis and execute
+                else if (t3c.step == 2)
+                {
+                    // Validate dimension
+                    if (Cube.D < this.axis.idx)
+                    {
+                        // Invalid axis, reset
+                        t3c.Reset();
+                        redraw = true;
+                        return;
+                    }
+
+                    t3c.toAxis = this.axis;
+
+                    // Accumulate negative count
+                    if (this.negative)
+                    {
+                        t3c.negativeCount++;
+                    }
+
+                    // If negativeCount is odd, swap fromAxis and toAxis
+                    if (t3c.negativeCount % 2 == 1)
+                    {
+                        Axis tmp = t3c.toAxis;
+                        t3c.toAxis = t3c.fromAxis;
+                        t3c.fromAxis = tmp;
+                    }
+
+                    t3c.step = 3;
+
+                    // Now execute the grip+twist
+                    if (t3c.IsValid())
+                    {
+                        // First grip
+                        Grip grip = new Grip(t3c.gripAxis, t3c.gripLayerMask);
+                        grip.OnKeyDown(ref Cube, ref redraw, ref didTwist);
+
+                        // Then twist
+                        Twist twist = new Twist(t3c.fromAxis, t3c.toAxis);
+                        twist.OnKeyDown(ref Cube, ref redraw, ref didTwist);
+
+                        // Release grip
+                        grip.OnKeyUp(ref Cube, ref redraw, ref didTwist);
+
+                        // Reset for next operation
+                        t3c.Reset();
+                    }
+                    else
+                    {
+                        // Invalid twist, reset
+                        t3c.Reset();
+                    }
+
+                    redraw = true;
+                }
+            }
+
+            public void OnKeyUp(ref Cube7D Cube, ref bool redraw, ref bool didTwist) { }
+
+            public string Serialize()
+            {
+                return $"Twist3c,{(this.negative ? "-" : "+")},{axis.name}";
+            }
+
+            public void Deserialize(string s)
+            {
+                string[] p = s.Split(',');
+                if (p[1] != "Twist3c" || !Axis.fromString.ContainsKey(p[3]))
+                {
+                    throw new Exception($"Invalid Twist3c: {s}");
+                }
+
+                this.axis = Axis.fromString[p[3]];
+                this.negative = p[2] == "-";
+            }
+
+            public Control[] SetupControls()
+            {
+                ComboBox negComboBox = new ComboBox
+                {
+                    Anchor = AnchorStyles.Left | AnchorStyles.Top,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    ItemHeight = 24,
+                    Name = "negative",
+                    Size = new Size(32, 30),
+                };
+                negComboBox.Items.AddRange(new string[] { "+", "-" });
+                negComboBox.SelectedIndex = this.negative ? 1 : 0;
+                negComboBox.SelectedIndexChanged += (object sender, EventArgs e) =>
+                {
+                    this.negative = (string)((ComboBox)sender).SelectedItem == "-";
+                };
+
+                negComboBox.MouseWheel += (object sender, MouseEventArgs e) => ((HandledMouseEventArgs)e).Handled = true;
+
+                ComboBox axisComboBox = new ComboBox
+                {
+                    Anchor = AnchorStyles.Left | AnchorStyles.Top,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    ItemHeight = 24,
+                    Name = "Twist3c axis",
+                    Size = new Size(48, 30),
+                };
+                axisComboBox.Items.AddRange(Axis.fromString.Keys.ToArray());
+                axisComboBox.SelectedIndex = axisComboBox.Items.IndexOf(this.axis.name);
+                axisComboBox.SelectedIndexChanged += (object sender, EventArgs e) =>
+                {
+                    this.axis = Axis.fromString[(string)((ComboBox)sender).SelectedItem];
+                };
+
+                axisComboBox.MouseWheel += (object sender, MouseEventArgs e) => ((HandledMouseEventArgs)e).Handled = true;
+
+                return new Control[] { negComboBox, axisComboBox };
             }
         }
 

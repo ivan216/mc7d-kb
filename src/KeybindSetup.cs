@@ -23,6 +23,7 @@ namespace _3dedit
             { "Twist", () => new Keybindings.Twist() },
             { "GripTwist", () => new Keybindings.GripTwist() },
             { "Twist2c", () => new Keybindings.Twist2c() },
+            { "Twist3c", () => new Keybindings.Twist3c() },
             { "Layer", () => new Keybindings.Layer() },
             { "Recenter", () => new Keybindings.Recenter() },
             { "ChangeLayout", () => new Keybindings.ChangeLayout() },

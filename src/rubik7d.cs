@@ -1883,10 +1883,20 @@ namespace _3dedit
 
         private void PostKeybindAction(bool redraw, bool didTwist)
         {
+            // Check if Twist3c wants to clear mouse click state
+            if (Cube.partialTwist3c.needClearMouseClicks)
+            {
+                NClicks = 0;
+                FaceClick = 0;
+                FaceFrom = 0;
+                Cube.partialTwist3c.needClearMouseClicks = false;
+            }
+
             if (redraw)
             {
                 ProcessHighLights();
                 Redraw();
+                RedrawClickStatus();  // Update status bar for Twist3c progress
             }
 
             if (didTwist)
@@ -1975,6 +1985,8 @@ namespace _3dedit
             if(stk<0) {
                 NClicks=0;
                 ClickQual=true;
+                // Clear Twist3c state when clicking empty area
+                Cube.partialTwist3c.Reset();
                 switch(RecordingMacroStatus) {
                     case REC_MACRO_STICKERS: RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE; break;
                     case REC_MACRO_APPLY: RecordingMacroStatus=OldRecMacroStatus; break;
@@ -2004,6 +2016,8 @@ namespace _3dedit
                                 NClicks=ClickMode==CLICK_MODE_3 ? 1 : 2;
                                 ClickQual=true;
                                 RotateCube=true;
+                                // Clear Twist3c state when mouse clicking starts
+                                Cube.partialTwist3c.Reset();
                             } else {
                                 NClicks=0;
                                 ClickQual=false;
@@ -2077,6 +2091,8 @@ namespace _3dedit
                                 if(FaceClick!=0) {
                                     NClicks=ClickMode==CLICK_MODE_3 ? 1 : 2;
                                     RotateCube=false;
+                                    // Clear Twist3c state when mouse clicking starts
+                                    Cube.partialTwist3c.Reset();
                                 } else {
                                     NClicks=0;
                                     ClickQual=false;
@@ -2123,11 +2139,22 @@ namespace _3dedit
 		}
 
         void RedrawClickStatus() {
-            pb_ClickStatus.ForeColor=ClickQual ? Color.Green : Color.Red;
-            pb_ClickStatus.Value=NClicks*40+10;
+            // Check if Twist3c is in progress
+            int twist3cStep = Cube?.partialTwist3c?.step ?? 0;
+
+            if (twist3cStep > 0) {
+                // Twist3c is active, show its progress
+                pb_ClickStatus.ForeColor = Color.Green;
+                pb_ClickStatus.Value = twist3cStep * 33 + 10; // 0->10, 1->43, 2->76, 3->109 (but will reset before 3)
+            } else {
+                // Normal click status
+                pb_ClickStatus.ForeColor = ClickQual ? Color.Green : Color.Red;
+                pb_ClickStatus.Value = NClicks * 40 + 10;
+            }
+
             Color bg=Color.Black;
             if(RecordingMacroStatus==REC_MACRO_STICKERS || RecordingMacroStatus==REC_MACRO_APPLY) bg=Color.White;
-            if(!ClickQual) bg=Color.DarkRed;
+            if(!ClickQual && twist3cStep == 0) bg=Color.DarkRed;
             dxControl2.Scene.BGColor=bg;
 
             switch(RecordingMacroStatus) {
@@ -3020,7 +3047,7 @@ namespace _3dedit
 
 
         private void aboutToolStripMenuItem_Click(object sender,EventArgs e) {
-            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen");
+            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n(c)2026, ivan216");
         }
 
         private void btnTogglePanel_Click(object sender, EventArgs e) {
