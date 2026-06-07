@@ -645,8 +645,26 @@ namespace _3dedit {
             FindOtherStickers(stk);
         }
 
+        // Helper method: check if any mask has black check (value > 0)
+        private bool HasBlackCheck(int[] mask, int startIndex, int endIndex) {
+            for(int i = startIndex; i <= endIndex; i++) {
+                if(mask[i] > 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         internal void FindStickersByMask(int[] hmask,bool cAll) {  // array indexed by 1..14, hmask=-1,0,1
+            FindStickersByMask(hmask, cAll, null);
+        }
+
+        internal void FindStickersByMask(int[] hmask,bool cAll,int[] ncolMask) {  // array indexed by 1..14, hmask=-1,0,1; ncolMask indexed by 1..7, values: -1=exclude (dark), 0=neutral/gray, 1=include (highlight)
             HighLighted.SetAll(false);
+
+            // Check if any color is selected (black check)
+            bool hasColorBlackCheck = HasBlackCheck(hmask, 1, 14);
+
             int []cmask=new int[16];
             if(cAll) {
                 for(int i=0;i<NC;i++) {
@@ -672,21 +690,81 @@ namespace _3dedit {
                     if(qf) {
                         v=1;
                         for(int j=1;j<=D;j++) {
-                            if(Cube[i-v]!=0) HighLighted[i-v]=true;
-                            if(Cube[i+v]!=0) HighLighted[i+v]=true;
+                            if(Cube[i-v]!=0) {
+                                HighLighted[i-v]=true;
+                            }
+                            if(Cube[i+v]!=0) {
+                                HighLighted[i+v]=true;
+                            }
                             v*=N2;
                         }
                     }
                 }
             } else {
+                // Gray check mode: only show matching stickers
+                if(hasColorBlackCheck) {
+                    // Has black checks: only highlight those colors
+                    for(int i=0;i<NC;i++) {
+                        if(Cube[i]!=0 && hmask[Cube[i]]>0) {
+                            HighLighted[i]=true;
+                        }
+                    }
+                } else {
+                    // No black checks: highlight all, then exclude unchecked colors
+                    for(int i=0;i<NC;i++) {
+                        if(Cube[i]!=0 && hmask[Cube[i]] >= 0) {  // Gray or black (not uncheck)
+                            HighLighted[i]=true;
+                        }
+                    }
+                }
+            }
+
+            // Apply ncolMask filtering on top of color filtering
+            if(ncolMask != null) {
+                bool hasNColBlackCheck = HasBlackCheck(ncolMask, 1, 7);
+
                 for(int i=0;i<NC;i++) {
-                    if(Cube[i]!=0 && hmask[Cube[i]]>0) HighLighted[i]=true;
+                    if(Cube[i]==0) continue;
+                    int ncol = StkNCols[i];
+
+                    if(hasNColBlackCheck) {
+                        // If there are black checks, only keep those with black check
+                        if(ncolMask[ncol] <= 0) {
+                            HighLighted[i]=false;
+                        }
+                    } else {
+                        // No black checks: uncheck means exclude
+                        if(ncolMask[ncol] < 0) {
+                            HighLighted[i]=false;
+                        }
+                    }
                 }
             }
         }
 
         internal void HighlightAll() {
-            HighLighted.SetAll(true);
+            HighlightAll(null);
+        }
+
+        internal void HighlightAll(int[] ncolMask) {
+            if(ncolMask == null) {
+                HighLighted.SetAll(true);
+                for(int i=0;i<NC;i++) {
+                    if(Cube[i]==0) HighLighted[i]=false;
+                }
+            } else {
+                bool hasNColBlackCheck = HasBlackCheck(ncolMask, 1, 7);
+
+                for(int i=0;i<NC;i++) {
+                    if(Cube[i]==0) {
+                        HighLighted[i] = false;
+                        continue;
+                    }
+
+                    int ncol = StkNCols[i];
+                    HighLighted[i] = hasNColBlackCheck ? (ncolMask[ncol] > 0) : (ncolMask[ncol] >= 0);
+                }
+            }
         }
 
         public void Save(string fn) {

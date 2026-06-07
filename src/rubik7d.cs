@@ -119,6 +119,7 @@ namespace _3dedit
         private CheckBox cb_Show7C;
         private CheckBox cb_Show4C;
         private CheckBox cb_HighlightByColors;
+        private Button btn_ResetHighlightSelection;
         private Label label9;
         private Label label10;
         private ListBox m_lbMacros;
@@ -183,9 +184,9 @@ namespace _3dedit
 			this.panel2.Controls.Add(this.dxControl2);
             this.panel2.Controls.SetChildIndex(this.dxControl2, 0);
 
-            NColMask=new bool[8];
+            NColMask=new int[8];
             FaceMask=new int[15];
-            for(int i=0;i<8;i++) NColMask[i]=true;
+            for(int i=0;i<8;i++) NColMask[i]=0;  // 0 = Indeterminate (normal/neutral)
             for(int i=0;i<15;i++) FaceMask[i]=0;
             LoadSettings("MC7D_settings.txt");
             Macros=new CMacroFile(GetDim(),GetSize());
@@ -240,6 +241,7 @@ namespace _3dedit
             this.cb_Show7C = new System.Windows.Forms.CheckBox();
             this.cb_Show4C = new System.Windows.Forms.CheckBox();
             this.cb_HighlightByColors = new System.Windows.Forms.CheckBox();
+            this.btn_ResetHighlightSelection = new System.Windows.Forms.Button();
             this.label8 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.m_trkFullUndoSpeed = new System.Windows.Forms.TrackBar();
@@ -393,6 +395,7 @@ namespace _3dedit
             this.panel1.Controls.Add(this.cb_Show7C);
             this.panel1.Controls.Add(this.cb_Show4C);
             this.panel1.Controls.Add(this.cb_HighlightByColors);
+            this.panel1.Controls.Add(this.btn_ResetHighlightSelection);
             this.panel1.Controls.Add(this.label8);
             this.panel1.Controls.Add(this.label7);
             this.panel1.Controls.Add(this.m_trkFullUndoSpeed);
@@ -537,116 +540,134 @@ namespace _3dedit
             this.label9.Text = "Show cubies:";
             // 
             // cb_Show3C
-            // 
+            //
             this.cb_Show3C.AutoSize = true;
             this.cb_Show3C.Checked = true;
-            this.cb_Show3C.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cb_Show3C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show3C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cb_Show3C.Location = new System.Drawing.Point(155, 505);
             this.cb_Show3C.Name = "cb_Show3C";
             this.cb_Show3C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show3C.TabIndex = 10;
             this.cb_Show3C.Text = "3C";
+            this.cb_Show3C.ThreeState = true;
             this.cb_Show3C.UseVisualStyleBackColor = true;
             this.cb_Show3C.CheckStateChanged += new System.EventHandler(this.cb_Show1C_CheckedChanged);
             // 
             // cb_Show5C
-            // 
+            //
             this.cb_Show5C.AutoSize = true;
             this.cb_Show5C.Checked = true;
-            this.cb_Show5C.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cb_Show5C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show5C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cb_Show5C.Location = new System.Drawing.Point(155, 551);
             this.cb_Show5C.Name = "cb_Show5C";
             this.cb_Show5C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show5C.TabIndex = 10;
             this.cb_Show5C.Text = "5C";
+            this.cb_Show5C.ThreeState = true;
             this.cb_Show5C.UseVisualStyleBackColor = true;
             this.cb_Show5C.CheckStateChanged += new System.EventHandler(this.cb_Show1C_CheckedChanged);
             // 
             // cb_Show1C
-            // 
+            //
             this.cb_Show1C.AutoSize = true;
             this.cb_Show1C.Checked = true;
-            this.cb_Show1C.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cb_Show1C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show1C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cb_Show1C.Location = new System.Drawing.Point(155, 459);
             this.cb_Show1C.Name = "cb_Show1C";
             this.cb_Show1C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show1C.TabIndex = 10;
             this.cb_Show1C.Text = "1C";
+            this.cb_Show1C.ThreeState = true;
             this.cb_Show1C.UseVisualStyleBackColor = true;
-            this.cb_Show1C.CheckedChanged += new System.EventHandler(this.cb_Show1C_CheckedChanged);
+            this.cb_Show1C.CheckStateChanged += new System.EventHandler(this.cb_Show1C_CheckedChanged);
             // 
             // cb_Show6C
-            // 
+            //
             this.cb_Show6C.AutoSize = true;
             this.cb_Show6C.Checked = true;
-            this.cb_Show6C.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cb_Show6C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show6C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cb_Show6C.Location = new System.Drawing.Point(155, 574);
             this.cb_Show6C.Name = "cb_Show6C";
             this.cb_Show6C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show6C.TabIndex = 10;
             this.cb_Show6C.Text = "6C";
+            this.cb_Show6C.ThreeState = true;
             this.cb_Show6C.UseVisualStyleBackColor = true;
             this.cb_Show6C.CheckStateChanged += new System.EventHandler(this.cb_Show1C_CheckedChanged);
             // 
             // cb_Show2C
-            // 
+            //
             this.cb_Show2C.AutoSize = true;
             this.cb_Show2C.Checked = true;
-            this.cb_Show2C.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cb_Show2C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show2C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cb_Show2C.Location = new System.Drawing.Point(155, 482);
             this.cb_Show2C.Name = "cb_Show2C";
             this.cb_Show2C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show2C.TabIndex = 10;
             this.cb_Show2C.Text = "2C";
+            this.cb_Show2C.ThreeState = true;
             this.cb_Show2C.UseVisualStyleBackColor = true;
             this.cb_Show2C.CheckStateChanged += new System.EventHandler(this.cb_Show1C_CheckedChanged);
             // 
             // cb_Show7C
-            // 
+            //
             this.cb_Show7C.AutoSize = true;
             this.cb_Show7C.Checked = true;
-            this.cb_Show7C.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cb_Show7C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show7C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cb_Show7C.Location = new System.Drawing.Point(155, 597);
             this.cb_Show7C.Name = "cb_Show7C";
             this.cb_Show7C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show7C.TabIndex = 10;
             this.cb_Show7C.Text = "7C";
+            this.cb_Show7C.ThreeState = true;
             this.cb_Show7C.UseVisualStyleBackColor = true;
             this.cb_Show7C.CheckStateChanged += new System.EventHandler(this.cb_Show1C_CheckedChanged);
-            // 
+            //
             // cb_Show4C
-            // 
+            //
             this.cb_Show4C.AutoSize = true;
             this.cb_Show4C.Checked = true;
-            this.cb_Show4C.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cb_Show4C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show4C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cb_Show4C.Location = new System.Drawing.Point(155, 528);
             this.cb_Show4C.Name = "cb_Show4C";
             this.cb_Show4C.Size = new System.Drawing.Size(39, 17);
+            this.cb_Show4C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show4C.TabIndex = 10;
             this.cb_Show4C.Text = "4C";
+            this.cb_Show4C.ThreeState = true;
             this.cb_Show4C.UseVisualStyleBackColor = true;
             this.cb_Show4C.CheckStateChanged += new System.EventHandler(this.cb_Show1C_CheckedChanged);
-            // 
+            //
             // cb_HighlightByColors
-            // 
+            //
             this.cb_HighlightByColors.AutoSize = true;
             this.cb_HighlightByColors.Location = new System.Drawing.Point(15, 397);
             this.cb_HighlightByColors.Name = "cb_HighlightByColors";
             this.cb_HighlightByColors.Size = new System.Drawing.Size(112, 17);
             this.cb_HighlightByColors.TabIndex = 9;
-            this.cb_HighlightByColors.Text = "Highlight by colors";
+            this.cb_HighlightByColors.Text = "Enable highlighting";
             this.cb_HighlightByColors.ThreeState = true;
             this.cb_HighlightByColors.UseVisualStyleBackColor = true;
             this.cb_HighlightByColors.CheckedChanged += new System.EventHandler(this.cb_HighlightByColors_CheckedChanged);
             this.cb_HighlightByColors.CheckStateChanged += new System.EventHandler(this.cb_HighlightByColors_CheckedChanged);
-            // 
+            //
+            // btn_ResetHighlightSelection
+            //
+            this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(130, 394);
+            this.btn_ResetHighlightSelection.Name = "btn_ResetHighlightSelection";
+            this.btn_ResetHighlightSelection.Size = new System.Drawing.Size(75, 23);
+            this.btn_ResetHighlightSelection.TabIndex = 10;
+            this.btn_ResetHighlightSelection.Text = "Reset Filters";
+            this.btn_ResetHighlightSelection.UseVisualStyleBackColor = true;
+            this.btn_ResetHighlightSelection.Click += new System.EventHandler(this.btn_ResetHighlightSelection_Click);
+            //
             // label8
             // 
             this.label8.AutoSize = true;
@@ -1767,7 +1788,7 @@ namespace _3dedit
         Form KeybindsSetup;
 
         bool AltHighlight=false;
-        bool[] NColMask;
+        int[] NColMask;  // -1: only unhighlight, 0: normal (Indeterminate), 1: only highlight
         int[] FaceMask;
 
         int DiffLight=150;
@@ -1884,11 +1905,48 @@ namespace _3dedit
             }
         }
 
+        // Helper method: check if any mask has non-gray value (black check or uncheck)
+        private bool HasSelection(int[] mask, int startIndex, int endIndex) {
+            for (int i = startIndex; i <= endIndex; i++) {
+                if (mask[i] != 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private void ProcessHighLights()
         {
-            if (cb_HighlightByColors.CheckState != CheckState.Unchecked)
-                Cube.FindStickersByMask(FaceMask, cb_HighlightByColors.CheckState == CheckState.Checked);
-            else Cube.HighlightAll();
+            // Check if any show cubies is not gray (black check or uncheck)
+            bool hasNColSelection = (cb_HighlightByColors.CheckState != CheckState.Unchecked)
+                                    && HasSelection(NColMask, 1, 7);
+
+            // Check if any color is not gray (black check or uncheck)
+            bool hasColorSelection = HasSelection(FaceMask, 1, 14);
+
+            // Only apply NColMask filtering when Enable highlighting is checked or indeterminate
+            int[] effectiveNColMask = (cb_HighlightByColors.CheckState != CheckState.Unchecked) ? NColMask : null;
+
+            if (cb_HighlightByColors.CheckState == CheckState.Checked) {
+                // Black check: show whole cubies
+                if (hasColorSelection || hasNColSelection)
+                    Cube.FindStickersByMask(FaceMask, true, effectiveNColMask);
+                else
+                    Cube.HighlightAll(effectiveNColMask);
+            } else if (cb_HighlightByColors.CheckState == CheckState.Indeterminate) {
+                // Gray check: show only matching stickers
+                if (hasColorSelection || hasNColSelection)
+                    Cube.FindStickersByMask(FaceMask, false, effectiveNColMask);
+                else {
+                    // All gray: all dark
+                    Cube.HighLighted.SetAll(false);
+                    Cube.HighLightGrip();
+                    return;
+                }
+            } else {
+                // Unchecked: show all cubies normally (ignore color/cubies filters)
+                Cube.HighlightAll(null);
+            }
 
             Cube.HighLightGrip();
         }
@@ -1923,9 +1981,7 @@ namespace _3dedit
                 }
                 RedrawClickStatus();
                 if(AltHighlight){
-                    if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
-                        Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
-                    else Cube.HighlightAll();
+                    ProcessHighLights();
                     AltHighlight=false;
                     Redraw();
                 }
@@ -2002,8 +2058,7 @@ namespace _3dedit
                                             CurMacro=null;
                                         } else {
                                             Cube.ApplyMacro(cmap,CurMacro.Code,CurMacro.LMacro,MacroReverse);
-                                            if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
-                                                Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
+                                            ProcessHighLights();
                                             TestBuild();
                                             Redraw();
                                         }
@@ -2049,8 +2104,7 @@ namespace _3dedit
                         rr=Cube.RotateCubeByStickers(fclick,ffrom,ff);
                     } else {
                         rr=Cube.Twist(fclick,ffrom,ff,TwistMask);
-                        if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
-                            Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
+                        ProcessHighLights();
                         TestBuild();
                     }
                 }
@@ -2191,8 +2245,7 @@ namespace _3dedit
 
             int nstk=Cube.GetStickers(out col,out map,out coord,out hmask,out stkncol);
             CubeView.SetCoords(col,map,coord,stkncol,hmask,NColMask,nstk);
-            if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
-                Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
+            ProcessHighLights();
             dxControl2.SetSceneChanged();
             ShowRevStack();
             //            dxControl2.Invalidate();
@@ -2259,8 +2312,7 @@ namespace _3dedit
         private void mi_Undo_Click(object sender,EventArgs e) {
             bool r=Cube.Undo();
             if(r) {
-                if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
-                    Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
+                ProcessHighLights();
                 Redraw();
             }
         }
@@ -2268,8 +2320,7 @@ namespace _3dedit
         private void mi_Redo_Click(object sender,EventArgs e) {
             bool r=Cube.Redo();
             if(r) {
-                if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
-                    Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
+                ProcessHighLights();
                 Redraw();
             }
         }
@@ -2434,13 +2485,13 @@ namespace _3dedit
             cb_Col13.CheckState=st[FaceMask[13]+1];
             cb_Col14.CheckState=st[FaceMask[14]+1];
 
-            cb_Show1C.Checked=NColMask[1];
-            cb_Show2C.Checked=NColMask[2];
-            cb_Show3C.Checked=NColMask[3];
-            cb_Show4C.Checked=NColMask[4];
-            cb_Show5C.Checked=NColMask[5];
-            cb_Show6C.Checked=NColMask[6];
-            cb_Show7C.Checked=NColMask[7];
+            cb_Show1C.CheckState = (NColMask[1] == 1) ? CheckState.Checked : (NColMask[1] == -1) ? CheckState.Unchecked : CheckState.Indeterminate;
+            cb_Show2C.CheckState = (NColMask[2] == 1) ? CheckState.Checked : (NColMask[2] == -1) ? CheckState.Unchecked : CheckState.Indeterminate;
+            cb_Show3C.CheckState = (NColMask[3] == 1) ? CheckState.Checked : (NColMask[3] == -1) ? CheckState.Unchecked : CheckState.Indeterminate;
+            cb_Show4C.CheckState = (NColMask[4] == 1) ? CheckState.Checked : (NColMask[4] == -1) ? CheckState.Unchecked : CheckState.Indeterminate;
+            cb_Show5C.CheckState = (NColMask[5] == 1) ? CheckState.Checked : (NColMask[5] == -1) ? CheckState.Unchecked : CheckState.Indeterminate;
+            cb_Show6C.CheckState = (NColMask[6] == 1) ? CheckState.Checked : (NColMask[6] == -1) ? CheckState.Unchecked : CheckState.Indeterminate;
+            cb_Show7C.CheckState = (NColMask[7] == 1) ? CheckState.Checked : (NColMask[7] == -1) ? CheckState.Unchecked : CheckState.Indeterminate;
 
             trk_LightDiff.Value=DiffLight;
             trk_LightSpec.Value=SpecLight;
@@ -2513,7 +2564,7 @@ namespace _3dedit
                 for(int i=1;i<=14;i++) ln+=" "+FaceMask[i];
                 sw.WriteLine(ln);
                 ln="ShowNColors";
-                for(int i=1;i<=7;i++) ln+=NColMask[i] ? " T" : " F";
+                for(int i=1;i<=7;i++) ln+=" "+NColMask[i];
                 sw.WriteLine(ln);
                 sw.WriteLine("DiffLight {0}",DiffLight);
                 sw.WriteLine("SpecLight {0}",SpecLight);
@@ -2568,7 +2619,7 @@ namespace _3dedit
                                 for(int i=1;i<=14;i++) FaceMask[i]=int.Parse(pars[i]);
                                 break;
                             case "ShowNColors":
-                                for(int i=1;i<=7;i++) NColMask[i]=(pars[i][0]=='T');
+                                for(int i=1;i<=7;i++) NColMask[i]=int.Parse(pars[i]);
                                 break;     
                             case "QuickMacro":
                                 m_cbQuickMacro.Checked=(pars[1][0]=='T');
@@ -2704,27 +2755,66 @@ namespace _3dedit
                 FaceMask[13]=chstate(cb_Col13.CheckState);
                 FaceMask[14]=chstate(cb_Col14.CheckState);
                 if(cb_HighlightByColors.CheckState!=CheckState.Unchecked){
-                    Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
+                    ProcessHighLights();
                     Redraw();
                 }
             }
         }
         private void cb_HighlightByColors_CheckedChanged(object sender,EventArgs e) {
-            if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
-                Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
-            else Cube.HighlightAll();
+            ProcessHighLights();
+            Redraw();
+        }
+
+        private void btn_ResetHighlightSelection_Click(object sender, EventArgs e) {
+            // Reset all color filters to gray (indeterminate)
+            for (int i = 1; i <= 14; i++) {
+                FaceMask[i] = 0;
+            }
+
+            // Reset all show cubies filters to gray (indeterminate)
+            for (int i = 1; i <= 7; i++) {
+                NColMask[i] = 0;
+            }
+
+            // Update UI checkboxes to indeterminate state
+            m_setgeom = true;
+            cb_Col1.CheckState = CheckState.Indeterminate;
+            cb_Col2.CheckState = CheckState.Indeterminate;
+            cb_Col3.CheckState = CheckState.Indeterminate;
+            cb_Col4.CheckState = CheckState.Indeterminate;
+            cb_Col5.CheckState = CheckState.Indeterminate;
+            cb_Col6.CheckState = CheckState.Indeterminate;
+            cb_Col7.CheckState = CheckState.Indeterminate;
+            cb_Col8.CheckState = CheckState.Indeterminate;
+            cb_Col9.CheckState = CheckState.Indeterminate;
+            cb_Col10.CheckState = CheckState.Indeterminate;
+            cb_Col11.CheckState = CheckState.Indeterminate;
+            cb_Col12.CheckState = CheckState.Indeterminate;
+            cb_Col13.CheckState = CheckState.Indeterminate;
+            cb_Col14.CheckState = CheckState.Indeterminate;
+
+            cb_Show1C.CheckState = CheckState.Indeterminate;
+            cb_Show2C.CheckState = CheckState.Indeterminate;
+            cb_Show3C.CheckState = CheckState.Indeterminate;
+            cb_Show4C.CheckState = CheckState.Indeterminate;
+            cb_Show5C.CheckState = CheckState.Indeterminate;
+            cb_Show6C.CheckState = CheckState.Indeterminate;
+            cb_Show7C.CheckState = CheckState.Indeterminate;
+            m_setgeom = false;
+
+            // Refresh highlighting
+            ProcessHighLights();
             Redraw();
         }
 
         private void cb_Show1C_CheckedChanged(object sender,EventArgs e) {
             if(!m_setgeom) {
-                NColMask[1]=cb_Show1C.Checked;
-                NColMask[2]=cb_Show2C.Checked;
-                NColMask[3]=cb_Show3C.Checked;
-                NColMask[4]=cb_Show4C.Checked;
-                NColMask[5]=cb_Show5C.Checked;
-                NColMask[6]=cb_Show6C.Checked;
-                NColMask[7]=cb_Show7C.Checked;
+                CheckState[] st = new CheckState[] { cb_Show1C.CheckState, cb_Show2C.CheckState, cb_Show3C.CheckState,
+                                                      cb_Show4C.CheckState, cb_Show5C.CheckState, cb_Show6C.CheckState, cb_Show7C.CheckState };
+                for(int i=1; i<=7; i++) {
+                    NColMask[i] = (st[i-1] == CheckState.Checked) ? 1 : (st[i-1] == CheckState.Unchecked) ? -1 : 0;
+                }
+                ProcessHighLights();
                 Redraw();
             }
         }
@@ -2811,8 +2901,7 @@ namespace _3dedit
             if(m_cbQuickMacro.Checked && CurMacro.Vectors!=null) {
                 int[] cmap=GetFastMacroRef(CurMacro.Vectors,CurMacro.Orient);
                 Cube.ApplyMacro(cmap,CurMacro.Code,CurMacro.LMacro,qrev);
-                if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
-                    Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
+                ProcessHighLights();
                 TestBuild();
                 Redraw();
                 return;
@@ -3020,8 +3109,7 @@ namespace _3dedit
                     if(p>=r) {
                         Cube.ApplySeqReverse(RevStack[LRevStack-1,0],r);
                         Cube.ApplySeqReverse(r,p);
-                        if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
-                            Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
+                        ProcessHighLights();
                     }
                 }
                 LRevStack--;
