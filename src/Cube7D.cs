@@ -26,6 +26,7 @@ namespace _3dedit {
 
         public int[] Gripped;
         public Keybindings.Twist partialTwist;
+        public PartialTwist3c partialTwist3c;
         public HashSet<Keybindings.Layer> LayerOverrides;
 
         public short[] Seq;
@@ -67,6 +68,7 @@ namespace _3dedit {
 
             Gripped = new int[2] { -1, 1 };
             partialTwist = new Keybindings.Twist();
+            partialTwist3c = new PartialTwist3c();
             LayerOverrides = new HashSet<Keybindings.Layer>();
 
             SetCoords();
@@ -1071,6 +1073,35 @@ _1: ;
             NTwists=GetNTwists(lshuf,lptr);
             Recalculate();
             return true;
+        }
+    }
+
+    // State tracker for Twist3c (3-click twist)
+    public class PartialTwist3c {
+        public Keybindings.Axis gripAxis;
+        public int gripLayerMask;
+        public Keybindings.Axis fromAxis;
+        public Keybindings.Axis toAxis;
+        public int step; // 0=empty, 1=grip set, 2=from set, 3=complete
+        public int negativeCount; // Count of negative flags in step 2 and 3
+        public bool needClearMouseClicks; // Flag to notify Form to clear mouse click state
+
+        public PartialTwist3c() {
+            Reset();
+        }
+
+        public void Reset() {
+            gripAxis = null;
+            gripLayerMask = 1;
+            fromAxis = null;
+            toAxis = null;
+            step = 0;
+            negativeCount = 0;
+            needClearMouseClicks = false;
+        }
+
+        public bool IsValid() {
+            return step == 3 && gripAxis != null && fromAxis != null && toAxis != null;
         }
     }
 }
