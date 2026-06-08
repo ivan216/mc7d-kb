@@ -135,8 +135,6 @@ namespace _3dedit
         private ToolStripMenuItem stopExtraTurnsToolStripMenuItem;
         private ToolStripMenuItem undoExtraTurnsToolStripMenuItem;
         private ToolStripMenuItem commutatorToolStripMenuItem;
-        private TextBox m_tbRevStack;
-        private Label label11;
         private ToolStripStatusLabel ms_MacroStatus;
         private ToolStripSeparator toolStripMenuItem4;
         private ToolStripMenuItem recalculateToolStripMenuItem;
@@ -147,6 +145,7 @@ namespace _3dedit
         private RadioButton m_rbClick2Inv;
         private CheckBox m_cbQuickMacro;
         private ToolStripStatusLabel m_lblCTime;
+        private ToolStripStatusLabel ms_RevStack;
         private CheckBox m_RunByClick;
         private ToolStripDropDownButton activeKeybind;
         private ToolStripSeparator toolStripSeparator2;
@@ -228,8 +227,6 @@ namespace _3dedit
             this.m_cbQuickMacro = new System.Windows.Forms.CheckBox();
             this.label13 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
-            this.m_tbRevStack = new System.Windows.Forms.TextBox();
-            this.label11 = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
             this.m_lbMacros = new System.Windows.Forms.ListBox();
             this.label9 = new System.Windows.Forms.Label();
@@ -297,6 +294,7 @@ namespace _3dedit
             this.ms_Twists = new System.Windows.Forms.ToolStripStatusLabel();
             this.ms_MacroStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.m_lblCTime = new System.Windows.Forms.ToolStripStatusLabel();
+            this.ms_RevStack = new System.Windows.Forms.ToolStripStatusLabel();
             this.activeKeybind = new System.Windows.Forms.ToolStripDropDownButton();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -382,8 +380,6 @@ namespace _3dedit
             this.panel1.Controls.Add(this.m_cbQuickMacro);
             this.panel1.Controls.Add(this.label13);
             this.panel1.Controls.Add(this.label12);
-            this.panel1.Controls.Add(this.m_tbRevStack);
-            this.panel1.Controls.Add(this.label11);
             this.panel1.Controls.Add(this.label10);
             this.panel1.Controls.Add(this.m_lbMacros);
             this.panel1.Controls.Add(this.label9);
@@ -490,25 +486,6 @@ namespace _3dedit
             this.label12.Size = new System.Drawing.Size(86, 13);
             this.label12.TabIndex = 16;
             this.label12.Text = "Full Undo Speed";
-            // 
-            // m_tbRevStack
-            // 
-            this.m_tbRevStack.BackColor = System.Drawing.SystemColors.Control;
-            this.m_tbRevStack.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.m_tbRevStack.Location = new System.Drawing.Point(67, 661);
-            this.m_tbRevStack.Name = "m_tbRevStack";
-            this.m_tbRevStack.ReadOnly = true;
-            this.m_tbRevStack.Size = new System.Drawing.Size(138, 13);
-            this.m_tbRevStack.TabIndex = 15;
-            // 
-            // label11
-            // 
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(6, 661);
-            this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(58, 13);
-            this.label11.TabIndex = 14;
-            this.label11.Text = "RevStack:";
             // 
             // label10
             // 
@@ -1228,7 +1205,8 @@ namespace _3dedit
             this.ms_Twists,
             this.ms_MacroStatus,
             this.m_lblCTime,
-            this.activeKeybind});
+            this.activeKeybind,
+            this.ms_RevStack});
             this.statusStrip1.Location = new System.Drawing.Point(0, 661);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(774, 23);
@@ -1236,44 +1214,51 @@ namespace _3dedit
             this.statusStrip1.Text = "statusStrip1";
             // 
             // toolStripStatusLabel1
-            // 
+            //
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.Size = new System.Drawing.Size(74, 18);
             this.toolStripStatusLabel1.Text = "Click Status: ";
             // 
             // pb_ClickStatus
-            // 
+            //
             this.pb_ClickStatus.Name = "pb_ClickStatus";
             this.pb_ClickStatus.Size = new System.Drawing.Size(100, 17);
             this.pb_ClickStatus.Step = 25;
             this.pb_ClickStatus.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             // 
             // ms_Twists
-            // 
+            //
             this.ms_Twists.Name = "ms_Twists";
             this.ms_Twists.Size = new System.Drawing.Size(63, 18);
             this.ms_Twists.Text = "  Twists: 0  ";
             // 
             // ms_MacroStatus
-            // 
+            //
             this.ms_MacroStatus.Name = "ms_MacroStatus";
             this.ms_MacroStatus.Size = new System.Drawing.Size(39, 18);
             this.ms_MacroStatus.Text = "Ready";
             // 
             // m_lblCTime
-            // 
+            //
             this.m_lblCTime.Name = "m_lblCTime";
             this.m_lblCTime.Size = new System.Drawing.Size(91, 18);
             this.m_lblCTime.Text = "   Time: 00:00:00";
-            // 
+            //
             // activeKeybind
-            // 
+            //
             this.activeKeybind.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.activeKeybind.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.activeKeybind.Name = "activeKeybind";
             this.activeKeybind.Size = new System.Drawing.Size(74, 21);
             this.activeKeybind.Text = "Keybinds: ";
             this.activeKeybind.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            //
+            // ms_RevStack
+            //
+            this.ms_RevStack.Name = "ms_RevStack";
+            this.ms_RevStack.Size = new System.Drawing.Size(60, 18);
+            this.ms_RevStack.Text = "RevStack: ";
+            this.ms_RevStack.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // menuStrip1
             // 
@@ -3161,8 +3146,8 @@ namespace _3dedit
                 }
             }
             if(p<q) l+=Cube.GetNTwists(p,q).ToString();
-            
-            m_tbRevStack.Text=l;
+
+            ms_RevStack.Text = "RevStack: " + l;
             ms_Twists.Text="  Twists: "+Cube.NTwists;
         }
 
