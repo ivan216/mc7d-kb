@@ -1874,6 +1874,7 @@ namespace _3dedit
                 NClicks = 0;
                 FaceClick = 0;
                 FaceFrom = 0;
+                ClickQual = true;  // Clear red background state
                 Cube.partialTwist3c.needClearMouseClicks = false;
             }
 
@@ -1996,18 +1997,19 @@ namespace _3dedit
                                 Redraw();
                                 return;
                             }
+                            // Clear Twist3c state when mouse clicking starts (before validity check)
+                            Cube.partialTwist3c.Reset();
                             FaceClick=Cube.GetFirstSticker(stk,ClickMode,out FaceFrom);
                             if(FaceClick!=0) {
                                 NClicks=ClickMode==CLICK_MODE_3 ? 1 : 2;
                                 ClickQual=true;
                                 RotateCube=true;
-                                // Clear Twist3c state when mouse clicking starts
-                                Cube.partialTwist3c.Reset();
                             } else {
                                 NClicks=0;
                                 ClickQual=false;
                             }
                             RedrawClickStatus();
+                            Redraw();  // Ensure UI updates for invalid clicks
                             return;
                         }
                     case EAction.ActionCtrlRightClick: {
@@ -2081,9 +2083,12 @@ namespace _3dedit
                                 } else {
                                     NClicks=0;
                                     ClickQual=false;
+                                    // Clear Twist3c state even for invalid clicks
+                                    Cube.partialTwist3c.Reset();
                                 }
                             }
                             RedrawClickStatus();
+                            Redraw();  // Ensure UI updates for invalid clicks
                             return;
                         }
                 }
