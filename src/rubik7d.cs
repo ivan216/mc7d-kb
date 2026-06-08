@@ -2128,11 +2128,11 @@ namespace _3dedit
             int twist3cStep = Cube?.partialTwist3c?.step ?? 0;
 
             if (twist3cStep > 0) {
-                // Twist3c is active, show its progress
-                pb_ClickStatus.ForeColor = Color.Green;
+                // Twist3c is active, show its progress in blue
+                pb_ClickStatus.ForeColor = Color.Blue;
                 pb_ClickStatus.Value = twist3cStep * 33 + 10; // 0->10, 1->43, 2->76, 3->109 (but will reset before 3)
             } else {
-                // Normal click status
+                // Normal click status (green/red based on quality)
                 pb_ClickStatus.ForeColor = ClickQual ? Color.Green : Color.Red;
                 pb_ClickStatus.Value = NClicks * 40 + 10;
             }

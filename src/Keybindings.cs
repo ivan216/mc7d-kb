@@ -326,8 +326,8 @@ namespace _3dedit
 
             public Twist()
             {
-                this.fromAxis = Axis.X;
-                this.toAxis = Axis.Y;
+                this.fromAxis = null;
+                this.toAxis = null;
             }
             public Twist(Axis fromAxis, Axis toAxis) {
                 this.fromAxis = fromAxis;
@@ -624,6 +624,12 @@ namespace _3dedit
 
             public void OnKeyDown(ref Cube7D Cube, ref bool redraw, ref bool didTwist)
             {
+                // Twist2c requires grip before setting axes
+                if (Cube.Gripped[0] == -1)
+                {
+                    return;
+                }
+
                 Twist t = Cube.partialTwist;
 
                 if (t.fromAxis == null)
