@@ -119,6 +119,7 @@ namespace _3dedit
         private CheckBox cb_Show7C;
         private CheckBox cb_Show4C;
         private CheckBox cb_HighlightByColors;
+        private CheckBox cb_MaskStickers;
         private Button btn_ResetHighlightSelection;
         private Label label9;
         private Label label10;
@@ -238,6 +239,7 @@ namespace _3dedit
             this.cb_Show7C = new System.Windows.Forms.CheckBox();
             this.cb_Show4C = new System.Windows.Forms.CheckBox();
             this.cb_HighlightByColors = new System.Windows.Forms.CheckBox();
+            this.cb_MaskStickers = new System.Windows.Forms.CheckBox();
             this.btn_ResetHighlightSelection = new System.Windows.Forms.Button();
             this.label8 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
@@ -391,6 +393,7 @@ namespace _3dedit
             this.panel1.Controls.Add(this.cb_Show7C);
             this.panel1.Controls.Add(this.cb_Show4C);
             this.panel1.Controls.Add(this.cb_HighlightByColors);
+            this.panel1.Controls.Add(this.cb_MaskStickers);
             this.panel1.Controls.Add(this.btn_ResetHighlightSelection);
             this.panel1.Controls.Add(this.label8);
             this.panel1.Controls.Add(this.label7);
@@ -450,7 +453,7 @@ namespace _3dedit
             this.m_RunByClick.AutoSize = true;
             this.m_RunByClick.Checked = true;
             this.m_RunByClick.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_RunByClick.Location = new System.Drawing.Point(113, 633);
+            this.m_RunByClick.Location = new System.Drawing.Point(113, 625);
             this.m_RunByClick.Name = "m_RunByClick";
             this.m_RunByClick.Size = new System.Drawing.Size(86, 17);
             this.m_RunByClick.TabIndex = 17;
@@ -462,7 +465,7 @@ namespace _3dedit
             this.m_cbQuickMacro.AutoSize = true;
             this.m_cbQuickMacro.Checked = true;
             this.m_cbQuickMacro.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_cbQuickMacro.Location = new System.Drawing.Point(6, 633);
+            this.m_cbQuickMacro.Location = new System.Drawing.Point(6, 625);
             this.m_cbQuickMacro.Name = "m_cbQuickMacro";
             this.m_cbQuickMacro.Size = new System.Drawing.Size(98, 17);
             this.m_cbQuickMacro.TabIndex = 17;
@@ -490,7 +493,7 @@ namespace _3dedit
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(6, 431);
+            this.label10.Location = new System.Drawing.Point(6, 446);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(45, 13);
             this.label10.TabIndex = 13;
@@ -499,7 +502,7 @@ namespace _3dedit
             // m_lbMacros
             // 
             this.m_lbMacros.FormattingEnabled = true;
-            this.m_lbMacros.Location = new System.Drawing.Point(6, 453);
+            this.m_lbMacros.Location = new System.Drawing.Point(6, 468);
             this.m_lbMacros.Name = "m_lbMacros";
             this.m_lbMacros.Size = new System.Drawing.Size(110, 147);
             this.m_lbMacros.Sorted = true;
@@ -634,6 +637,17 @@ namespace _3dedit
             this.cb_HighlightByColors.UseVisualStyleBackColor = true;
             this.cb_HighlightByColors.CheckedChanged += new System.EventHandler(this.cb_HighlightByColors_CheckedChanged);
             this.cb_HighlightByColors.CheckStateChanged += new System.EventHandler(this.cb_HighlightByColors_CheckedChanged);
+            //
+            // cb_MaskStickers
+            //
+            this.cb_MaskStickers.AutoSize = true;
+            this.cb_MaskStickers.Location = new System.Drawing.Point(15, 418);
+            this.cb_MaskStickers.Name = "cb_MaskStickers";
+            this.cb_MaskStickers.Size = new System.Drawing.Size(95, 17);
+            this.cb_MaskStickers.TabIndex = 11;
+            this.cb_MaskStickers.Text = "Mask stickers";
+            this.cb_MaskStickers.UseVisualStyleBackColor = true;
+            this.cb_MaskStickers.CheckedChanged += new System.EventHandler(this.cb_MaskStickers_CheckedChanged);
             //
             // btn_ResetHighlightSelection
             //
@@ -1687,7 +1701,7 @@ namespace _3dedit
             // Form1
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-            this.ClientSize = new System.Drawing.Size(997, 684);
+            this.ClientSize = new System.Drawing.Size(872, 654);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.btnTogglePanel);
@@ -1774,6 +1788,7 @@ namespace _3dedit
 
         bool AltHighlight=false;
         int[] NColMask;  // -1: only unhighlight, 0: normal (Indeterminate), 1: only highlight
+        bool MaskStickers = false;  // true: exclude unchecked stickers from mesh (unclickable), false: only dim them
         int[] FaceMask;
 
         int DiffLight=150;
@@ -2262,6 +2277,7 @@ namespace _3dedit
 
             int nstk=Cube.GetStickers(out col,out map,out coord,out hmask,out stkncol);
             CubeView.SetCoords(col,map,coord,stkncol,hmask,NColMask,nstk);
+            CubeView.MaskStickers = MaskStickers;
             ProcessHighLights();
             dxControl2.SetSceneChanged();
             ShowRevStack();
@@ -2513,6 +2529,7 @@ namespace _3dedit
             trk_LightDiff.Value=DiffLight;
             trk_LightSpec.Value=SpecLight;
             m_trkTransparency.Value=255-CubeObj.Transparency;
+            cb_MaskStickers.Checked = MaskStickers;
             m_setgeom=false;
         }
 
@@ -2583,6 +2600,7 @@ namespace _3dedit
                 ln="ShowNColors";
                 for(int i=1;i<=7;i++) ln+=" "+NColMask[i];
                 sw.WriteLine(ln);
+                sw.WriteLine("MaskStickers {0}",MaskStickers ? "T" : "F");
                 sw.WriteLine("DiffLight {0}",DiffLight);
                 sw.WriteLine("SpecLight {0}",SpecLight);
                 sw.WriteLine("Transparency {0}",CubeObj.Transparency);
@@ -2637,7 +2655,10 @@ namespace _3dedit
                                 break;
                             case "ShowNColors":
                                 for(int i=1;i<=7;i++) NColMask[i]=int.Parse(pars[i]);
-                                break;     
+                                break;
+                            case "MaskStickers":
+                                MaskStickers = (pars[1][0]=='T');
+                                break;
                             case "QuickMacro":
                                 m_cbQuickMacro.Checked=(pars[1][0]=='T');
                                 break;
@@ -2780,6 +2801,18 @@ namespace _3dedit
         private void cb_HighlightByColors_CheckedChanged(object sender,EventArgs e) {
             ProcessHighLights();
             Redraw();
+        }
+
+        private void cb_MaskStickers_CheckedChanged(object sender, EventArgs e) {
+            if (!m_setgeom) {
+                MaskStickers = cb_MaskStickers.Checked;
+                // Need to rebuild the mesh to apply/remove sticker exclusion
+                if (CubeView != null) {
+                    CubeView.MaskStickers = MaskStickers;
+                    CubeView.Dispose();  // clear meshes so they rebuild with new mask mode
+                }
+                Redraw();
+            }
         }
 
         private void btn_ResetHighlightSelection_Click(object sender, EventArgs e) {
