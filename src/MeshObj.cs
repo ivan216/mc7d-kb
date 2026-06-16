@@ -20,6 +20,9 @@ namespace _3dedit {
         int nstk;
         byte[] stkNcol;
         BitArray hmask;
+        int[] ncolMask;
+        bool maskStickers;
+        public bool MaskStickers { get { return maskStickers; } set { maskStickers = value; } }
 
         public CubeObj() { }
 
@@ -36,7 +39,7 @@ namespace _3dedit {
             nstk=_nstk;
             stkNcol=_stkNcol;
             hmask=_hmask;
-            // NColMask no longer used - keeping parameter for compatibility
+            ncolMask=_ncmask;
         }
 
 
@@ -56,6 +59,11 @@ namespace _3dedit {
             int p=0;
             for(int a=0;a<nstk;a++) {
                 int mm=map[a];
+
+                // When mask stickers is enabled, skip all non-highlighted (dimmed) stickers
+                // so they are completely invisible and unclickable
+                if (maskStickers && !hmask[mm]) continue;
+
                 int c=(int)Colors[col[mm]];
                 if(!hmask[mm]) c&=smask;
 
@@ -122,6 +130,8 @@ namespace _3dedit {
             double[,] M=new double[8,3];
             bool[] S=new bool[12];
             for(int i=0;i<nstk;i++) {
+                int mm=map[i];
+                if(maskStickers && !hmask[mm]) continue;
                 double dx=coord[i,24]-pt.X,dy=coord[i,25]-pt.Y,dz=coord[i,26]-pt.Z;
                 double l=dx*dir.X+dy*dir.Y+dz*dir.Z;
                 if(l<0 || l>dmin) continue;
