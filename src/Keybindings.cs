@@ -521,8 +521,8 @@ namespace _3dedit
                 {
                     Anchor = AnchorStyles.Top | AnchorStyles.Left,
                     Width = 48,
-                    Minimum = -31,
-                    Maximum = 31,
+                    Minimum = -127,
+                    Maximum = 127,
                     Value = layerMask,
                 };
                 layerInput.ValueChanged += (object sender, EventArgs e) => this.layerMask = (int)((NumericUpDown)sender).Value;
@@ -765,8 +765,8 @@ namespace _3dedit
                 NumericUpDown layerInput = new NumericUpDown
                 {
                     Width = 48,
-                    Minimum = -31,
-                    Maximum = 31,
+                    Minimum = -127,
+                    Maximum = 127,
                     Value = layerMask,
                 };
                 layerInput.ValueChanged += (object sender, EventArgs e) => this.layerMask = (int)((NumericUpDown)sender).Value;
