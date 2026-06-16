@@ -2393,12 +2393,13 @@ namespace _3dedit
         bool m_runUndo=false;
         private void mi_FullUndo_Click(object sender,EventArgs e) {
             m_runUndo=true;
-            while(Cube.Undo()) {                
+            while(Cube.Undo()) {
+                ProcessHighLights();
                 Redraw();
                 dxControl2.SetSceneChanged();
                 dxControl2.Scene.Render3DEnvironment();
-                Thread.Sleep(TRate);                
-                Application.DoEvents(); 
+                Thread.Sleep(TRate);
+                Application.DoEvents();
                 if(!m_runUndo) break;
             }
         }
@@ -2406,9 +2407,10 @@ namespace _3dedit
         private void mi_FullRedo_Click(object sender,EventArgs e) {
             m_runUndo=true;
             while(Cube.Redo()) {
+                ProcessHighLights();
                 Redraw();
                 dxControl2.SetSceneChanged();
-                dxControl2.Scene.Render3DEnvironment(); 
+                dxControl2.Scene.Render3DEnvironment();
                 Thread.Sleep(TRate);
                 Application.DoEvents();
                 if(!m_runUndo) break;
