@@ -84,7 +84,7 @@ namespace _3dedit
             {
                 Text = key,
                 Name = "textBox" + key,
-                Size = new Size(64, 24),
+                Size = new Size(96, 24),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left,
             };
             textBox.KeyUp += new KeyEventHandler(this.Hotkey_KeyUp);
@@ -110,7 +110,7 @@ namespace _3dedit
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 ItemHeight = 24,
                 Name = "comboBox" + key,
-                Size = new Size(96, 30),
+                Size = new Size(120, 30),
             };
 
             FlowLayoutPanel extra = new FlowLayoutPanel

@@ -411,7 +411,7 @@ namespace _3dedit
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     ItemHeight = 24,
                     Name = "Twist fromAxis",
-                    Size = new Size(48, 30),
+                    Size = new Size(56, 30),
                 };
                 fromComboBox.Items.AddRange(axes);
                 fromComboBox.SelectedIndex = fromComboBox.Items.IndexOf(displayFromAxis.name);
@@ -426,7 +426,7 @@ namespace _3dedit
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     ItemHeight = 24,
                     Name = "Twist toAxis",
-                    Size = new Size(48, 30),
+                    Size = new Size(56, 30),
                 };
                 toComboBox.Items.AddRange(axes);
                 toComboBox.SelectedIndex = toComboBox.Items.IndexOf(displayToAxis.name);
@@ -505,7 +505,7 @@ namespace _3dedit
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     ItemHeight = 24,
                     Name = "Grip toAxis",
-                    Size = new Size(48, 30),
+                    Size = new Size(56, 30),
                 };
                 axisComboBox.Items.AddRange(Axis.fromString.Keys.ToArray());
                 axisComboBox.SelectedIndex = axisComboBox.Items.IndexOf(this.axis.name);
@@ -520,7 +520,7 @@ namespace _3dedit
                 NumericUpDown layerInput = new NumericUpDown
                 {
                     Anchor = AnchorStyles.Top | AnchorStyles.Left,
-                    Width = 48,
+                    Width = 56,
                     Minimum = -127,
                     Maximum = 127,
                     Value = layerMask,
@@ -689,7 +689,7 @@ namespace _3dedit
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     ItemHeight = 24,
                     Name = "Twist2c toAxis",
-                    Size = new Size(48, 30),
+                    Size = new Size(56, 30),
                 };
                 axisComboBox.Items.AddRange(Axis.fromString.Keys.ToArray());
                 axisComboBox.SelectedIndex = axisComboBox.Items.IndexOf(this.axis.name);
@@ -706,7 +706,7 @@ namespace _3dedit
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     ItemHeight = 24,
                     Name = "negative",
-                    Size = new Size(32, 30),
+                    Size = new Size(56, 30),
                 };
                 negComboBox.Items.AddRange(new string[] { "+", "-" });
                 negComboBox.SelectedIndex = this.negative ? 1 : 0;
@@ -764,7 +764,7 @@ namespace _3dedit
             {
                 NumericUpDown layerInput = new NumericUpDown
                 {
-                    Width = 48,
+                    Width = 56,
                     Minimum = -127,
                     Maximum = 127,
                     Value = layerMask,
@@ -949,7 +949,7 @@ namespace _3dedit
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     ItemHeight = 24,
                     Name = "negative",
-                    Size = new Size(32, 30),
+                    Size = new Size(56, 30),
                 };
                 negComboBox.Items.AddRange(new string[] { "+", "-" });
                 negComboBox.SelectedIndex = this.negative ? 1 : 0;
@@ -966,7 +966,7 @@ namespace _3dedit
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     ItemHeight = 24,
                     Name = "Twist3c axis",
-                    Size = new Size(48, 30),
+                    Size = new Size(56, 30),
                 };
                 axisComboBox.Items.AddRange(Axis.fromString.Keys.ToArray());
                 axisComboBox.SelectedIndex = axisComboBox.Items.IndexOf(this.axis.name);
