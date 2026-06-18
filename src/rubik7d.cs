@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -120,6 +120,21 @@ namespace _3dedit
         private CheckBox cb_Show4C;
         private CheckBox cb_HighlightByColors;
         private CheckBox cb_MaskStickers;
+	private Label label_GripAxes;
+	private CheckBox cb_GripAxis1;
+	private CheckBox cb_GripAxis2;
+	private CheckBox cb_GripAxis3;
+	private CheckBox cb_GripAxis4;
+	private CheckBox cb_GripAxis5;
+	private CheckBox cb_GripAxis6;
+	private CheckBox cb_GripAxis7;
+	private NumericUpDown nud_GripLayer1;
+	private NumericUpDown nud_GripLayer2;
+	private NumericUpDown nud_GripLayer3;
+	private NumericUpDown nud_GripLayer4;
+	private NumericUpDown nud_GripLayer5;
+	private NumericUpDown nud_GripLayer6;
+	private NumericUpDown nud_GripLayer7;
         private Button btn_ResetHighlightSelection;
         private Label label9;
         private Label label10;
@@ -188,6 +203,7 @@ namespace _3dedit
             FaceMask=new int[15];
             for(int i=0;i<8;i++) NColMask[i]=0;  // 0 = Indeterminate (normal/neutral)
             for(int i=0;i<15;i++) FaceMask[i]=0;
+            for(int i=1;i<=7;i++) { GripAxisMask[i]=0; GripLayerNum[i]=1; }
             LoadSettings("MC7D_settings.txt");
             Macros=new CMacroFile(GetDim(),GetSize());
             m_Timer=new System.Threading.Timer(this.UpdateTime,null,0,117);
@@ -240,6 +256,21 @@ namespace _3dedit
             this.cb_Show4C = new System.Windows.Forms.CheckBox();
             this.cb_HighlightByColors = new System.Windows.Forms.CheckBox();
             this.cb_MaskStickers = new System.Windows.Forms.CheckBox();
+            this.label_GripAxes = new System.Windows.Forms.Label();
+            this.cb_GripAxis1 = new System.Windows.Forms.CheckBox();
+            this.cb_GripAxis2 = new System.Windows.Forms.CheckBox();
+            this.cb_GripAxis3 = new System.Windows.Forms.CheckBox();
+            this.cb_GripAxis4 = new System.Windows.Forms.CheckBox();
+            this.cb_GripAxis5 = new System.Windows.Forms.CheckBox();
+            this.cb_GripAxis6 = new System.Windows.Forms.CheckBox();
+            this.cb_GripAxis7 = new System.Windows.Forms.CheckBox();
+            this.nud_GripLayer1 = new System.Windows.Forms.NumericUpDown();
+            this.nud_GripLayer2 = new System.Windows.Forms.NumericUpDown();
+            this.nud_GripLayer3 = new System.Windows.Forms.NumericUpDown();
+            this.nud_GripLayer4 = new System.Windows.Forms.NumericUpDown();
+            this.nud_GripLayer5 = new System.Windows.Forms.NumericUpDown();
+            this.nud_GripLayer6 = new System.Windows.Forms.NumericUpDown();
+            this.nud_GripLayer7 = new System.Windows.Forms.NumericUpDown();
             this.btn_ResetHighlightSelection = new System.Windows.Forms.Button();
             this.label8 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
@@ -394,6 +425,21 @@ namespace _3dedit
             this.panel1.Controls.Add(this.cb_Show4C);
             this.panel1.Controls.Add(this.cb_HighlightByColors);
             this.panel1.Controls.Add(this.cb_MaskStickers);
+            this.panel1.Controls.Add(this.label_GripAxes);
+            this.panel1.Controls.Add(this.cb_GripAxis1);
+            this.panel1.Controls.Add(this.cb_GripAxis2);
+            this.panel1.Controls.Add(this.cb_GripAxis3);
+            this.panel1.Controls.Add(this.cb_GripAxis4);
+            this.panel1.Controls.Add(this.cb_GripAxis5);
+            this.panel1.Controls.Add(this.cb_GripAxis6);
+            this.panel1.Controls.Add(this.cb_GripAxis7);
+            this.panel1.Controls.Add(this.nud_GripLayer1);
+            this.panel1.Controls.Add(this.nud_GripLayer2);
+            this.panel1.Controls.Add(this.nud_GripLayer3);
+            this.panel1.Controls.Add(this.nud_GripLayer4);
+            this.panel1.Controls.Add(this.nud_GripLayer5);
+            this.panel1.Controls.Add(this.nud_GripLayer6);
+            this.panel1.Controls.Add(this.nud_GripLayer7);
             this.panel1.Controls.Add(this.btn_ResetHighlightSelection);
             this.panel1.Controls.Add(this.label8);
             this.panel1.Controls.Add(this.label7);
@@ -453,19 +499,19 @@ namespace _3dedit
             this.m_RunByClick.AutoSize = true;
             this.m_RunByClick.Checked = true;
             this.m_RunByClick.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_RunByClick.Location = new System.Drawing.Point(113, 625);
+            this.m_RunByClick.Location = new System.Drawing.Point(130, 698);
             this.m_RunByClick.Name = "m_RunByClick";
             this.m_RunByClick.Size = new System.Drawing.Size(86, 17);
             this.m_RunByClick.TabIndex = 17;
             this.m_RunByClick.Text = "Run by Click";
             this.m_RunByClick.UseVisualStyleBackColor = true;
-            // 
+            //
             // m_cbQuickMacro
-            // 
+            //
             this.m_cbQuickMacro.AutoSize = true;
             this.m_cbQuickMacro.Checked = true;
             this.m_cbQuickMacro.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_cbQuickMacro.Location = new System.Drawing.Point(6, 625);
+            this.m_cbQuickMacro.Location = new System.Drawing.Point(130, 675);
             this.m_cbQuickMacro.Name = "m_cbQuickMacro";
             this.m_cbQuickMacro.Size = new System.Drawing.Size(98, 17);
             this.m_cbQuickMacro.TabIndex = 17;
@@ -493,7 +539,7 @@ namespace _3dedit
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(6, 446);
+			this.label10.Location = new System.Drawing.Point(6, 550);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(45, 13);
             this.label10.TabIndex = 13;
@@ -502,9 +548,9 @@ namespace _3dedit
             // m_lbMacros
             // 
             this.m_lbMacros.FormattingEnabled = true;
-            this.m_lbMacros.Location = new System.Drawing.Point(6, 468);
+			this.m_lbMacros.Location = new System.Drawing.Point(6, 570);
             this.m_lbMacros.Name = "m_lbMacros";
-            this.m_lbMacros.Size = new System.Drawing.Size(110, 147);
+            this.m_lbMacros.Size = new System.Drawing.Size(110, 150);
             this.m_lbMacros.Sorted = true;
             this.m_lbMacros.TabIndex = 12;
             this.m_lbMacros.MouseDown += new System.Windows.Forms.MouseEventHandler(this.m_lbMacros_MouseDown);
@@ -513,7 +559,7 @@ namespace _3dedit
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(127, 431);
+			this.label9.Location = new System.Drawing.Point(127, 535);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(71, 13);
             this.label9.TabIndex = 11;
@@ -525,7 +571,7 @@ namespace _3dedit
             this.cb_Show3C.Checked = true;
             this.cb_Show3C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show3C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.cb_Show3C.Location = new System.Drawing.Point(155, 505);
+			this.cb_Show3C.Location = new System.Drawing.Point(130, 609);
             this.cb_Show3C.Name = "cb_Show3C";
             this.cb_Show3C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show3C.TabIndex = 10;
@@ -540,7 +586,7 @@ namespace _3dedit
             this.cb_Show5C.Checked = true;
             this.cb_Show5C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show5C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.cb_Show5C.Location = new System.Drawing.Point(155, 551);
+			this.cb_Show5C.Location = new System.Drawing.Point(180, 563);
             this.cb_Show5C.Name = "cb_Show5C";
             this.cb_Show5C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show5C.TabIndex = 10;
@@ -555,7 +601,7 @@ namespace _3dedit
             this.cb_Show1C.Checked = true;
             this.cb_Show1C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show1C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.cb_Show1C.Location = new System.Drawing.Point(155, 459);
+			this.cb_Show1C.Location = new System.Drawing.Point(130, 563);
             this.cb_Show1C.Name = "cb_Show1C";
             this.cb_Show1C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show1C.TabIndex = 10;
@@ -570,7 +616,7 @@ namespace _3dedit
             this.cb_Show6C.Checked = true;
             this.cb_Show6C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show6C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.cb_Show6C.Location = new System.Drawing.Point(155, 574);
+			this.cb_Show6C.Location = new System.Drawing.Point(180, 586);
             this.cb_Show6C.Name = "cb_Show6C";
             this.cb_Show6C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show6C.TabIndex = 10;
@@ -585,7 +631,7 @@ namespace _3dedit
             this.cb_Show2C.Checked = true;
             this.cb_Show2C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show2C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.cb_Show2C.Location = new System.Drawing.Point(155, 482);
+			this.cb_Show2C.Location = new System.Drawing.Point(130, 586);
             this.cb_Show2C.Name = "cb_Show2C";
             this.cb_Show2C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show2C.TabIndex = 10;
@@ -600,7 +646,7 @@ namespace _3dedit
             this.cb_Show7C.Checked = true;
             this.cb_Show7C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show7C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.cb_Show7C.Location = new System.Drawing.Point(155, 597);
+			this.cb_Show7C.Location = new System.Drawing.Point(180, 609);
             this.cb_Show7C.Name = "cb_Show7C";
             this.cb_Show7C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show7C.TabIndex = 10;
@@ -615,7 +661,7 @@ namespace _3dedit
             this.cb_Show4C.Checked = true;
             this.cb_Show4C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show4C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.cb_Show4C.Location = new System.Drawing.Point(155, 528);
+			this.cb_Show4C.Location = new System.Drawing.Point(130, 632);
             this.cb_Show4C.Name = "cb_Show4C";
             this.cb_Show4C.Size = new System.Drawing.Size(39, 17);
             this.cb_Show4C.Size = new System.Drawing.Size(39, 17);
@@ -625,10 +671,187 @@ namespace _3dedit
             this.cb_Show4C.UseVisualStyleBackColor = true;
             this.cb_Show4C.CheckStateChanged += new System.EventHandler(this.cb_Show1C_CheckedChanged);
             //
+            // label_GripAxes
+            //
+            this.label_GripAxes.AutoSize = true;
+            this.label_GripAxes.Location = new System.Drawing.Point(12, 392);
+            this.label_GripAxes.Name = "label_GripAxes";
+            this.label_GripAxes.Size = new System.Drawing.Size(62, 13);
+            this.label_GripAxes.TabIndex = 20;
+            this.label_GripAxes.Text = "Axes:";
+            //
+            // cb_GripAxis1
+            //
+            this.cb_GripAxis1.AutoSize = false;
+            this.cb_GripAxis1.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.cb_GripAxis1.Location = new System.Drawing.Point(29, 405);
+            this.cb_GripAxis1.Name = "cb_GripAxis1";
+            this.cb_GripAxis1.Size = new System.Drawing.Size(24, 22);
+            this.cb_GripAxis1.TabIndex = 21;
+            this.cb_GripAxis1.Text = "W";
+            this.cb_GripAxis1.ThreeState = true;
+            this.cb_GripAxis1.UseVisualStyleBackColor = true;
+            this.cb_GripAxis1.CheckStateChanged += new System.EventHandler(this.cb_GripAxis_CheckStateChanged);
+            //
+            // cb_GripAxis2
+            //
+            this.cb_GripAxis2.AutoSize = false;
+            this.cb_GripAxis2.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.cb_GripAxis2.Location = new System.Drawing.Point(67, 405);
+            this.cb_GripAxis2.Name = "cb_GripAxis2";
+            this.cb_GripAxis2.Size = new System.Drawing.Size(24, 22);
+            this.cb_GripAxis2.TabIndex = 22;
+            this.cb_GripAxis2.Text = "X";
+            this.cb_GripAxis2.ThreeState = true;
+            this.cb_GripAxis2.UseVisualStyleBackColor = true;
+            this.cb_GripAxis2.CheckStateChanged += new System.EventHandler(this.cb_GripAxis_CheckStateChanged);
+            //
+            // cb_GripAxis3
+            //
+            this.cb_GripAxis3.AutoSize = false;
+            this.cb_GripAxis3.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.cb_GripAxis3.Location = new System.Drawing.Point(105, 405);
+            this.cb_GripAxis3.Name = "cb_GripAxis3";
+            this.cb_GripAxis3.Size = new System.Drawing.Size(24, 22);
+            this.cb_GripAxis3.TabIndex = 23;
+            this.cb_GripAxis3.Text = "Z";
+            this.cb_GripAxis3.ThreeState = true;
+            this.cb_GripAxis3.UseVisualStyleBackColor = true;
+            this.cb_GripAxis3.CheckStateChanged += new System.EventHandler(this.cb_GripAxis_CheckStateChanged);
+            //
+            // cb_GripAxis4
+            //
+            this.cb_GripAxis4.AutoSize = false;
+            this.cb_GripAxis4.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.cb_GripAxis4.Location = new System.Drawing.Point(143, 405);
+            this.cb_GripAxis4.Name = "cb_GripAxis4";
+            this.cb_GripAxis4.Size = new System.Drawing.Size(24, 22);
+            this.cb_GripAxis4.TabIndex = 24;
+            this.cb_GripAxis4.Text = "Y";
+            this.cb_GripAxis4.ThreeState = true;
+            this.cb_GripAxis4.UseVisualStyleBackColor = true;
+            this.cb_GripAxis4.CheckStateChanged += new System.EventHandler(this.cb_GripAxis_CheckStateChanged);
+            //
+            // cb_GripAxis5
+            //
+            this.cb_GripAxis5.AutoSize = false;
+            this.cb_GripAxis5.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.cb_GripAxis5.Location = new System.Drawing.Point(67, 449);
+            this.cb_GripAxis5.Name = "cb_GripAxis5";
+            this.cb_GripAxis5.Size = new System.Drawing.Size(24, 22);
+            this.cb_GripAxis5.TabIndex = 25;
+            this.cb_GripAxis5.Text = "V";
+            this.cb_GripAxis5.ThreeState = true;
+            this.cb_GripAxis5.UseVisualStyleBackColor = true;
+            this.cb_GripAxis5.CheckStateChanged += new System.EventHandler(this.cb_GripAxis_CheckStateChanged);
+            //
+            // cb_GripAxis6
+            //
+            this.cb_GripAxis6.AutoSize = false;
+            this.cb_GripAxis6.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.cb_GripAxis6.Location = new System.Drawing.Point(105, 449);
+            this.cb_GripAxis6.Name = "cb_GripAxis6";
+            this.cb_GripAxis6.Size = new System.Drawing.Size(24, 22);
+            this.cb_GripAxis6.TabIndex = 26;
+            this.cb_GripAxis6.Text = "U";
+            this.cb_GripAxis6.ThreeState = true;
+            this.cb_GripAxis6.UseVisualStyleBackColor = true;
+            this.cb_GripAxis6.CheckStateChanged += new System.EventHandler(this.cb_GripAxis_CheckStateChanged);
+            //
+            // cb_GripAxis7
+            //
+            this.cb_GripAxis7.AutoSize = false;
+            this.cb_GripAxis7.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.cb_GripAxis7.Location = new System.Drawing.Point(143, 449);
+            this.cb_GripAxis7.Name = "cb_GripAxis7";
+            this.cb_GripAxis7.Size = new System.Drawing.Size(24, 22);
+            this.cb_GripAxis7.TabIndex = 27;
+            this.cb_GripAxis7.Text = "T";
+            this.cb_GripAxis7.ThreeState = true;
+            this.cb_GripAxis7.UseVisualStyleBackColor = true;
+            this.cb_GripAxis7.CheckStateChanged += new System.EventHandler(this.cb_GripAxis_CheckStateChanged);
+            //
+            // nud_GripLayer1
+            //
+            this.nud_GripLayer1.Location = new System.Drawing.Point(29, 427);
+            this.nud_GripLayer1.Name = "nud_GripLayer1";
+            this.nud_GripLayer1.Size = new System.Drawing.Size(36, 20);
+            this.nud_GripLayer1.Minimum = -127;
+            this.nud_GripLayer1.Maximum = 127;
+            this.nud_GripLayer1.Value = 1;
+            this.nud_GripLayer1.TabIndex = 28;
+            this.nud_GripLayer1.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
+            //
+            // nud_GripLayer2
+            //
+            this.nud_GripLayer2.Location = new System.Drawing.Point(67, 427);
+            this.nud_GripLayer2.Name = "nud_GripLayer2";
+            this.nud_GripLayer2.Size = new System.Drawing.Size(36, 20);
+            this.nud_GripLayer2.Minimum = -127;
+            this.nud_GripLayer2.Maximum = 127;
+            this.nud_GripLayer2.Value = 1;
+            this.nud_GripLayer2.TabIndex = 29;
+            this.nud_GripLayer2.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
+            //
+            // nud_GripLayer3
+            //
+            this.nud_GripLayer3.Location = new System.Drawing.Point(105, 427);
+            this.nud_GripLayer3.Name = "nud_GripLayer3";
+            this.nud_GripLayer3.Size = new System.Drawing.Size(36, 20);
+            this.nud_GripLayer3.Minimum = -127;
+            this.nud_GripLayer3.Maximum = 127;
+            this.nud_GripLayer3.Value = 1;
+            this.nud_GripLayer3.TabIndex = 30;
+            this.nud_GripLayer3.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
+            //
+            // nud_GripLayer4
+            //
+            this.nud_GripLayer4.Location = new System.Drawing.Point(143, 427);
+            this.nud_GripLayer4.Name = "nud_GripLayer4";
+            this.nud_GripLayer4.Size = new System.Drawing.Size(36, 20);
+            this.nud_GripLayer4.Minimum = -127;
+            this.nud_GripLayer4.Maximum = 127;
+            this.nud_GripLayer4.Value = 1;
+            this.nud_GripLayer4.TabIndex = 31;
+            this.nud_GripLayer4.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
+            //
+            // nud_GripLayer5
+            //
+            this.nud_GripLayer5.Location = new System.Drawing.Point(67, 471);
+            this.nud_GripLayer5.Name = "nud_GripLayer5";
+            this.nud_GripLayer5.Size = new System.Drawing.Size(36, 20);
+            this.nud_GripLayer5.Minimum = -127;
+            this.nud_GripLayer5.Maximum = 127;
+            this.nud_GripLayer5.Value = 1;
+            this.nud_GripLayer5.TabIndex = 32;
+            this.nud_GripLayer5.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
+            //
+            // nud_GripLayer6
+            //
+            this.nud_GripLayer6.Location = new System.Drawing.Point(105, 471);
+            this.nud_GripLayer6.Name = "nud_GripLayer6";
+            this.nud_GripLayer6.Size = new System.Drawing.Size(36, 20);
+            this.nud_GripLayer6.Minimum = -127;
+            this.nud_GripLayer6.Maximum = 127;
+            this.nud_GripLayer6.Value = 1;
+            this.nud_GripLayer6.TabIndex = 33;
+            this.nud_GripLayer6.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
+            //
+            // nud_GripLayer7
+            //
+            this.nud_GripLayer7.Location = new System.Drawing.Point(143, 471);
+            this.nud_GripLayer7.Name = "nud_GripLayer7";
+            this.nud_GripLayer7.Size = new System.Drawing.Size(36, 20);
+            this.nud_GripLayer7.Minimum = -127;
+            this.nud_GripLayer7.Maximum = 127;
+            this.nud_GripLayer7.Value = 1;
+            this.nud_GripLayer7.TabIndex = 34;
+            this.nud_GripLayer7.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
+            //
             // cb_HighlightByColors
             //
             this.cb_HighlightByColors.AutoSize = true;
-            this.cb_HighlightByColors.Location = new System.Drawing.Point(15, 397);
+			this.cb_HighlightByColors.Location = new System.Drawing.Point(15, 501);
             this.cb_HighlightByColors.Name = "cb_HighlightByColors";
             this.cb_HighlightByColors.Size = new System.Drawing.Size(112, 17);
             this.cb_HighlightByColors.TabIndex = 9;
@@ -641,7 +864,7 @@ namespace _3dedit
             // cb_MaskStickers
             //
             this.cb_MaskStickers.AutoSize = true;
-            this.cb_MaskStickers.Location = new System.Drawing.Point(15, 418);
+			this.cb_MaskStickers.Location = new System.Drawing.Point(15, 522);
             this.cb_MaskStickers.Name = "cb_MaskStickers";
             this.cb_MaskStickers.Size = new System.Drawing.Size(95, 17);
             this.cb_MaskStickers.TabIndex = 11;
@@ -651,7 +874,7 @@ namespace _3dedit
             //
             // btn_ResetHighlightSelection
             //
-            this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(130, 394);
+			this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(130, 498);
             this.btn_ResetHighlightSelection.Name = "btn_ResetHighlightSelection";
             this.btn_ResetHighlightSelection.Size = new System.Drawing.Size(75, 23);
             this.btn_ResetHighlightSelection.TabIndex = 10;
@@ -1265,7 +1488,7 @@ namespace _3dedit
             this.activeKeybind.Name = "activeKeybind";
             this.activeKeybind.Size = new System.Drawing.Size(74, 21);
             this.activeKeybind.Text = "Keybinds: ";
-            this.activeKeybind.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            this.activeKeybind.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             //
             // ms_RevStack
             //
@@ -1790,6 +2013,8 @@ namespace _3dedit
         int[] NColMask;  // -1: only unhighlight, 0: normal (Indeterminate), 1: only highlight
         bool MaskStickers = false;  // true: exclude unchecked stickers from mesh (unclickable), false: only dim them
         int[] FaceMask;
+        int[] GripAxisMask = new int[8];  // index 1..7, -1=exclude, 0=neutral, 1=include
+        int[] GripLayerNum = new int[8];  // index 1..7, layer numbers 1..N
 
         int DiffLight=150;
         int SpecLight=100;
@@ -1949,9 +2174,15 @@ namespace _3dedit
                 if (hasColorSelection || hasNColSelection)
                     Cube.FindStickersByMask(FaceMask, false, effectiveNColMask);
                 else {
-                    // All gray: all dark
-                    Cube.HighLighted.SetAll(false);
+                    // All gray: all dark, unless grip axis filter is active
+                    if (HasSelection(GripAxisMask, 1, 7)) {
+                        // Let grip axis filter determine what is visible (like show cubies)
+                        Cube.HighlightAll(null);
+                    } else {
+                        Cube.HighLighted.SetAll(false);
+                    }
                     Cube.HighLightGrip();
+                    ApplyGripAxisFilters();
                     return;
                 }
             } else {
@@ -1960,7 +2191,58 @@ namespace _3dedit
             }
 
             Cube.HighLightGrip();
+            if (cb_HighlightByColors.CheckState != CheckState.Unchecked)
+                ApplyGripAxisFilters();
         }
+
+		private void ApplyGripAxisFilters()
+		{
+			if (Cube == null) return;
+			int N2val = Cube.N + 2;
+			int NClim = 1;
+			for (int p = 0; p < Cube.D; p++) NClim *= N2val;
+
+			for (int axis = 1; axis <= Cube.D; axis++)
+			{
+				int maskVal = GripAxisMask[axis];
+				if (maskVal == 0) continue;
+
+				int rawMask = GripLayerNum[axis];
+				if (rawMask == 0) continue;
+
+				// Apply same transformation chain as keyboard grip:
+				// 1. NormGripMask: negative value → reverse bits (same as Grip.OnKeyDown + NormGripMask)
+				// 2. Axis inverted flag (X=2, V=5) → flip mask bits
+				// 3. Orientation → if oriented axis is positive, reverse mask
+				// 4. Use oriented absolute axis for stride
+				int m0 = rawMask >= 0 ? rawMask : Cube.reverse(-rawMask);
+				bool inverted = (axis == 2 || axis == 5);
+				if (inverted) m0 = Cube.reverse(m0);
+
+				int oriented = Cube.Orient[axis - 1];
+				if (oriented > 0) m0 = Cube.reverse(m0);
+
+				int f0 = Math.Abs(oriented) - 1;
+				int m1 = 1 << (Cube.N - 1);
+				int expandedMask = (m0 & 1) + (m0 << 1) + ((m0 & m1) << 2);
+
+				int c0 = 1;
+				for (int p = 0; p < f0; p++) c0 *= N2val;
+
+				for (int i = 0; i < NClim; i++)
+				{
+					int k = (i / c0) % N2val;
+					bool inLayer = (expandedMask & (1 << k)) != 0;
+
+					if (maskVal == 1 && !inLayer)
+						Cube.HighLighted[i] = false;
+					else if (maskVal == -1 && inLayer)
+						Cube.HighLighted[i] = false;
+				}
+			}
+		}
+
+
 
 		
 		public void ProcessClick(MouseEventArgs e){
@@ -2278,10 +2560,27 @@ namespace _3dedit
             int nstk=Cube.GetStickers(out col,out map,out coord,out hmask,out stkncol);
             CubeView.SetCoords(col,map,coord,stkncol,hmask,NColMask,nstk);
             CubeView.MaskStickers = MaskStickers;
+            UpdateGripAxisNUDs();
             ProcessHighLights();
             dxControl2.SetSceneChanged();
             ShowRevStack();
             //            dxControl2.Invalidate();
+        }
+
+        private void UpdateGripAxisNUDs()
+        {
+            if (Cube == null) return;
+            NumericUpDown[] nuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
+                                                         nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
+            for (int i = 0; i < 7; i++) {
+                nuds[i].Maximum = 127;
+                nuds[i].Minimum = -127;
+            }
+            // Reset grip state for axes beyond current dimension
+            for (int i = Cube.D + 1; i <= 7; i++) {
+                GripAxisMask[i] = 0;
+                GripLayerNum[i] = 1;
+            }
         }
 
         private void mi_Puzzle4D_Click(object sender,EventArgs e) {
@@ -2532,6 +2831,25 @@ namespace _3dedit
             trk_LightSpec.Value=SpecLight;
             m_trkTransparency.Value=255-CubeObj.Transparency;
             cb_MaskStickers.Checked = MaskStickers;
+
+            // Restore grip axis filters
+            NumericUpDown[] gnuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
+                                                          nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
+            for (int i = 0; i < 7; i++)
+            {
+                gnuds[i].Maximum = 127;
+                gnuds[i].Minimum = -127;
+                gnuds[i].Value = Math.Max(Math.Min(GripLayerNum[i + 1], 127), -127);
+            }
+            CheckState[] st3 = new CheckState[] { CheckState.Unchecked, CheckState.Indeterminate, CheckState.Checked };
+            cb_GripAxis1.CheckState = st3[GripAxisMask[1] + 1];
+            cb_GripAxis2.CheckState = st3[GripAxisMask[2] + 1];
+            cb_GripAxis3.CheckState = st3[GripAxisMask[3] + 1];
+            cb_GripAxis4.CheckState = st3[GripAxisMask[4] + 1];
+            cb_GripAxis5.CheckState = st3[GripAxisMask[5] + 1];
+            cb_GripAxis6.CheckState = st3[GripAxisMask[6] + 1];
+            cb_GripAxis7.CheckState = st3[GripAxisMask[7] + 1];
+
             m_setgeom=false;
         }
 
@@ -2607,6 +2925,12 @@ namespace _3dedit
                 sw.WriteLine("SpecLight {0}",SpecLight);
                 sw.WriteLine("Transparency {0}",CubeObj.Transparency);
                 sw.WriteLine("QuickMacro {0}",m_cbQuickMacro.Checked ? "T" : "F");
+                string lnGripAxes = "GripAxes";
+                for (int i = 1; i <= 7; i++) lnGripAxes += " " + GripAxisMask[i];
+                sw.WriteLine(lnGripAxes);
+                string lnGripLayers = "GripLayers";
+                for (int i = 1; i <= 7; i++) lnGripLayers += " " + GripLayerNum[i];
+                sw.WriteLine(lnGripLayers);
                 if(m_FileName!=null) sw.WriteLine("FileName "+m_FileName);
                 sw.Close();
             } catch { }
@@ -2663,6 +2987,14 @@ namespace _3dedit
                                 break;
                             case "QuickMacro":
                                 m_cbQuickMacro.Checked=(pars[1][0]=='T');
+                                break;
+                            case "GripAxes":
+                                for (int i = 1; i <= 7 && i < pars.Length; i++)
+                                    GripAxisMask[i] = int.Parse(pars[i]);
+                                break;
+                            case "GripLayers":
+                                for (int i = 1; i <= 7 && i < pars.Length; i++)
+                                    GripLayerNum[i] = int.Parse(pars[i]);
                                 break;
                         }
                     }
@@ -2828,6 +3160,12 @@ namespace _3dedit
                 NColMask[i] = 0;
             }
 
+            // Reset grip axis filters to gray (indeterminate)
+            for (int i = 1; i <= 7; i++) {
+                GripAxisMask[i] = 0;
+                GripLayerNum[i] = 1;
+            }
+
             // Update UI checkboxes to indeterminate state
             m_setgeom = true;
             cb_Col1.CheckState = CheckState.Indeterminate;
@@ -2852,12 +3190,52 @@ namespace _3dedit
             cb_Show5C.CheckState = CheckState.Indeterminate;
             cb_Show6C.CheckState = CheckState.Indeterminate;
             cb_Show7C.CheckState = CheckState.Indeterminate;
+
+            cb_GripAxis1.CheckState = CheckState.Indeterminate;
+            cb_GripAxis2.CheckState = CheckState.Indeterminate;
+            cb_GripAxis3.CheckState = CheckState.Indeterminate;
+            cb_GripAxis4.CheckState = CheckState.Indeterminate;
+            cb_GripAxis5.CheckState = CheckState.Indeterminate;
+            cb_GripAxis6.CheckState = CheckState.Indeterminate;
+            cb_GripAxis7.CheckState = CheckState.Indeterminate;
+
+            nud_GripLayer1.Value = 1;
+            nud_GripLayer2.Value = 1;
+            nud_GripLayer3.Value = 1;
+            nud_GripLayer4.Value = 1;
+            nud_GripLayer5.Value = 1;
+            nud_GripLayer6.Value = 1;
+            nud_GripLayer7.Value = 1;
             m_setgeom = false;
 
             // Refresh highlighting
             ProcessHighLights();
             Redraw();
         }
+
+        private void cb_GripAxis_CheckStateChanged(object sender, EventArgs e)
+        {
+            if (m_setgeom) return;
+            CheckBox[] boxes = new CheckBox[] { cb_GripAxis1, cb_GripAxis2, cb_GripAxis3, cb_GripAxis4,
+                                                cb_GripAxis5, cb_GripAxis6, cb_GripAxis7 };
+            for (int i = 0; i < 7; i++)
+                GripAxisMask[i + 1] = (boxes[i].CheckState == CheckState.Checked) ? 1
+                                    : (boxes[i].CheckState == CheckState.Unchecked) ? -1 : 0;
+            ProcessHighLights();
+            Redraw();
+        }
+
+        private void nud_GripLayer_ValueChanged(object sender, EventArgs e)
+        {
+            if (m_setgeom) return;
+            NumericUpDown[] nuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
+                                                         nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
+            for (int i = 0; i < 7; i++)
+                GripLayerNum[i + 1] = (int)nuds[i].Value;
+            ProcessHighLights();
+            Redraw();
+        }
+
 
         private void cb_Show1C_CheckedChanged(object sender,EventArgs e) {
             if(!m_setgeom) {
@@ -3072,7 +3450,7 @@ namespace _3dedit
 
 
         private void aboutToolStripMenuItem_Click(object sender,EventArgs e) {
-            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n(c)2026, ivan216");
+            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n\r\nBuild: 2026.06.17\r\n(c)2026, ivan216");
         }
 
         private void btnTogglePanel_Click(object sender, EventArgs e) {

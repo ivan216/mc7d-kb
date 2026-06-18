@@ -31,9 +31,9 @@
             // btn_Ok
             // 
             this.btn_Ok.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btn_Ok.Location = new System.Drawing.Point(13,49);
+            this.btn_Ok.Location = new System.Drawing.Point(13, 41);
             this.btn_Ok.Name = "btn_Ok";
-            this.btn_Ok.Size = new System.Drawing.Size(75,23);
+            this.btn_Ok.Size = new System.Drawing.Size(75, 23);
             this.btn_Ok.TabIndex = 1;
             this.btn_Ok.Text = "Ok";
             this.btn_Ok.UseVisualStyleBackColor = true;
@@ -41,7 +41,7 @@
             // btn_Cancel
             // 
             this.btn_Cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btn_Cancel.Location = new System.Drawing.Point(94,49);
+            this.btn_Cancel.Location = new System.Drawing.Point(94, 41);
             this.btn_Cancel.Name = "btn_Cancel";
             this.btn_Cancel.Size = new System.Drawing.Size(75,23);
             this.btn_Cancel.TabIndex = 2;
@@ -61,7 +61,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F,13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btn_Cancel;
-            this.ClientSize = new System.Drawing.Size(180,83);
+            this.ClientSize = new System.Drawing.Size(180, 110);
             this.ControlBox = false;
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.btn_Cancel);
