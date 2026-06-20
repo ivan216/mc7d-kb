@@ -14,6 +14,7 @@ namespace _3dedit {
         byte[] Cube,Cube2;
         public BitArray HighLighted;
         public byte[] StkNCols;
+        public ushort[] TierSig;
 
         int NStk;
         int NStk0,NStk1;
@@ -60,6 +61,7 @@ namespace _3dedit {
             StkMap=new int[NStk];
             HighLighted=new BitArray(NC);
             StkNCols=new byte[NC];
+            TierSig=new ushort[NC];
 
             Orient=new int[7];
             for(int i=0;i<D;i++) Orient[i]=i+1;
@@ -177,6 +179,7 @@ namespace _3dedit {
             for(int i=0;i<NC;i++) {
                 int a=i,b=0;
                 int nst=0;
+                int t1=0,t2=0,t3=0;
                 for(int n=1;n<=D;n++) {
                     int p=a%N2; a/=N2;
                     if(p==0 || p==N2-1) {
@@ -184,10 +187,16 @@ namespace _3dedit {
                         else b=-1;
                         nst++;
                     } else if(p==1 || p==N) nst++;
-
+                    else {
+                        int tier=(p-1<N-p) ? (p-1) : (N-p);
+                        if(tier==1) t1++;
+                        else if(tier==2) t2++;
+                        else if(tier==3) t3++;
+                    }
                 }
                 Cube[i]=(byte)(b<0 ? 0 : b);
                 StkNCols[i]=(byte)nst;
+                TierSig[i]=(ushort)(nst|(t1<<3)|(t2<<6)|(t3<<9));
             }
             HighLighted.SetAll(true);
         }
@@ -647,6 +656,33 @@ namespace _3dedit {
             FindOtherStickers(stk);
         }
 
+        // Highlight all stickers belonging to pieces in the same orbit as the clicked sticker
+        internal void FindStickersByOrbit(int stk) {
+            HighLighted.SetAll(false);
+            ushort target=TierSig[StkMap[stk]];
+            for(int i=0;i<NC;i++)
+                if(Cube[i]!=0 && TierSig[i]==target)
+                    HighLighted[i]=true;
+        }
+
+        // Return all unique tier signatures present in the current puzzle (for UI)
+        public ushort[] GetAllSignatures() {
+            HashSet<ushort> set=new HashSet<ushort>();
+            for(int i=0;i<NC;i++)
+                if(Cube[i]!=0) set.Add(TierSig[i]);
+            ushort[] r=new ushort[set.Count]; set.CopyTo(r); return r;
+        }
+
+        // Extract C-value (count_0) from a tier signature
+        public static int GetStkNColsFromSig(ushort sig) { return sig&7; }
+
+        // Decode non-sticker tier counts for display: [count_1, count_2, ...]
+        public static int[] DecodeNonStickerTiers(ushort sig,int maxTier) {
+            int[] r=new int[maxTier];
+            for(int k=1;k<=maxTier;k++) r[k-1]=(sig>>(k*3))&7;
+            return r;
+        }
+
         // Helper method: check if any mask has black check (value > 0)
         private bool HasBlackCheck(int[] mask, int startIndex, int endIndex) {
             for(int i = startIndex; i <= endIndex; i++) {
@@ -661,7 +697,11 @@ namespace _3dedit {
             FindStickersByMask(hmask, cAll, null);
         }
 
-        internal void FindStickersByMask(int[] hmask,bool cAll,int[] ncolMask) {  // array indexed by 1..14, hmask=-1,0,1; ncolMask indexed by 1..7, values: -1=exclude (dark), 0=neutral/gray, 1=include (highlight)
+        internal void FindStickersByMask(int[] hmask,bool cAll,int[] ncolMask) {
+            FindStickersByMask(hmask, cAll, ncolMask, null);
+        }
+
+        internal void FindStickersByMask(int[] hmask,bool cAll,int[] ncolMask, Dictionary<ushort,int> orbitMask) {  // array indexed by 1..14, hmask=-1,0,1; ncolMask indexed by 1..7, values: -1=exclude (dark), 0=neutral/gray, 1=include (highlight)
             HighLighted.SetAll(false);
 
             // Check if any color is selected (black check)
@@ -742,6 +782,17 @@ namespace _3dedit {
                     }
                 }
             }
+
+            // Apply orbitMask filtering: only exclude, never override inclusions
+            if(orbitMask != null && orbitMask.Count > 0) {
+                for(int i=0;i<NC;i++) {
+                    if(Cube[i]==0) continue;
+                    int val;
+                    if(orbitMask.TryGetValue(TierSig[i],out val)) {
+                        if(val < 0) HighLighted[i]=false;
+                    }
+                }
+            }
         }
 
         internal void HighlightAll() {
@@ -749,6 +800,10 @@ namespace _3dedit {
         }
 
         internal void HighlightAll(int[] ncolMask) {
+            HighlightAll(ncolMask, null);
+        }
+
+        internal void HighlightAll(int[] ncolMask, Dictionary<ushort,int> orbitMask) {
             if(ncolMask == null) {
                 HighLighted.SetAll(true);
                 for(int i=0;i<NC;i++) {
@@ -765,6 +820,17 @@ namespace _3dedit {
 
                     int ncol = StkNCols[i];
                     HighLighted[i] = hasNColBlackCheck ? (ncolMask[ncol] > 0) : (ncolMask[ncol] >= 0);
+                }
+            }
+
+            // Apply orbitMask filtering: only exclude, never override inclusions
+            if(orbitMask != null && orbitMask.Count > 0) {
+                for(int i=0;i<NC;i++) {
+                    if(Cube[i]==0) continue;
+                    int val;
+                    if(orbitMask.TryGetValue(TierSig[i],out val)) {
+                        if(val < 0) HighLighted[i]=false;
+                    }
                 }
             }
         }
