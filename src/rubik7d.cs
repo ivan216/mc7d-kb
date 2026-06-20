@@ -2781,6 +2781,7 @@ namespace _3dedit
                 m_FileName=sf.FileName;
                 Text=m_FileName+" - MC7D";
                 Cube.Load(m_FileName);
+                BuildOrbitCheckboxes();
                 ShowCube();
                 dxControl2.ParkCamera(true);
                 NClicks=0; ClickQual=true;
