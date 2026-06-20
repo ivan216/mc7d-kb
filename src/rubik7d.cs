@@ -3682,7 +3682,7 @@ namespace _3dedit
 Highlighting:
 - Check ""Enable Highlighting"" to turn on the highlight filter.
 - The ""Show Cubies"" checkboxes select pieces by C-value (number of colored stickers).
-- The dropdowns below each C-value checkbox select a specific orbit. Orbits are groups of pieces that share the same coordinate profile: for each internal coordinate, the tier (distance from the nearest face) is computed, and pieces with the same multiset of tiers belong to the same orbit. The orbit label shows the C-value followed by the non-sticker tier counts in brackets, e.g., C3:[1,0,0] means 3-sticker pieces where one dimension is at tier 1 and the other two non-sticker dimensions are at tier 0.";
+- The dropdowns below each C-value checkbox select a specific orbit. Each internal coordinate (one not on a face) is assigned a tier = distance from the nearest face. The orbit label shows the C-value followed by the count of dimensions at each tier depth in brackets, e.g., C3:[1,0,0] means the piece has C=3 (3 dimensions on faces or adjacent) plus 1 dimension at tier 1 depth, 0 at tier 2, 0 at tier 3. Two pieces in different tier-count groups can never reach each other via twists — that is why they are separate orbits.";
             tb.Select(0, 0);
 
             guideForm.Controls.Add(tb);
