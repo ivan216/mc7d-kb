@@ -144,6 +144,7 @@ namespace _3dedit
         private ToolStripMenuItem loadMacroFileToolStripMenuItem;
         private ToolStripMenuItem saveMacroFileToolStripMenuItem;
         private ToolStripMenuItem helpToolStripMenuItem;
+        private ToolStripMenuItem usageGuideToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
         private ToolStripMenuItem saveMacroFileAsToolStripMenuItem;
         private ToolStripSeparator toolStripMenuItem3;
@@ -214,6 +215,9 @@ namespace _3dedit
             Keybinds.KeybindLayoutsChanged += this.UpdateKeybindMenu;
             this.UpdateKeybindMenu(null, EventArgs.Empty);
             Keybindings.loaded = Keybinds;
+
+            // Wire up macro hotkey execution
+            Keybindings.ExecuteMacroById = ExecuteMacroByIdCmd;
 
             // Setup orbit combo panel — created once, never destroyed
             SetupOrbitPanel();
@@ -407,6 +411,7 @@ namespace _3dedit
             this.undoExtraTurnsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.commutatorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.usageGuideToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.m_trkFullUndoSpeed)).BeginInit();
@@ -1937,10 +1942,18 @@ namespace _3dedit
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.usageGuideToolStripMenuItem,
             this.aboutToolStripMenuItem});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             this.helpToolStripMenuItem.Text = "Help";
+            //
+            // usageGuideToolStripMenuItem
+            //
+            this.usageGuideToolStripMenuItem.Name = "usageGuideToolStripMenuItem";
+            this.usageGuideToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.usageGuideToolStripMenuItem.Text = "Usage Guide";
+            this.usageGuideToolStripMenuItem.Click += new System.EventHandler(this.usageGuideToolStripMenuItem_Click);
             // 
             // aboutToolStripMenuItem
             // 
@@ -2826,6 +2839,7 @@ namespace _3dedit
                 SaveKeybinds("MC7D_keybinds.txt");
                 SettingsSaved =true;
             }
+            Keybindings.ExecuteMacroById = null;
         }
 
         bool m_setgeom=false;
@@ -3512,6 +3526,29 @@ namespace _3dedit
         private void ReverseMacro(object sender,EventArgs e) {
             appMacro(true);
         }
+
+        // Execute macro by its 1-based index in the listbox (alphabetical order)
+        void ExecuteMacroByIdCmd(int id, bool reverse) {
+            int index = id - 1;
+            if (index < 0 || index >= m_lbMacros.Items.Count) return;
+            string macroName = (string)m_lbMacros.Items[index];
+            CurMacro = Macros.GetMacro(macroName);
+            if (CurMacro == null) return;
+            if (m_cbQuickMacro.Checked && CurMacro.Vectors != null) {
+                int[] cmap = GetFastMacroRef(CurMacro.Vectors, CurMacro.Orient);
+                Cube.ApplyMacro(cmap, CurMacro.Code, CurMacro.LMacro, reverse);
+                ProcessHighLights();
+                TestBuild();
+                Redraw();
+                return;
+            }
+            OldRecMacroStatus = RecordingMacroStatus;
+            RecordingMacroStatus = REC_MACRO_APPLY;
+            LMacroStickers = 0;
+            MacroReverse = reverse;
+            RedrawClickStatus();
+        }
+
         private void DeleteMacro(object sender,EventArgs e) {
             Macros.Delete(m_macroName);
             m_lbMacros.Items.Remove(m_macroName);
@@ -3617,7 +3654,39 @@ namespace _3dedit
 
 
         private void aboutToolStripMenuItem_Click(object sender,EventArgs e) {
-            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n\r\nBuild: 2026.06.20\r\n(c)2026, ivan216");
+            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n\r\nBuild: 2026.06.21\r\n(c)2026, ivan216");
+        }
+
+        private void usageGuideToolStripMenuItem_Click(object sender,EventArgs e) {
+            Form guideForm = new Form();
+            guideForm.Text = "Usage Guide";
+            guideForm.Size = new System.Drawing.Size(640, 480);
+            guideForm.StartPosition = FormStartPosition.CenterParent;
+            guideForm.MinimumSize = new System.Drawing.Size(480, 320);
+
+            TextBox tb = new TextBox();
+            tb.Multiline = true;
+            tb.ReadOnly = true;
+            tb.ScrollBars = ScrollBars.Vertical;
+            tb.Dock = DockStyle.Fill;
+            tb.WordWrap = true;
+            tb.Font = new System.Drawing.Font("Segoe UI", 10f);
+            tb.Padding = new Padding(10);
+            tb.Text =
+@"Keybinds:
+- Twist and Twist2c require you to grip a facet first, then press the twist key.
+- Twist3c is a three-step operation: 1) first press (optionally with Layer keys) select the grip facet; 2) the next two presses determine the twist axes from and to.
+- Macro hotkey executes the macro at the given position in the Macros list (1-based). Hold the MacroReverse key while pressing a Macro hotkey to execute the reverse of that macro.
+- Layer hotkeys (and the Layer spinboxes in the highlight panel) use a binary bitmask: each bit corresponds to a layer.
+
+Highlighting:
+- Check ""Enable Highlighting"" to turn on the highlight filter.
+- The ""Show Cubies"" checkboxes select pieces by C-value (number of colored stickers).
+- The dropdowns below each C-value checkbox select a specific orbit. Orbits are groups of pieces that share the same coordinate profile: for each internal coordinate, the tier (distance from the nearest face) is computed, and pieces with the same multiset of tiers belong to the same orbit. The orbit label shows the C-value followed by the non-sticker tier counts in brackets, e.g., C3:[1,0,0] means 3-sticker pieces where one dimension is at tier 1 and the other two non-sticker dimensions are at tier 0.";
+            tb.Select(0, 0);
+
+            guideForm.Controls.Add(tb);
+            guideForm.ShowDialog(this);
         }
 
         private void btnTogglePanel_Click(object sender, EventArgs e) {
