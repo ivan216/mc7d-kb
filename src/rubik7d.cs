@@ -220,29 +220,26 @@ namespace _3dedit
         }
 
         void SetupOrbitPanel() {
-            // Move Autoref/RunByClick to left side below macros listbox
-            int my=m_lbMacros.Location.Y+m_lbMacros.Height+6;
-            m_cbQuickMacro.Location=new System.Drawing.Point(6,my);
-            m_RunByClick.Location=new System.Drawing.Point(6,my+23);
-
-            // Create stable container panel for orbit combos
-            pnl_Orbits=new Panel();
-            pnl_Orbits.Location=new System.Drawing.Point(130,652);
-            pnl_Orbits.Size=new System.Drawing.Size(90,150);
-            panel1.Controls.Add(pnl_Orbits);
-
+            // Create standalone orbit combos in grid layout matching Show cubies checkboxes
+            // Row 2 (1C-4C): Y = cb_Show1C.Location.Y + 22
+            // Row 4 (5C-7C): Y = cb_Show5C.Location.Y + 22
             cb_Orbits=new ComboBox[7];
             cbOrbitSigs=new ushort[7][];
+            int[] row2X={29,72,115,158};
+            int[] row4X={72,115,158};
             for(int c=1;c<=7;c++) {
                 var combo=new ComboBox();
                 combo.DropDownStyle=ComboBoxStyle.DropDownList;
                 combo.Font=new System.Drawing.Font("Microsoft Sans Serif",8f);
                 combo.Tag=c;
-                combo.Location=new System.Drawing.Point(0,(c-1)*20);
-                combo.Size=new System.Drawing.Size(88,20);
+                combo.Size=new System.Drawing.Size(40,21);
                 combo.DropDownWidth=120;
+                if(c<=4)
+                    combo.Location=new System.Drawing.Point(row2X[c-1],cb_Show1C.Location.Y+22);
+                else
+                    combo.Location=new System.Drawing.Point(row4X[c-5],cb_Show5C.Location.Y+22);
                 combo.SelectedIndexChanged+=cb_Orbit_SelectedIndexChanged;
-                pnl_Orbits.Controls.Add(combo);
+                panel1.Controls.Add(combo);
                 cb_Orbits[c-1]=combo;
             }
             BuildOrbitCheckboxes();
@@ -531,7 +528,7 @@ namespace _3dedit
             this.m_RunByClick.AutoSize = true;
             this.m_RunByClick.Checked = true;
             this.m_RunByClick.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_RunByClick.Location = new System.Drawing.Point(130, 698);
+            this.m_RunByClick.Location = new System.Drawing.Point(120, 711);
             this.m_RunByClick.Name = "m_RunByClick";
             this.m_RunByClick.Size = new System.Drawing.Size(86, 17);
             this.m_RunByClick.TabIndex = 17;
@@ -543,7 +540,7 @@ namespace _3dedit
             this.m_cbQuickMacro.AutoSize = true;
             this.m_cbQuickMacro.Checked = true;
             this.m_cbQuickMacro.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_cbQuickMacro.Location = new System.Drawing.Point(130, 675);
+            this.m_cbQuickMacro.Location = new System.Drawing.Point(120, 689);
             this.m_cbQuickMacro.Name = "m_cbQuickMacro";
             this.m_cbQuickMacro.Size = new System.Drawing.Size(98, 17);
             this.m_cbQuickMacro.TabIndex = 17;
@@ -571,7 +568,7 @@ namespace _3dedit
             // label10
             // 
             this.label10.AutoSize = true;
-			this.label10.Location = new System.Drawing.Point(6, 550);
+			this.label10.Location = new System.Drawing.Point(6, 600);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(45, 13);
             this.label10.TabIndex = 13;
@@ -580,9 +577,9 @@ namespace _3dedit
             // m_lbMacros
             // 
             this.m_lbMacros.FormattingEnabled = true;
-			this.m_lbMacros.Location = new System.Drawing.Point(6, 570);
+			this.m_lbMacros.Location = new System.Drawing.Point(6, 617);
             this.m_lbMacros.Name = "m_lbMacros";
-            this.m_lbMacros.Size = new System.Drawing.Size(110, 150);
+            this.m_lbMacros.Size = new System.Drawing.Size(100, 150);
             this.m_lbMacros.Sorted = true;
             this.m_lbMacros.TabIndex = 12;
             this.m_lbMacros.MouseDown += new System.Windows.Forms.MouseEventHandler(this.m_lbMacros_MouseDown);
@@ -591,7 +588,7 @@ namespace _3dedit
             // label9
             // 
             this.label9.AutoSize = true;
-			this.label9.Location = new System.Drawing.Point(127, 535);
+			this.label9.Location = new System.Drawing.Point(12, 497);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(71, 13);
             this.label9.TabIndex = 11;
@@ -599,13 +596,13 @@ namespace _3dedit
             // 
             // cb_Show3C
             //
-            this.cb_Show3C.AutoSize = true;
+            this.cb_Show3C.AutoSize = false;
             this.cb_Show3C.Checked = true;
             this.cb_Show3C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show3C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show3C.Location = new System.Drawing.Point(130, 609);
+			this.cb_Show3C.Location = new System.Drawing.Point(115, 510);
             this.cb_Show3C.Name = "cb_Show3C";
-            this.cb_Show3C.Size = new System.Drawing.Size(39, 17);
+            this.cb_Show3C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show3C.TabIndex = 10;
             this.cb_Show3C.Text = "3C";
             this.cb_Show3C.ThreeState = true;
@@ -614,13 +611,13 @@ namespace _3dedit
             // 
             // cb_Show5C
             //
-            this.cb_Show5C.AutoSize = true;
+            this.cb_Show5C.AutoSize = false;
             this.cb_Show5C.Checked = true;
             this.cb_Show5C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show5C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show5C.Location = new System.Drawing.Point(180, 563);
+			this.cb_Show5C.Location = new System.Drawing.Point(72, 554);
             this.cb_Show5C.Name = "cb_Show5C";
-            this.cb_Show5C.Size = new System.Drawing.Size(39, 17);
+            this.cb_Show5C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show5C.TabIndex = 10;
             this.cb_Show5C.Text = "5C";
             this.cb_Show5C.ThreeState = true;
@@ -629,13 +626,13 @@ namespace _3dedit
             // 
             // cb_Show1C
             //
-            this.cb_Show1C.AutoSize = true;
+            this.cb_Show1C.AutoSize = false;
             this.cb_Show1C.Checked = true;
             this.cb_Show1C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show1C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show1C.Location = new System.Drawing.Point(130, 563);
+			this.cb_Show1C.Location = new System.Drawing.Point(29, 510);
             this.cb_Show1C.Name = "cb_Show1C";
-            this.cb_Show1C.Size = new System.Drawing.Size(39, 17);
+            this.cb_Show1C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show1C.TabIndex = 10;
             this.cb_Show1C.Text = "1C";
             this.cb_Show1C.ThreeState = true;
@@ -644,13 +641,13 @@ namespace _3dedit
             // 
             // cb_Show6C
             //
-            this.cb_Show6C.AutoSize = true;
+            this.cb_Show6C.AutoSize = false;
             this.cb_Show6C.Checked = true;
             this.cb_Show6C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show6C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show6C.Location = new System.Drawing.Point(180, 586);
+			this.cb_Show6C.Location = new System.Drawing.Point(115, 554);
             this.cb_Show6C.Name = "cb_Show6C";
-            this.cb_Show6C.Size = new System.Drawing.Size(39, 17);
+            this.cb_Show6C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show6C.TabIndex = 10;
             this.cb_Show6C.Text = "6C";
             this.cb_Show6C.ThreeState = true;
@@ -659,13 +656,13 @@ namespace _3dedit
             // 
             // cb_Show2C
             //
-            this.cb_Show2C.AutoSize = true;
+            this.cb_Show2C.AutoSize = false;
             this.cb_Show2C.Checked = true;
             this.cb_Show2C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show2C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show2C.Location = new System.Drawing.Point(130, 586);
+			this.cb_Show2C.Location = new System.Drawing.Point(72, 510);
             this.cb_Show2C.Name = "cb_Show2C";
-            this.cb_Show2C.Size = new System.Drawing.Size(39, 17);
+            this.cb_Show2C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show2C.TabIndex = 10;
             this.cb_Show2C.Text = "2C";
             this.cb_Show2C.ThreeState = true;
@@ -674,13 +671,13 @@ namespace _3dedit
             // 
             // cb_Show7C
             //
-            this.cb_Show7C.AutoSize = true;
+            this.cb_Show7C.AutoSize = false;
             this.cb_Show7C.Checked = true;
             this.cb_Show7C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show7C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show7C.Location = new System.Drawing.Point(180, 609);
+			this.cb_Show7C.Location = new System.Drawing.Point(158, 554);
             this.cb_Show7C.Name = "cb_Show7C";
-            this.cb_Show7C.Size = new System.Drawing.Size(39, 17);
+            this.cb_Show7C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show7C.TabIndex = 10;
             this.cb_Show7C.Text = "7C";
             this.cb_Show7C.ThreeState = true;
@@ -689,14 +686,13 @@ namespace _3dedit
             //
             // cb_Show4C
             //
-            this.cb_Show4C.AutoSize = true;
+            this.cb_Show4C.AutoSize = false;
             this.cb_Show4C.Checked = true;
             this.cb_Show4C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show4C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show4C.Location = new System.Drawing.Point(130, 632);
+			this.cb_Show4C.Location = new System.Drawing.Point(158, 510);
             this.cb_Show4C.Name = "cb_Show4C";
-            this.cb_Show4C.Size = new System.Drawing.Size(39, 17);
-            this.cb_Show4C.Size = new System.Drawing.Size(39, 17);
+            this.cb_Show4C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show4C.TabIndex = 10;
             this.cb_Show4C.Text = "4C";
             this.cb_Show4C.ThreeState = true;
@@ -883,7 +879,7 @@ namespace _3dedit
             // cb_HighlightByColors
             //
             this.cb_HighlightByColors.AutoSize = true;
-			this.cb_HighlightByColors.Location = new System.Drawing.Point(15, 501);
+			this.cb_HighlightByColors.Location = new System.Drawing.Point(120, 645);
             this.cb_HighlightByColors.Name = "cb_HighlightByColors";
             this.cb_HighlightByColors.Size = new System.Drawing.Size(112, 17);
             this.cb_HighlightByColors.TabIndex = 9;
@@ -896,7 +892,7 @@ namespace _3dedit
             // cb_MaskStickers
             //
             this.cb_MaskStickers.AutoSize = true;
-			this.cb_MaskStickers.Location = new System.Drawing.Point(15, 522);
+			this.cb_MaskStickers.Location = new System.Drawing.Point(120, 667);
             this.cb_MaskStickers.Name = "cb_MaskStickers";
             this.cb_MaskStickers.Size = new System.Drawing.Size(95, 17);
             this.cb_MaskStickers.TabIndex = 11;
@@ -906,7 +902,7 @@ namespace _3dedit
             //
             // btn_ResetHighlightSelection
             //
-			this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(130, 498);
+			this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(120, 610);
             this.btn_ResetHighlightSelection.Name = "btn_ResetHighlightSelection";
             this.btn_ResetHighlightSelection.Size = new System.Drawing.Size(75, 23);
             this.btn_ResetHighlightSelection.TabIndex = 10;
@@ -2045,7 +2041,6 @@ namespace _3dedit
         int[] NColMask;  // -1: only unhighlight, 0: normal (Indeterminate), 1: only highlight
         bool MaskStickers = false;  // true: exclude unchecked stickers from mesh (unclickable), false: only dim them
         int[] FaceMask;
-        Panel pnl_Orbits;                // container panel for orbit combos (created once)
         ComboBox[] cb_Orbits;            // one ComboBox per C-value (index 0..6 = 1C..7C)
         ushort[][] cbOrbitSigs;          // sigs for each combo: [c-1][i] = sig for combo item i+1
         Dictionary<int,ushort> OrbitSel; // C-value -> selected orbit sig, 0=All
@@ -3359,20 +3354,24 @@ namespace _3dedit
             }
 
             for(int c=1;c<=7;c++) {
-                groups[c].Sort();
+                groups[c].Sort((a,b)=>{
+                    int t1a=(a>>3)&7,t1b=(b>>3)&7; if(t1a!=t1b) return t1a.CompareTo(t1b);
+                    int t2a=(a>>6)&7,t2b=(b>>6)&7; if(t2a!=t2b) return t2a.CompareTo(t2b);
+                    int t3a=(a>>9)&7,t3b=(b>>9)&7; return t3a.CompareTo(t3b);
+                });
                 cbOrbitSigs[c-1]=groups[c].ToArray();
                 int n=groups[c].Count;
 
                 ComboBox combo=cb_Orbits[c-1];
                 combo.SelectedIndexChanged-=cb_Orbit_SelectedIndexChanged;
                 combo.Items.Clear();
-                combo.Items.Add(c+"C: All");
+                combo.Items.Add("All");
                 for(int i=0;i<n;i++) {
                     ushort sig=groups[c][i];
                     int[] tiers=Cube7D.DecodeNonStickerTiers(sig,maxTier);
                     string[] ts=new string[tiers.Length];
                     for(int k=0;k<tiers.Length;k++) ts[k]=tiers[k].ToString();
-                    combo.Items.Add(string.Format("{0}C:[{1}]",c,string.Join(",",ts)));
+                    combo.Items.Add("["+string.Join(",",ts)+"]");
                 }
                 combo.SelectedIndex=0;
                 combo.Enabled=(n>0);
@@ -3617,7 +3616,7 @@ namespace _3dedit
 
 
         private void aboutToolStripMenuItem_Click(object sender,EventArgs e) {
-            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n\r\nBuild: 2026.06.17\r\n(c)2026, ivan216");
+            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n\r\nBuild: 2026.06.20\r\n(c)2026, ivan216");
         }
 
         private void btnTogglePanel_Click(object sender, EventArgs e) {
