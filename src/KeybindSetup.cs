@@ -27,6 +27,8 @@ namespace _3dedit
             { "Layer", () => new Keybindings.Layer() },
             { "Recenter", () => new Keybindings.Recenter() },
             { "ChangeLayout", () => new Keybindings.ChangeLayout() },
+            { "Macro", () => new Keybindings.Macro() },
+            { "MacroReverse", () => new Keybindings.MacroReverse() },
         };
 
         public KeybindSetup(Keybindings keybinds)

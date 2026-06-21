@@ -14,6 +14,8 @@ namespace _3dedit
     public class Keybindings
     {
         public static Keybindings loaded;
+        public static Action<int, bool> ExecuteMacroById;
+        public static bool MacroReverseHeld;
 
         public event EventHandler KeybindLayoutsChanged;
         public event EventHandler ActiveLayoutChanged;
@@ -290,6 +292,12 @@ namespace _3dedit
                                 break;
                             case "ChangeLayout":
                                 action = new ChangeLayout();
+                                break;
+                            case "Macro":
+                                action = new Macro();
+                                break;
+                            case "MacroReverse":
+                                action = new MacroReverse();
                                 break;
                         }
 
@@ -1033,6 +1041,88 @@ namespace _3dedit
                 layoutComboBox.MouseWheel += (object sender, MouseEventArgs e) => ((HandledMouseEventArgs)e).Handled = true;
 
                 return new Control[] { layoutComboBox };
+            }
+        }
+
+        public class Macro : IAction
+        {
+            public int id;
+
+            public Macro()
+            {
+                this.id = 1;
+            }
+            public Macro(int id)
+            {
+                this.id = id;
+            }
+
+            public void OnKeyDown(ref Cube7D Cube, ref bool redraw, ref bool didTwist)
+            {
+                if (ExecuteMacroById == null) return;
+                ExecuteMacroById(id, MacroReverseHeld);
+                redraw = true;
+            }
+
+            public void OnKeyUp(ref Cube7D Cube, ref bool redraw, ref bool didTwist) { }
+
+            public string Serialize()
+            {
+                return $"Macro,{id}";
+            }
+
+            public void Deserialize(string s)
+            {
+                string[] p = s.Split(',');
+                if (p[1] != "Macro" || p.Length < 3)
+                {
+                    throw new Exception($"Invalid Macro: {s}");
+                }
+
+                Int32.TryParse(p[2], out id);
+                if (id < 1) id = 1;
+            }
+
+            public Control[] SetupControls()
+            {
+                NumericUpDown idInput = new NumericUpDown
+                {
+                    Width = 56,
+                    Minimum = 1,
+                    Maximum = 99999,
+                    Value = id,
+                };
+                idInput.ValueChanged += (object sender, EventArgs e) => this.id = (int)((NumericUpDown)sender).Value;
+                idInput.MouseWheel += (object sender, MouseEventArgs e) => ((HandledMouseEventArgs)e).Handled = true;
+
+                return new Control[] { idInput };
+            }
+        }
+
+        public class MacroReverse : IAction
+        {
+            public void OnKeyDown(ref Cube7D Cube, ref bool redraw, ref bool didTwist)
+            {
+                MacroReverseHeld = true;
+            }
+
+            public void OnKeyUp(ref Cube7D Cube, ref bool redraw, ref bool didTwist)
+            {
+                MacroReverseHeld = false;
+            }
+
+            public string Serialize() { return "MacroReverse"; }
+            public void Deserialize(string s)
+            {
+                string[] p = s.Split(',');
+                if (p[1] != "MacroReverse")
+                {
+                    throw new Exception($"Invalid MacroReverse: {s}");
+                }
+            }
+            public Control[] SetupControls()
+            {
+                return new Control[] { };
             }
         }
     }
