@@ -188,6 +188,9 @@
     <Compile Include="src\rubik7d.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="src\rubik7d.Designer.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
     <Compile Include="lib\CTrans.cs">
       <SubType>Code</SubType>
     </Compile>
