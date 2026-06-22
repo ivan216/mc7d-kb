@@ -1457,7 +1457,21 @@ namespace _3dedit
             OrbitSel=new Dictionary<int,ushort>();
 
             ushort[] allSigs=Cube.GetAllSignatures();
-            int maxTier=Cube.N%2==0 ? Cube.N/2 : (Cube.N-1)/2;
+            int maxTier=(Cube.N-1)/2;
+
+            // N=2: no internal tiers exist, disable all orbit combos
+            if(Cube.N==2) {
+                for(int c=1;c<=7;c++) {
+                    ComboBox combo=cb_Orbits[c-1];
+                    combo.SelectedIndexChanged-=cb_Orbit_SelectedIndexChanged;
+                    combo.Items.Clear();
+                    combo.Items.Add("All");
+                    combo.SelectedIndex=0;
+                    combo.Enabled=false;
+                    combo.SelectedIndexChanged+=cb_Orbit_SelectedIndexChanged;
+                }
+                return;
+            }
 
             List<ushort>[] groups=new List<ushort>[8];
             for(int c=1;c<=7;c++) groups[c]=new List<ushort>();
