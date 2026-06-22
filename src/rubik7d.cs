@@ -1814,7 +1814,7 @@ namespace _3dedit
 
 
         private void aboutToolStripMenuItem_Click(object sender,EventArgs e) {
-            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n\r\nBuild: 2026.06.21\r\n(c)2026, ivan216");
+            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n\r\nBuild: 2026.06.22\r\n(c)2026, ivan216");
         }
 
         private void usageGuideToolStripMenuItem_Click(object sender,EventArgs e) {
