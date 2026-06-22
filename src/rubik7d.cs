@@ -53,6 +53,11 @@ namespace _3dedit
             for(int i=0;i<8;i++) NColMask[i]=0;  // 0 = Indeterminate (normal/neutral)
             for(int i=0;i<15;i++) FaceMask[i]=0;
             for(int i=1;i<=7;i++) { GripAxisMask[i]=0; GripLayerNum[i]=1; }
+
+            // Create orbit filter panel before LoadSettings (which may call NewScene → RebuildOrbitChips)
+            SetupOrbitFilterPanel();
+            m_orbChipMap=new Dictionary<ushort,CheckBox>();
+
             LoadSettings("MC7D_settings.txt");
             Macros=new CMacroFile(GetDim(),GetSize());
             m_Timer=new System.Threading.Timer(this.UpdateTime,null,0,117);
@@ -67,34 +72,22 @@ namespace _3dedit
             // Wire up macro hotkey execution
             Keybindings.ExecuteMacroById = ExecuteMacroByIdCmd;
 
-            // Setup orbit combo panel — created once, never destroyed
-            SetupOrbitPanel();
         }
 
-        void SetupOrbitPanel() {
-            // Create standalone orbit combos in grid layout matching Show cubies checkboxes
-            // Row 2 (1C-4C): Y = cb_Show1C.Location.Y + 22
-            // Row 4 (5C-7C): Y = cb_Show5C.Location.Y + 22
-            cb_Orbits=new ComboBox[7];
-            cbOrbitSigs=new ushort[7][];
-            int[] row2X={29,72,115,158};
-            int[] row4X={72,115,158};
-            for(int c=1;c<=7;c++) {
-                var combo=new ComboBox();
-                combo.DropDownStyle=ComboBoxStyle.DropDownList;
-                combo.Font=new System.Drawing.Font("Microsoft Sans Serif",8f);
-                combo.Tag=c;
-                combo.Size=new System.Drawing.Size(40,21);
-                combo.DropDownWidth=120;
-                if(c<=4)
-                    combo.Location=new System.Drawing.Point(row2X[c-1],cb_Show1C.Location.Y+22);
-                else
-                    combo.Location=new System.Drawing.Point(row4X[c-5],cb_Show5C.Location.Y+22);
-                combo.SelectedIndexChanged+=cb_Orbit_SelectedIndexChanged;
-                panel1.Controls.Add(combo);
-                cb_Orbits[c-1]=combo;
-            }
-            BuildOrbitCheckboxes();
+        void SetupOrbitFilterPanel() {
+            var lbl=new Label();
+            lbl.Text="Orbit Filters";
+            lbl.Location=new System.Drawing.Point(6, 566);
+            lbl.Size=new System.Drawing.Size(80, 16);
+            lbl.Font=new System.Drawing.Font("Microsoft Sans Serif",8f);
+            panel1.Controls.Add(lbl);
+
+            m_pnlOrbitFilters=new Panel();
+            m_pnlOrbitFilters.Location=new System.Drawing.Point(6, 584);
+            m_pnlOrbitFilters.Size=new System.Drawing.Size(200, 130);
+            m_pnlOrbitFilters.AutoScroll=true;
+            m_pnlOrbitFilters.BorderStyle=BorderStyle.FixedSingle;
+            panel1.Controls.Add(m_pnlOrbitFilters);
         }
         int GetDim() {
             if(mi_Puzzle4D.Checked) return 4;
@@ -152,9 +145,8 @@ namespace _3dedit
         int[] NColMask;  // -1: only unhighlight, 0: normal (Indeterminate), 1: only highlight
         bool MaskStickers = false;  // true: exclude unchecked stickers from mesh (unclickable), false: only dim them
         int[] FaceMask;
-        ComboBox[] cb_Orbits;            // one ComboBox per C-value (index 0..6 = 1C..7C)
-        ushort[][] cbOrbitSigs;          // sigs for each combo: [c-1][i] = sig for combo item i+1
-        Dictionary<int,ushort> OrbitSel; // C-value -> selected orbit sig, 0=All
+        Panel m_pnlOrbitFilters;               // scrollable container for orbit chips
+        Dictionary<ushort,CheckBox> m_orbChipMap; // sig → chip checkbox
         int[] GripAxisMask = new int[8];  // index 1..7, -1=exclude, 0=neutral, 1=include
         int[] GripLayerNum = new int[8];  // index 1..7, layer numbers 1..N
 
@@ -306,18 +298,71 @@ namespace _3dedit
             // Only apply NColMask filtering when Enable highlighting is checked or indeterminate
             int[] effectiveNColMask = (cb_HighlightByColors.CheckState != CheckState.Unchecked) ? NColMask : null;
 
-            // Compute effective orbit mask from OrbitSel
-            Dictionary<ushort,int> effectiveOrbitMask = (cb_HighlightByColors.CheckState != CheckState.Unchecked)
-                ? BuildOrbitMask() : null;
+            // Compute orbit chip mask — only when highlighting is on
+            Dictionary<ushort,int> rawOrbitMask = (cb_HighlightByColors.CheckState != CheckState.Unchecked)
+                ? GetOrbitFilterMask() : null;
 
-            // When a C-value is Unchecked but has an orbit selection,
-            // neutralize NColMask for that C-value so orbit can handle the exclusion
-            if(effectiveNColMask != null && effectiveOrbitMask != null && OrbitSel != null) {
-                bool adjusted=false;
+            // Build effective orbit mask (Cube7D only handles exclusion: val < 0)
+            // Neutral C-values with Checked chips: include only those specific orbits.
+            // Neutral C-values with only Unchecked chips: leave NColMask neutral (0),
+            // just add exclusion entries — if another C-value is checked, these neutrals
+            // stay hidden, so also bump them to 1.
+            Dictionary<ushort,int> effectiveOrbitMask = null;
+            if(rawOrbitMask != null && effectiveNColMask != null) {
+                bool[] cHasCheck=new bool[8], cHasUncheck=new bool[8];
+                foreach(var kv in rawOrbitMask) {
+                    int c=Cube7D.GetStkNColsFromSig(kv.Key);
+                    if(kv.Value>0) cHasCheck[c]=true;
+                    else cHasUncheck[c]=true;
+                }
+
+                bool ncolAdjusted=false;
+                ushort[] allSigs=null;
+
                 for(int c=1;c<=7;c++) {
-                    if(effectiveNColMask[c] < 0 && OrbitSel.ContainsKey(c) && OrbitSel[c] != 0) {
-                        if(!adjusted) { effectiveNColMask=(int[])effectiveNColMask.Clone(); adjusted=true; }
-                        effectiveNColMask[c]=0;
+                    int nc=effectiveNColMask[c];
+                    if(nc==-1) continue; // unchecked C-value — chips ignored
+                    if(!cHasCheck[c] && !cHasUncheck[c]) continue; // no chip activity
+
+                    if(cHasCheck[c]) {
+                        // Include chips override the C-value default:
+                        // set NColMask=1 (or keep it), exclude non-Checked orbits
+                        if(nc==0) {
+                            if(!ncolAdjusted) { effectiveNColMask=(int[])effectiveNColMask.Clone(); ncolAdjusted=true; }
+                            effectiveNColMask[c]=1;
+                        }
+                        if(allSigs==null) allSigs=Cube.GetAllSignatures();
+                        foreach(ushort sig in allSigs) {
+                            if(Cube7D.GetStkNColsFromSig(sig)!=c) continue;
+                            int chipVal=0;
+                            rawOrbitMask.TryGetValue(sig,out chipVal);
+                            if(chipVal<=0) {
+                                if(effectiveOrbitMask==null) effectiveOrbitMask=new Dictionary<ushort,int>();
+                                if(!effectiveOrbitMask.ContainsKey(sig)) effectiveOrbitMask[sig]=-1;
+                            }
+                        }
+                    } else {
+                        // Exclude-only: never activate a C-value via NColMask.
+                        // For already-checked C-values, exclude chips work via the loop below.
+                        if(nc==0) {
+                            if(effectiveOrbitMask==null) effectiveOrbitMask=new Dictionary<ushort,int>();
+                            foreach(var kv in rawOrbitMask) {
+                                if(Cube7D.GetStkNColsFromSig(kv.Key)!=c) continue;
+                                if(kv.Value<0 && !effectiveOrbitMask.ContainsKey(kv.Key))
+                                    effectiveOrbitMask[kv.Key]=-1;
+                            }
+                        }
+                    }
+                }
+
+                // Excludes on non-neutral C-values (e.g., 1C checked + C2 orbit unchecked)
+                foreach(var kv in rawOrbitMask) {
+                    if(kv.Value<0 && Cube7D.GetStkNColsFromSig(kv.Key)<=7) {
+                        int c=Cube7D.GetStkNColsFromSig(kv.Key);
+                        if(effectiveNColMask[c]==1 || effectiveNColMask[c]==-1) {
+                            if(effectiveOrbitMask==null) effectiveOrbitMask=new Dictionary<ushort,int>();
+                            if(!effectiveOrbitMask.ContainsKey(kv.Key)) effectiveOrbitMask[kv.Key]=-1;
+                        }
                     }
                 }
             }
@@ -658,7 +703,7 @@ namespace _3dedit
             Cube.Init(GetSize(),GetDim());
             qSolved=true;
 
-            BuildOrbitCheckboxes();
+            RebuildOrbitChips();
 
             if(Macros==null || !Macros.CheckSize(GetDim(),GetSize())) {
                 Macros=new CMacroFile(GetDim(),GetSize());
@@ -892,7 +937,7 @@ namespace _3dedit
                 m_FileName=sf.FileName;
                 Text=m_FileName+" - MC7D";
                 Cube.Load(m_FileName);
-                BuildOrbitCheckboxes();
+                RebuildOrbitChips();
                 ShowCube();
                 dxControl2.ParkCamera(true);
                 NClicks=0; ClickQual=true;
@@ -1094,10 +1139,16 @@ namespace _3dedit
                 string lnGripLayers = "GripLayers";
                 for (int i = 1; i <= 7; i++) lnGripLayers += " " + GripLayerNum[i];
                 sw.WriteLine(lnGripLayers);
-                if(OrbitSel != null && OrbitSel.Count > 0) {
-                    string lnOrbits = "ShowOrbits";
-                    foreach(var kv in OrbitSel) lnOrbits += " " + kv.Key + "=" + kv.Value;
-                    sw.WriteLine(lnOrbits);
+                if(m_orbChipMap != null && m_orbChipMap.Count > 0) {
+                    bool any=false;
+                    string lnOrbits = "OrbitChips";
+                    foreach(var kv in m_orbChipMap) {
+                        int val=0;
+                        if(kv.Value.CheckState==CheckState.Checked) val=1;
+                        else if(kv.Value.CheckState==CheckState.Unchecked) val=-1;
+                        if(val!=0) { lnOrbits += " " + kv.Key + "=" + val; any=true; }
+                    }
+                    if(any) sw.WriteLine(lnOrbits);
                 }
                 if(m_FileName!=null) sw.WriteLine("FileName "+m_FileName);
                 sw.Close();
@@ -1164,11 +1215,21 @@ namespace _3dedit
                                 for (int i = 1; i <= 7 && i < pars.Length; i++)
                                     GripLayerNum[i] = int.Parse(pars[i]);
                                 break;
-                            case "ShowOrbits":
-                                OrbitSel = new Dictionary<int,ushort>();
-                                for(int i=1;i<pars.Length;i++) {
-                                    string[] p=pars[i].Split('=');
-                                    if(p.Length==2) OrbitSel[int.Parse(p[0])]=ushort.Parse(p[1]);
+                            case "OrbitChips":
+                                if(m_orbChipMap != null) {
+                                    for(int i=1;i<pars.Length;i++) {
+                                        string[] p=pars[i].Split('=');
+                                        if(p.Length==2) {
+                                            ushort sig=ushort.Parse(p[0]);
+                                            int val=int.Parse(p[1]);
+                                            CheckBox chip;
+                                            if(m_orbChipMap.TryGetValue(sig,out chip)) {
+                                                chip.CheckState = (val>0) ? CheckState.Checked
+                                                            : (val<0) ? CheckState.Unchecked
+                                                            : CheckState.Indeterminate;
+                                            }
+                                        }
+                                    }
                                 }
                                 break;
                         }
@@ -1185,7 +1246,7 @@ namespace _3dedit
                 Cube=new Cube7D();
                 Cube.Load(m_FileName);
                 ShowCube();
-                BuildOrbitCheckboxes();
+                RebuildOrbitChips();
                 SetDim(Cube.D); SetSize(Cube.N);
                 dxControl2.ParkCamera(true);
                 NClicks=0; ClickQual=true;
@@ -1384,12 +1445,7 @@ namespace _3dedit
             nud_GripLayer7.Value = 1;
 
             // Reset orbit filters
-            if(OrbitSel != null) OrbitSel.Clear();
-            if(cb_Orbits != null) {
-                for(int i=0;i<cb_Orbits.Length;i++) {
-                    if(cb_Orbits[i]!=null) cb_Orbits[i].SelectedIndex=0;
-                }
-            }
+            ResetOrbitChips();
 
             m_setgeom = false;
 
@@ -1434,44 +1490,16 @@ namespace _3dedit
             }
         }
 
-        private void cb_Orbit_SelectedIndexChanged(object sender,EventArgs e) {
-            if(m_setgeom) return;
-            ComboBox cb=sender as ComboBox;
-            if(cb==null || cb.Tag==null) return;
-            int cVal=(int)cb.Tag;
-            // SelectedIndex > 0 → specific orbit; selectedIndex = 0 → "All"
-            ushort selSig=0;
-            if(cb.SelectedIndex>0 && cbOrbitSigs!=null && cVal-1<cbOrbitSigs.Length) {
-                selSig=cbOrbitSigs[cVal-1][cb.SelectedIndex-1];
-            }
-            if(OrbitSel==null) OrbitSel=new Dictionary<int,ushort>();
-            OrbitSel[cVal]=selSig;
-            ProcessHighLights();
-            Redraw();
-        }
+        void RebuildOrbitChips() {
+            m_pnlOrbitFilters.Controls.Clear();
+            m_orbChipMap.Clear();
 
-        void BuildOrbitCheckboxes() {
-            if(Cube==null || cb_Orbits==null) return;
-
-            var oldSel=OrbitSel;
-            OrbitSel=new Dictionary<int,ushort>();
+            if(Cube==null) return;
 
             ushort[] allSigs=Cube.GetAllSignatures();
-            int maxTier=(Cube.N-1)/2;
+            if(allSigs.Length==0) return;
 
-            // N=2: no internal tiers exist, disable all orbit combos
-            if(Cube.N==2) {
-                for(int c=1;c<=7;c++) {
-                    ComboBox combo=cb_Orbits[c-1];
-                    combo.SelectedIndexChanged-=cb_Orbit_SelectedIndexChanged;
-                    combo.Items.Clear();
-                    combo.Items.Add("All");
-                    combo.SelectedIndex=0;
-                    combo.Enabled=false;
-                    combo.SelectedIndexChanged+=cb_Orbit_SelectedIndexChanged;
-                }
-                return;
-            }
+            int maxTier=(Cube.N-1)/2;
 
             List<ushort>[] groups=new List<ushort>[8];
             for(int c=1;c<=7;c++) groups[c]=new List<ushort>();
@@ -1480,66 +1508,86 @@ namespace _3dedit
                 if(cVal>=1 && cVal<=7) groups[cVal].Add(allSigs[i]);
             }
 
+            int y=3, chipH=18, gap=8;
+            int panelW=m_pnlOrbitFilters.ClientSize.Width;
+            System.Drawing.Font font7=new System.Drawing.Font("Microsoft Sans Serif",8f);
+
             for(int c=1;c<=7;c++) {
+                if(groups[c].Count==0) continue;
+
+                // C-value label
+                var lbl=new Label();
+                lbl.Text="C"+c+":";
+                lbl.Location=new System.Drawing.Point(3,y);
+                lbl.Size=new System.Drawing.Size(35,chipH);
+                lbl.Font=font7;
+                lbl.TextAlign=ContentAlignment.MiddleLeft;
+                m_pnlOrbitFilters.Controls.Add(lbl);
+
                 groups[c].Sort((a,b)=>{
                     int t1a=(a>>3)&7,t1b=(b>>3)&7; if(t1a!=t1b) return t1a.CompareTo(t1b);
                     int t2a=(a>>6)&7,t2b=(b>>6)&7; if(t2a!=t2b) return t2a.CompareTo(t2b);
                     int t3a=(a>>9)&7,t3b=(b>>9)&7; return t3a.CompareTo(t3b);
                 });
-                cbOrbitSigs[c-1]=groups[c].ToArray();
-                int n=groups[c].Count;
 
-                ComboBox combo=cb_Orbits[c-1];
-                combo.SelectedIndexChanged-=cb_Orbit_SelectedIndexChanged;
-                combo.Items.Clear();
-                combo.Items.Add("All");
-                for(int i=0;i<n;i++) {
-                    ushort sig=groups[c][i];
+                int x=40;
+                int rowH=chipH+gap;
+                foreach(ushort sig in groups[c]) {
                     int[] tiers=Cube7D.DecodeNonStickerTiers(sig,maxTier);
-                    string[] ts=new string[tiers.Length];
-                    for(int k=0;k<tiers.Length;k++) ts[k]=tiers[k].ToString();
-                    combo.Items.Add("["+string.Join(",",ts)+"]");
-                }
-                combo.SelectedIndex=0;
-                combo.Enabled=(n>0);
+                    string label="["+string.Join(",",System.Array.ConvertAll(tiers,t=>t.ToString()))+"]";
 
-                ushort oldSig=0;
-                if(oldSel!=null) oldSel.TryGetValue(c,out oldSig);
-                OrbitSel[c]=oldSig;
-                if(oldSig!=0 && n>0) {
-                    for(int i=0;i<n;i++) {
-                        if(groups[c][i]==oldSig) { combo.SelectedIndex=i+1; break; }
-                    }
+                    var chip=new CheckBox();
+                    chip.Text=label;
+                    chip.Font=font7;
+                    chip.ThreeState=true;
+                    chip.CheckState=CheckState.Indeterminate;
+                    chip.Tag=sig;
+                    chip.CheckStateChanged+=ChipOrbit_CheckStateChanged;
+                    // Auto-size to fit text, but constrain height
+                    chip.AutoSize=true;
+                    chip.MaximumSize=new System.Drawing.Size(0,chipH);
+                    chip.Location=new System.Drawing.Point(x,y);
+                    m_pnlOrbitFilters.Controls.Add(chip);
+                    m_orbChipMap[sig]=chip;
+
+                    // Measure actual width for positioning
+                    int chipW=Math.Max(chip.Width,30);
+                    // If chip won't fit, wrap to next row
+                    if(x+chipW>panelW) { x=40; y+=rowH; chip.Location=new System.Drawing.Point(x,y); }
+                    x+=chipW+gap;
                 }
-                combo.SelectedIndexChanged+=cb_Orbit_SelectedIndexChanged;
+                y+=rowH+4;
             }
         }
 
-        Dictionary<ushort,int> BuildOrbitMask() {
-            if(OrbitSel==null || Cube==null) return null;
+        void ChipOrbit_CheckStateChanged(object sender,EventArgs e) {
+            if(m_setgeom) return;
+            ProcessHighLights();
+            Redraw();
+        }
+
+        // Build orbit filter mask from chip states:  -1=exclude, 0=neutral, 1=include
+        Dictionary<ushort,int> GetOrbitFilterMask() {
+            if(m_orbChipMap==null || m_orbChipMap.Count==0) return null;
             bool any=false;
-            foreach(var kv in OrbitSel) {
-                if(kv.Value!=0 && NColMask[kv.Key]!=0) { any=true; break; }
-            }
-            if(!any) return null;
             var mask=new Dictionary<ushort,int>();
-            ushort[] allSigs=Cube.GetAllSignatures();
-            foreach(var kv in OrbitSel) {
-                if(kv.Value==0) continue;
-                int cVal=kv.Key;
-                if(NColMask[cVal]==0) continue; // neutral — ignore
-                if(NColMask[cVal]>0) {
-                    // Checked: exclude all OTHER orbits in this C-value
-                    foreach(ushort sig in allSigs) {
-                        if(Cube7D.GetStkNColsFromSig(sig)==cVal && sig!=kv.Value)
-                            mask[sig]=-1;
-                    }
-                } else {
-                    // Unchecked: exclude the selected orbit only
-                    mask[kv.Value]=-1;
+            foreach(var kv in m_orbChipMap) {
+                int val=0;
+                switch(kv.Value.CheckState) {
+                    case CheckState.Checked: val=1; any=true; break;
+                    case CheckState.Unchecked: val=-1; any=true; break;
                 }
+                if(val!=0) mask[kv.Key]=val;
             }
-            return mask;
+            return any ? mask : null;
+        }
+
+        // Reset all orbit chips to neutral
+        void ResetOrbitChips() {
+            if(m_orbChipMap==null) return;
+            foreach(var chip in m_orbChipMap.Values) {
+                chip.CheckState=CheckState.Indeterminate;
+            }
         }
 
         double[] m_macroVec;
@@ -1824,6 +1872,9 @@ Highlighting:
         private void Form1_Load(object sender, EventArgs e) {
             // Initialize button position on form load
             UpdateToggleButtonPosition();
+
+            // Rebuild orbit chips after form is fully initialized (fixes AutoSize layout on first load)
+            if(m_orbChipMap != null && m_orbChipMap.Count > 0) RebuildOrbitChips();
         }
 
         private void Form1_Resize(object sender, EventArgs e) {

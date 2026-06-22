@@ -451,7 +451,7 @@ namespace _3dedit
             this.m_RunByClick.AutoSize = true;
             this.m_RunByClick.Checked = true;
             this.m_RunByClick.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_RunByClick.Location = new System.Drawing.Point(120, 711);
+            this.m_RunByClick.Location = new System.Drawing.Point(120, 842);
             this.m_RunByClick.Name = "m_RunByClick";
             this.m_RunByClick.Size = new System.Drawing.Size(86, 17);
             this.m_RunByClick.TabIndex = 17;
@@ -463,7 +463,7 @@ namespace _3dedit
             this.m_cbQuickMacro.AutoSize = true;
             this.m_cbQuickMacro.Checked = true;
             this.m_cbQuickMacro.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_cbQuickMacro.Location = new System.Drawing.Point(120, 689);
+            this.m_cbQuickMacro.Location = new System.Drawing.Point(120, 820);
             this.m_cbQuickMacro.Name = "m_cbQuickMacro";
             this.m_cbQuickMacro.Size = new System.Drawing.Size(98, 17);
             this.m_cbQuickMacro.TabIndex = 17;
@@ -491,7 +491,7 @@ namespace _3dedit
             // label10
             // 
             this.label10.AutoSize = true;
-			this.label10.Location = new System.Drawing.Point(6, 600);
+			this.label10.Location = new System.Drawing.Point(6, 731);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(45, 13);
             this.label10.TabIndex = 13;
@@ -500,7 +500,7 @@ namespace _3dedit
             // m_lbMacros
             // 
             this.m_lbMacros.FormattingEnabled = true;
-			this.m_lbMacros.Location = new System.Drawing.Point(6, 617);
+			this.m_lbMacros.Location = new System.Drawing.Point(6, 748);
             this.m_lbMacros.Name = "m_lbMacros";
             this.m_lbMacros.Size = new System.Drawing.Size(100, 150);
             this.m_lbMacros.Sorted = true;
@@ -523,7 +523,7 @@ namespace _3dedit
             this.cb_Show3C.Checked = true;
             this.cb_Show3C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show3C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show3C.Location = new System.Drawing.Point(115, 510);
+			this.cb_Show3C.Location = new System.Drawing.Point(101, 510);
             this.cb_Show3C.Name = "cb_Show3C";
             this.cb_Show3C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show3C.TabIndex = 10;
@@ -538,7 +538,7 @@ namespace _3dedit
             this.cb_Show5C.Checked = true;
             this.cb_Show5C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show5C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show5C.Location = new System.Drawing.Point(72, 554);
+			this.cb_Show5C.Location = new System.Drawing.Point(65, 536);
             this.cb_Show5C.Name = "cb_Show5C";
             this.cb_Show5C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show5C.TabIndex = 10;
@@ -568,7 +568,7 @@ namespace _3dedit
             this.cb_Show6C.Checked = true;
             this.cb_Show6C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show6C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show6C.Location = new System.Drawing.Point(115, 554);
+			this.cb_Show6C.Location = new System.Drawing.Point(101, 536);
             this.cb_Show6C.Name = "cb_Show6C";
             this.cb_Show6C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show6C.TabIndex = 10;
@@ -583,7 +583,7 @@ namespace _3dedit
             this.cb_Show2C.Checked = true;
             this.cb_Show2C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show2C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show2C.Location = new System.Drawing.Point(72, 510);
+			this.cb_Show2C.Location = new System.Drawing.Point(65, 510);
             this.cb_Show2C.Name = "cb_Show2C";
             this.cb_Show2C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show2C.TabIndex = 10;
@@ -598,7 +598,7 @@ namespace _3dedit
             this.cb_Show7C.Checked = true;
             this.cb_Show7C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show7C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show7C.Location = new System.Drawing.Point(158, 554);
+			this.cb_Show7C.Location = new System.Drawing.Point(137, 536);
             this.cb_Show7C.Name = "cb_Show7C";
             this.cb_Show7C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show7C.TabIndex = 10;
@@ -613,7 +613,7 @@ namespace _3dedit
             this.cb_Show4C.Checked = true;
             this.cb_Show4C.CheckState = System.Windows.Forms.CheckState.Indeterminate;
             this.cb_Show4C.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.cb_Show4C.Location = new System.Drawing.Point(158, 510);
+			this.cb_Show4C.Location = new System.Drawing.Point(137, 510);
             this.cb_Show4C.Name = "cb_Show4C";
             this.cb_Show4C.Size = new System.Drawing.Size(32, 22);
             this.cb_Show4C.TabIndex = 10;
@@ -802,7 +802,7 @@ namespace _3dedit
             // cb_HighlightByColors
             //
             this.cb_HighlightByColors.AutoSize = true;
-			this.cb_HighlightByColors.Location = new System.Drawing.Point(120, 645);
+			this.cb_HighlightByColors.Location = new System.Drawing.Point(120, 776);
             this.cb_HighlightByColors.Name = "cb_HighlightByColors";
             this.cb_HighlightByColors.Size = new System.Drawing.Size(112, 17);
             this.cb_HighlightByColors.TabIndex = 9;
@@ -815,7 +815,7 @@ namespace _3dedit
             // cb_MaskStickers
             //
             this.cb_MaskStickers.AutoSize = true;
-			this.cb_MaskStickers.Location = new System.Drawing.Point(120, 667);
+			this.cb_MaskStickers.Location = new System.Drawing.Point(120, 798);
             this.cb_MaskStickers.Name = "cb_MaskStickers";
             this.cb_MaskStickers.Size = new System.Drawing.Size(95, 17);
             this.cb_MaskStickers.TabIndex = 11;
@@ -825,7 +825,7 @@ namespace _3dedit
             //
             // btn_ResetHighlightSelection
             //
-			this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(120, 610);
+			this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(120, 741);
             this.btn_ResetHighlightSelection.Name = "btn_ResetHighlightSelection";
             this.btn_ResetHighlightSelection.Size = new System.Drawing.Size(75, 23);
             this.btn_ResetHighlightSelection.TabIndex = 10;
