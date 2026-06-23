@@ -15,6 +15,8 @@ namespace _3dedit {
         public BitArray HighLighted;
         public byte[] StkNCols;
         public ushort[] TierSig;
+        ushort[] _cachedSignatures; // cached by GetAllSignatures, invalidated by InitCube
+        bool _signaturesDirty = true;
 
         int NStk;
         int NStk0,NStk1;
@@ -199,6 +201,7 @@ namespace _3dedit {
                 TierSig[i]=(ushort)(nst|(t1<<3)|(t2<<6)|(t3<<9));
             }
             HighLighted.SetAll(true);
+            _signaturesDirty = true;
         }
 
         void InitStkMap() {
@@ -387,22 +390,21 @@ namespace _3dedit {
             return res;
         }
 
-        public int[] NormGrip()
+        public void NormGrip(out int f0, out int m0)
         {
-            int f0 = Gripped[0], m0 = GetLayerMask();
-            if (f0 == -1) return Gripped;
+            f0 = Gripped[0];
+            m0 = GetLayerMask();
+            if (f0 == -1) return;
 
             f0 = Orient[f0 - 1];
             if (f0 < 0) f0 = -f0;
             else m0 = reverse(m0);
-
-            return new int[] { f0, m0 };
         }
 
         public void HighLightGrip()
         {
-            int[] ng = NormGrip();
-            int f0 = ng[0], m0 = ng[1];
+            int f0, m0;
+            NormGrip(out f0, out m0);
             if (f0 == -1) return;
 
             f0 = f0 - 1;
@@ -501,9 +503,9 @@ namespace _3dedit {
 
         public bool RotateCubeByGrip()
         {
-            int[] ng = NormGrip();
-            int f0 = ng[0];
-            if ((ng[1]&reverse(1)) == 0)
+            int f0, m0;
+            NormGrip(out f0, out m0);
+            if ((m0 & reverse(1)) == 0)
             {
                 f0 = -f0;
             }
@@ -667,10 +669,15 @@ namespace _3dedit {
 
         // Return all unique tier signatures present in the current puzzle (for UI)
         public ushort[] GetAllSignatures() {
+            if(!_signaturesDirty && _cachedSignatures != null)
+                return _cachedSignatures;
+
             HashSet<ushort> set=new HashSet<ushort>();
             for(int i=0;i<NC;i++)
                 if(Cube[i]!=0) set.Add(TierSig[i]);
-            ushort[] r=new ushort[set.Count]; set.CopyTo(r); return r;
+            _cachedSignatures=new ushort[set.Count]; set.CopyTo(_cachedSignatures);
+            _signaturesDirty=false;
+            return _cachedSignatures;
         }
 
         // Extract C-value (count_0) from a tier signature
@@ -709,36 +716,42 @@ namespace _3dedit {
 
             int []cmask=new int[16];
             if(cAll) {
+                // Precompute stride per dimension: stride[j] = N2^j
+                int[] stride=new int[D];
+                stride[0]=1;
+                for(int j=1;j<D;j++) stride[j]=stride[j-1]*N2;
+
                 for(int i=0;i<NC;i++) {
-                    bool qf=true;
-                    int v=i;
+                    // ── Skip surface cells (any coord is 0 or N2-1) ──
+                    int t=i;
+                    bool internalCell=true;
                     for(int j=0;j<D;j++) {
-                        int w=v%N2; v/=N2;
-                        if(w==0 || w==N2-1) { qf=false; break; }
+                        int w=t%N2;
+                        if(w==0 || w==N2-1) { internalCell=false; break; }
+                        t/=N2;
                     }
-                    if(!qf) continue;
-                    v=1;
+                    if(!internalCell) continue;
+
+                    // ── Build color presence mask for this non-surface cell ──
                     for(int j=1;j<=D;j++) cmask[j]=cmask[j+7]=-1;
-                    for(int j=1;j<=D;j++) {
-                        cmask[Cube[i-v]]=1;
-                        cmask[Cube[i+v]]=1;
-                        v*=N2;
+                    for(int j=0;j<D;j++) {
+                        int s=stride[j];
+                        cmask[Cube[i-s]]=1;
+                        cmask[Cube[i+s]]=1;
                     }
-                    qf=true;
+
+                    // ── Validate all dimensions against color filters ──
+                    bool match=true;
                     for(int j=1;j<=D;j++) {
-                        if(hmask[j]*cmask[j]<0) { qf=false; break; }
-                        if(hmask[j+7]*cmask[j+7]<0) { qf=false; break; }
+                        if(hmask[j]*cmask[j]<0 || hmask[j+7]*cmask[j+7]<0) { match=false; break; }
                     }
-                    if(qf) {
-                        v=1;
-                        for(int j=1;j<=D;j++) {
-                            if(Cube[i-v]!=0) {
-                                HighLighted[i-v]=true;
-                            }
-                            if(Cube[i+v]!=0) {
-                                HighLighted[i+v]=true;
-                            }
-                            v*=N2;
+
+                    // ── Light up stickers on both sides of each dimension ──
+                    if(match) {
+                        for(int j=0;j<D;j++) {
+                            int s=stride[j];
+                            if(Cube[i-s]!=0) HighLighted[i-s]=true;
+                            if(Cube[i+s]!=0) HighLighted[i+s]=true;
                         }
                     }
                 }
