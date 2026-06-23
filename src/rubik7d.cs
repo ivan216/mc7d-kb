@@ -289,7 +289,6 @@ namespace _3dedit
 
         private void ProcessHighLights()
         {
-            if(AltHighlight) return; // don't overwrite temporary click highlights
             // Check if any show cubies is not gray (black check or uncheck)
             bool hasNColSelection = (cb_HighlightByColors.CheckState != CheckState.Unchecked)
                                     && HasSelection(NColMask, 1, 7);
