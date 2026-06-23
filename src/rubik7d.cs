@@ -57,6 +57,7 @@ namespace _3dedit
             // Create orbit filter panel before LoadSettings (which may call NewScene → RebuildOrbitChips)
             SetupOrbitFilterPanel();
             m_orbChipMap=new Dictionary<ushort,CheckBox>();
+            m_orbitMaskCache=new Dictionary<ushort,int>();
 
             LoadSettings("MC7D_settings.txt");
             Macros=new CMacroFile(GetDim(),GetSize());
@@ -148,6 +149,7 @@ namespace _3dedit
         Panel m_pnlOrbitFilters;               // scrollable container for orbit chips
         Dictionary<ushort,CheckBox> m_orbChipMap; // sig → chip checkbox
         int[] GripAxisMask = new int[8];  // index 1..7, -1=exclude, 0=neutral, 1=include
+        Dictionary<ushort,int> m_orbitMaskCache; // reused by GetOrbitFilterMask
         int[] GripLayerNum = new int[8];  // index 1..7, layer numbers 1..N
 
         int DiffLight=150;
@@ -287,7 +289,6 @@ namespace _3dedit
 
         private void ProcessHighLights()
         {
-            if(AltHighlight) return; // don't overwrite temporary click highlights
             // Check if any show cubies is not gray (black check or uncheck)
             bool hasNColSelection = (cb_HighlightByColors.CheckState != CheckState.Unchecked)
                                     && HasSelection(NColMask, 1, 7);
@@ -303,65 +304,62 @@ namespace _3dedit
                 ? GetOrbitFilterMask() : null;
 
             // Build effective orbit mask (Cube7D only handles exclusion: val < 0)
-            // Neutral C-values with Checked chips: include only those specific orbits.
-            // Neutral C-values with only Unchecked chips: leave NColMask neutral (0),
-            // just add exclusion entries — if another C-value is checked, these neutrals
-            // stay hidden, so also bump them to 1.
+            //
+            // Orbit chip semantics:
+            //   Checked   (+1): show ONLY this orbit within its C-value group.
+            //                    Also activates the C-value via NColMask if neutral.
+            //   Unchecked (-1): exclude this orbit from display.
+            //   Indeterminate:   no opinion — leave it to other filters.
+            //
+            // Implementation: since the orbit mask only supports exclusion (-1),
+            // a "checked" chip is expanded into exclusions of all OTHER same-C-value
+            // orbits that lack a checked chip of their own.
+            //
             Dictionary<ushort,int> effectiveOrbitMask = null;
             if(rawOrbitMask != null && effectiveNColMask != null) {
-                bool[] cHasCheck=new bool[8], cHasUncheck=new bool[8];
-                foreach(var kv in rawOrbitMask) {
-                    int c=Cube7D.GetStkNColsFromSig(kv.Key);
-                    if(kv.Value>0) cHasCheck[c]=true;
-                    else cHasUncheck[c]=true;
-                }
+                bool ncolCloned = false;
+                ushort[] allSigs = null;
 
-                bool ncolAdjusted=false;
-                ushort[] allSigs=null;
+                foreach(KeyValuePair<ushort,int> kv in rawOrbitMask) {
+                    ushort sig = kv.Key;
+                    int chipVal = kv.Value;
+                    int c = Cube7D.GetStkNColsFromSig(sig);
 
-                for(int c=1;c<=7;c++) {
-                    int nc=effectiveNColMask[c];
-                    if(nc==-1) continue; // unchecked C-value — chips ignored
-                    if(!cHasCheck[c] && !cHasUncheck[c]) continue; // no chip activity
+                    // C-values hidden by Show Cubies (-1) ignore all chip states
+                    if(effectiveNColMask[c] == -1) continue;
 
-                    if(cHasCheck[c]) {
-                        // Include chips override the C-value default:
-                        // set NColMask=1 (or keep it), exclude non-Checked orbits
-                        if(nc==0) {
-                            if(!ncolAdjusted) { effectiveNColMask=(int[])effectiveNColMask.Clone(); ncolAdjusted=true; }
-                            effectiveNColMask[c]=1;
-                        }
-                        if(allSigs==null) allSigs=Cube.GetAllSignatures();
-                        foreach(ushort sig in allSigs) {
-                            if(Cube7D.GetStkNColsFromSig(sig)!=c) continue;
-                            int chipVal=0;
-                            rawOrbitMask.TryGetValue(sig,out chipVal);
-                            if(chipVal<=0) {
-                                if(effectiveOrbitMask==null) effectiveOrbitMask=new Dictionary<ushort,int>();
-                                if(!effectiveOrbitMask.ContainsKey(sig)) effectiveOrbitMask[sig]=-1;
-                            }
-                        }
+                    if(chipVal == -1) {
+                        // ── Unchecked chip → exclude this orbit ──
+                        if(effectiveOrbitMask == null)
+                            effectiveOrbitMask = new Dictionary<ushort,int>();
+                        if(!effectiveOrbitMask.ContainsKey(sig))
+                            effectiveOrbitMask[sig] = -1;
                     } else {
-                        // Exclude-only: never activate a C-value via NColMask.
-                        // For already-checked C-values, exclude chips work via the loop below.
-                        if(nc==0) {
-                            if(effectiveOrbitMask==null) effectiveOrbitMask=new Dictionary<ushort,int>();
-                            foreach(var kv in rawOrbitMask) {
-                                if(Cube7D.GetStkNColsFromSig(kv.Key)!=c) continue;
-                                if(kv.Value<0 && !effectiveOrbitMask.ContainsKey(kv.Key))
-                                    effectiveOrbitMask[kv.Key]=-1;
+                        // ── Checked chip → activate C-value if neutral ──
+                        if(effectiveNColMask[c] == 0) {
+                            if(!ncolCloned) {
+                                effectiveNColMask = (int[])effectiveNColMask.Clone();
+                                ncolCloned = true;
                             }
+                            effectiveNColMask[c] = 1;
                         }
-                    }
-                }
 
-                // Excludes on non-neutral C-values (e.g., 1C checked + C2 orbit unchecked)
-                foreach(var kv in rawOrbitMask) {
-                    if(kv.Value<0 && Cube7D.GetStkNColsFromSig(kv.Key)<=7) {
-                        int c=Cube7D.GetStkNColsFromSig(kv.Key);
-                        if(effectiveNColMask[c]==1 || effectiveNColMask[c]==-1) {
-                            if(effectiveOrbitMask==null) effectiveOrbitMask=new Dictionary<ushort,int>();
-                            if(!effectiveOrbitMask.ContainsKey(kv.Key)) effectiveOrbitMask[kv.Key]=-1;
+                        // ── Exclude all other orbits of this C-value ──
+                        if(allSigs == null)
+                            allSigs = Cube.GetAllSignatures();
+                        foreach(ushort other in allSigs) {
+                            if(Cube7D.GetStkNColsFromSig(other) != c) continue;
+                            if(other == sig) continue; // the checked one survives
+
+                            // If this other orbit lacks a checked chip → exclude it
+                            int otherVal;
+                            bool hasOther = rawOrbitMask.TryGetValue(other, out otherVal);
+                            if(!hasOther || otherVal <= 0) {
+                                if(effectiveOrbitMask == null)
+                                    effectiveOrbitMask = new Dictionary<ushort,int>();
+                                if(!effectiveOrbitMask.ContainsKey(other))
+                                    effectiveOrbitMask[other] = -1;
+                            }
                         }
                     }
                 }
@@ -402,6 +400,7 @@ namespace _3dedit
 		private void ApplyGripAxisFilters()
 		{
 			if (Cube == null) return;
+			if(!HasSelection(GripAxisMask, 1, 7)) return;
 			int N2val = Cube.N + 2;
 			int NClim = 1;
 			for (int p = 0; p < Cube.D; p++) NClim *= N2val;
@@ -1569,17 +1568,18 @@ namespace _3dedit
         // Build orbit filter mask from chip states:  -1=exclude, 0=neutral, 1=include
         Dictionary<ushort,int> GetOrbitFilterMask() {
             if(m_orbChipMap==null || m_orbChipMap.Count==0) return null;
+
+            m_orbitMaskCache.Clear();
             bool any=false;
-            var mask=new Dictionary<ushort,int>();
             foreach(var kv in m_orbChipMap) {
                 int val=0;
                 switch(kv.Value.CheckState) {
                     case CheckState.Checked: val=1; any=true; break;
                     case CheckState.Unchecked: val=-1; any=true; break;
                 }
-                if(val!=0) mask[kv.Key]=val;
+                if(val!=0) m_orbitMaskCache[kv.Key]=val;
             }
-            return any ? mask : null;
+            return any ? m_orbitMaskCache : null;
         }
 
         // Reset all orbit chips to neutral
