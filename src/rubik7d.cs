@@ -18,6 +18,7 @@ namespace _3dedit
 
     public partial class Form1:System.Windows.Forms.Form {
         public string VERSION = "v0.8.4";
+        public string BUILD_DATE = "2026.06.23";
 		public Form1() {
 			//
 			// Required for Windows Form Designer support
@@ -1814,7 +1815,7 @@ namespace _3dedit
 
 
         private void aboutToolStripMenuItem_Click(object sender,EventArgs e) {
-            MessageBox.Show($"Original:\r\nMC7D v1.31\r\n(c)2010, Andrey Astrelin\r\n\r\nMC7D-KB {VERSION}\r\n(c)2025, Jessica Chen\r\n\r\nBuild: 2026.06.23\r\n(c)2026, ivan216");
+            MessageBox.Show(string.Format(Properties.Resources.AboutText, VERSION, BUILD_DATE));
         }
 
         private void usageGuideToolStripMenuItem_Click(object sender,EventArgs e) {
@@ -1832,17 +1833,7 @@ namespace _3dedit
             tb.WordWrap = true;
             tb.Font = new System.Drawing.Font("Segoe UI", 10f);
             tb.Padding = new Padding(10);
-            tb.Text =
-@"Keybinds:
-- Twist and Twist2c require you to grip a facet first, then press the twist key.
-- Twist3c is a three-step operation: 1) first press (optionally with Layer keys) select the grip facet; 2) the next two presses determine the twist axes from and to.
-- Macro hotkey executes the macro at the given position in the Macros list (1-based). Hold the MacroReverse key while pressing a Macro hotkey to execute the reverse of that macro.
-- Layer hotkeys (and the Layer spinboxes in the highlight panel) use a binary bitmask: each bit corresponds to a layer.
-
-Highlighting:
-- Check ""Enable Highlighting"" to turn on the highlight filter.
-- The ""Show Cubies"" checkboxes select pieces by C-value (number of colored stickers).
-- The dropdowns below each C-value checkbox select a specific orbit. Each internal coordinate (one not on a face) is assigned a tier = distance from the nearest face. The orbit label shows the C-value followed by the count of dimensions at each tier depth in brackets, e.g., C3:[1,0,0] means the piece has C=3 (3 dimensions on faces or adjacent) plus 1 dimension at tier 1 depth, 0 at tier 2, 0 at tier 3. Two pieces in different tier-count groups can never reach each other via twists — that is why they are separate orbits.";
+            tb.Text = Properties.Resources.UsageGuideText;
             tb.Select(0, 0);
 
             guideForm.Controls.Add(tb);

@@ -31,6 +31,25 @@ namespace _3dedit.Properties {
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
         }
+
+        /// <summary>
+        ///   Looks up a localized string for the About dialog text.
+        ///   {0} = version, {1} = build date.
+        /// </summary>
+        internal static string AboutText {
+            get {
+                return ResourceManager.GetString("AboutText", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string for the Usage Guide dialog text.
+        /// </summary>
+        internal static string UsageGuideText {
+            get {
+                return ResourceManager.GetString("UsageGuideText", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.

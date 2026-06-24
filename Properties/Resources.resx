@@ -117,4 +117,33 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AboutText" xml:space="preserve">
+    <value>Original:
+MC7D v1.31
+(c)2010, Andrey Astrelin
+
+MC7D-KB {0}
+(c)2025, Jessica Chen
+
+Build: {1}
+(c)2026, ivan216</value>
+  </data>
+  <data name="UsageGuideText" xml:space="preserve">
+    <value>Keybinds:
+- Twist / Twist2c: grip a facet first, then press the twist key.
+- Twist3c: three-step — 1) grip (optionally with Layer keys); 2-3) choose from / to axes.
+- Macro: press a macro hotkey (1-based index in the Macros list). Hold MacroReverse to play backwards.
+- Layer keys and spinboxes use a binary bitmask (one bit per layer).
+
+Highlighting:
+- Enable Highlighting to activate the filter panel.
+- Show Cubies: checkboxes by C-value (how many colored stickers a piece has).
+- Orbit Filters: tri-state checkboxes for each orbit (tier-signature group). Pieces with the same C-value but different tier structures can never reach each other via twists — each is in its own orbit.
+  • Checked  = show only this orbit
+  • Unchecked = hide this orbit
+  • Gray (default) = no opinion, follow other filters
+- Color checkboxes: tri-state per face. Black = only show this color; Unchecked = hide it; Gray = neutral.
+  • With Enable Highlighting checked (✓): whole cubies matching all color constraints are highlighted.
+  • With Enable Highlighting gray (-): only matching stickers are highlighted.</value>
+  </data>
 </root>
