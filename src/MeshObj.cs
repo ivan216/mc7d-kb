@@ -15,7 +15,7 @@ namespace _3dedit {
         int[] cver=new int[] { 0,1,2,2,1,3, 0,4,1,1,4,5, 0,2,4,4,2,6, 5,4,6,5,6,7, 6,2,3,6,3,7,3,1,5,3,5,7 };
 
         byte[] col;
-        float[,] coord;
+        float[][] coord;
         int[] map;
         int nstk;
         byte[] stkNcol;
@@ -31,7 +31,7 @@ namespace _3dedit {
             Meshes=null;
         }
 
-        public void SetCoords(byte[] _col,int[] _map,float[,] _coord,byte[] _stkNcol,BitArray _hmask,int []_ncmask,int _nstk) {
+        public void SetCoords(byte[] _col,int[] _map,float[][] _coord,byte[] _stkNcol,BitArray _hmask,int []_ncmask,int _nstk) {
             Dispose();
             col=_col;
             map=_map;
@@ -73,15 +73,15 @@ namespace _3dedit {
                     p=0;
                 }
                 for(int i=0;i<8;i++) {
-                    float x=coord[a,3*i];
-                    float y=coord[a,3*i+1];
-                    float z=coord[a,3*i+2];
+                    float x=coord[a][3*i];
+                    float y=coord[a][3*i+1];
+                    float z=coord[a][3*i+2];
                     vert[8*p+i].p.X=x;
                     vert[8*p+i].p.Y=y;
                     vert[8*p+i].p.Z=z;
-                    float dx=x-coord[a,24];
-                    float dy=y-coord[a,25];
-                    float dz=z-coord[a,26];
+                    float dx=x-coord[a][24];
+                    float dy=y-coord[a][25];
+                    float dz=z-coord[a][26];
                     double dd=MyMath.pyth(dx,dy,dz);
                     vert[8*p+i].n.X=(float)(dx/dd);
                     vert[8*p+i].n.Y=(float)(dy/dd);
@@ -132,14 +132,14 @@ namespace _3dedit {
             for(int i=0;i<nstk;i++) {
                 int mm=map[i];
                 if(maskStickers && !hmask[mm]) continue;
-                double dx=coord[i,24]-pt.X,dy=coord[i,25]-pt.Y,dz=coord[i,26]-pt.Z;
+                double dx=coord[i][24]-pt.X,dy=coord[i][25]-pt.Y,dz=coord[i][26]-pt.Z;
                 double l=dx*dir.X+dy*dir.Y+dz*dir.Z;
                 if(l<0 || l>dmin) continue;
-                if(MyMath.sqr(l*dir.X-dx)+MyMath.sqr(l*dir.Y-dy)+MyMath.sqr(l*dir.Z-dz)>MyMath.sqr(coord[i,27])) continue;
+                if(MyMath.sqr(l*dir.X-dx)+MyMath.sqr(l*dir.Y-dy)+MyMath.sqr(l*dir.Z-dz)>MyMath.sqr(coord[i][27])) continue;
                 for(int j=0;j<8;j++) {
-                    M[j,0]=coord[i,3*j]-pt.X;
-                    M[j,1]=coord[i,3*j+1]-pt.Y;
-                    M[j,2]=coord[i,3*j+2]-pt.Z;
+                    M[j,0]=coord[i][3*j]-pt.X;
+                    M[j,1]=coord[i][3*j+1]-pt.Y;
+                    M[j,2]=coord[i][3*j+2]-pt.Z;
                 }
                 for(int j=0;j<12;j++) {
                     int a=c_edges[j,0],b=c_edges[j,1];

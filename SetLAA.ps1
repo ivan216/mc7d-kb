@@ -1,23 +1,10 @@
-# Enable Large Address Aware flag for 32-bit executable to allow 4GB memory usage
+# Enable Large Address Aware flag for 32-bit executable to allow 4GB memory usage.
+# Sets the IMAGE_FILE_LARGE_ADDRESS_AWARE bit (0x0020) in the PE header directly,
+# so no external tools (editbin/corflags) are needed.
 param([string]$TargetPath)
 
-# Use vswhere.exe to find Visual Studio installation
-$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-if (Test-Path $vswhere) {
-    $vsPath = & $vswhere -latest -property installationPath 2>$null
-    if ($vsPath) {
-        $vcTools = Join-Path $vsPath "VC\Tools\MSVC"
-        if (Test-Path $vcTools) {
-            $latestVersion = Get-ChildItem $vcTools | Sort-Object Name -Descending | Select-Object -First 1
-            if ($latestVersion) {
-                $editbin = Join-Path $latestVersion.FullName "bin\Hostx64\x86\editbin.exe"
-                if (Test-Path $editbin) {
-                    & $editbin /LARGEADDRESSAWARE $TargetPath | Out-Null
-                    if ($LASTEXITCODE -eq 0) {
-                        Write-Host "Large Address Aware enabled (4GB memory limit)"
-                    }
-                }
-            }
-        }
-    }
-}
+$bytes = [IO.File]::ReadAllBytes($TargetPath)
+$peOffset = [BitConverter]::ToUInt32($bytes, 0x3C)
+$bytes[$peOffset + 22] = $bytes[$peOffset + 22] -bor 0x20
+[IO.File]::WriteAllBytes($TargetPath, $bytes)
+Write-Host "Large Address Aware enabled (4GB memory limit)"
