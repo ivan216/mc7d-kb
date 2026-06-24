@@ -18,7 +18,10 @@ namespace _3dedit
 
     public partial class Form1:System.Windows.Forms.Form {
         public string VERSION = "v0.8.4";
-        public string BUILD_DATE = "2026.06.23";
+        static string GetBuildDate() {
+            var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            return new DateTime(2000, 1, 1).AddDays(v.Build).ToString("yyyy.MM.dd");
+        }
 		public Form1() {
 			//
 			// Required for Windows Form Designer support
@@ -1815,7 +1818,7 @@ namespace _3dedit
 
 
         private void aboutToolStripMenuItem_Click(object sender,EventArgs e) {
-            MessageBox.Show(string.Format(Properties.Resources.AboutText, VERSION, BUILD_DATE));
+            MessageBox.Show(string.Format(Properties.Resources.AboutText, VERSION, GetBuildDate()));
         }
 
         private void usageGuideToolStripMenuItem_Click(object sender,EventArgs e) {
