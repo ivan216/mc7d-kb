@@ -1827,6 +1827,8 @@ namespace _3dedit
             guideForm.Size = new System.Drawing.Size(640, 480);
             guideForm.StartPosition = FormStartPosition.CenterParent;
             guideForm.MinimumSize = new System.Drawing.Size(480, 320);
+            guideForm.MinimizeBox = false;
+            guideForm.MaximizeBox = false;
 
             TextBox tb = new TextBox();
             tb.Multiline = true;
