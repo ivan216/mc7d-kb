@@ -20,7 +20,7 @@ namespace _3dedit {
 
         int NStk;
         int NStk0,NStk1;
-        float[,] Coord;
+        float[][] Coord;
         public int[] StkMap; // sticker to Cube
         public static double FSep=0.5,FExt=1,BSize=0.8,SSize=0.6;
 
@@ -59,7 +59,8 @@ namespace _3dedit {
             NStk1=NStk0*N*N*N;
             NStk=NStk1*7;
 
-            Coord=new float[NStk,28];
+            Coord=new float[NStk][];
+            for(int _i=0;_i<NStk;_i++) Coord[_i]=new float[28];
             StkMap=new int[NStk];
             HighLighted=new BitArray(NC);
             StkNCols=new byte[NC];
@@ -139,39 +140,39 @@ namespace _3dedit {
                     z0-=dz/2; dz*=2;
                 }
 
-                Coord[u,0]=Coord[u,6]=Coord[u,12]=Coord[u,18]=(float)x0;
-                Coord[u,3]=Coord[u,9]=Coord[u,15]=Coord[u,21]=(float)(x0+dx);
-                Coord[u,1]=Coord[u,4]=Coord[u,13]=Coord[u,16]=(float)y0;
-                Coord[u,7]=Coord[u,10]=Coord[u,19]=Coord[u,22]=(float)(y0+dy);
-                Coord[u,2]=Coord[u,5]=Coord[u,8]=Coord[u,11]=(float)z0;
-                Coord[u,14]=Coord[u,17]=Coord[u,20]=Coord[u,23]=(float)(z0+dz);
+                Coord[u][0]=Coord[u][6]=Coord[u][12]=Coord[u][18]=(float)x0;
+                Coord[u][3]=Coord[u][9]=Coord[u][15]=Coord[u][21]=(float)(x0+dx);
+                Coord[u][1]=Coord[u][4]=Coord[u][13]=Coord[u][16]=(float)y0;
+                Coord[u][7]=Coord[u][10]=Coord[u][19]=Coord[u][22]=(float)(y0+dy);
+                Coord[u][2]=Coord[u][5]=Coord[u][8]=Coord[u][11]=(float)z0;
+                Coord[u][14]=Coord[u][17]=Coord[u][20]=Coord[u][23]=(float)(z0+dz);
 
                 if(f!=0) {
                     int k=(f-1)/2,dk=2*(f&1)-1;
                     for(int i=0;i<24;i+=3) {
-                        float x=Coord[u,i+k];
+                        float x=Coord[u][i+k];
                         double cf=1+(dk*x+0.5)*FExt;
-                        Coord[u,i]*=(float)cf;
-                        Coord[u,i+1]*=(float)cf;
-                        Coord[u,i+2]*=(float)cf;
-                        Coord[u,i+k]=(float)(x+dk*(1+FSep));
+                        Coord[u][i]*=(float)cf;
+                        Coord[u][i+1]*=(float)cf;
+                        Coord[u][i+2]*=(float)cf;
+                        Coord[u][i+k]=(float)(x+dk*(1+FSep));
                     }
                 }
-                double xmin=Coord[u,0],xmax=Coord[u,0];
-                double ymin=Coord[u,1],ymax=Coord[u,1];
-                double zmin=Coord[u,2],zmax=Coord[u,2];
+                double xmin=Coord[u][0],xmax=Coord[u][0];
+                double ymin=Coord[u][1],ymax=Coord[u][1];
+                double zmin=Coord[u][2],zmax=Coord[u][2];
                 for(int i=3;i<24;i+=3) {
-                    xmin=Math.Min(xmin,Coord[u,i]);
-                    xmax=Math.Max(xmax,Coord[u,i]);
-                    ymin=Math.Min(ymin,Coord[u,i+1]);
-                    ymax=Math.Max(ymax,Coord[u,i+1]);
-                    zmin=Math.Min(zmin,Coord[u,i+2]);
-                    zmax=Math.Max(zmax,Coord[u,i+2]);
+                    xmin=Math.Min(xmin,Coord[u][i]);
+                    xmax=Math.Max(xmax,Coord[u][i]);
+                    ymin=Math.Min(ymin,Coord[u][i+1]);
+                    ymax=Math.Max(ymax,Coord[u][i+1]);
+                    zmin=Math.Min(zmin,Coord[u][i+2]);
+                    zmax=Math.Max(zmax,Coord[u][i+2]);
                 }
-                Coord[u,24]=(float)((xmax+xmin)/2);
-                Coord[u,25]=(float)((ymax+ymin)/2);
-                Coord[u,26]=(float)((zmax+zmin)/2);
-                Coord[u,27]=(float)(MyMath.pyth(zmax-zmin,ymax-ymin,xmax-xmin)/2);
+                Coord[u][24]=(float)((xmax+xmin)/2);
+                Coord[u][25]=(float)((ymax+ymin)/2);
+                Coord[u][26]=(float)((zmax+zmin)/2);
+                Coord[u][27]=(float)(MyMath.pyth(zmax-zmin,ymax-ymin,xmax-xmin)/2);
                 u++;
             }
         }
@@ -256,7 +257,7 @@ namespace _3dedit {
                 StkMap[u++]=m;
             }
         }
-        public int GetStickers(out byte[] col,out int[] map,out float[,] coord,out BitArray hlight,out byte []ncol) {
+        public int GetStickers(out byte[] col,out int[] map,out float[][] coord,out BitArray hlight,out byte []ncol) {
             col=Cube;
             map=StkMap;
             coord=Coord;

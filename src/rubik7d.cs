@@ -702,6 +702,7 @@ namespace _3dedit
 		void NewScene(){
 			dxControl2.ClearMeshes();
             CubeView=null;
+            GC.Collect();
             Cube=new Cube7D();
             Cube.Init(GetSize(),GetDim());
             qSolved=true;
@@ -761,7 +762,7 @@ namespace _3dedit
             }
 
             byte[] col;
-            float[,] coord;
+            float[][] coord;
             int[] map;
             byte[] stkncol;
             BitArray hmask;
@@ -890,6 +891,9 @@ namespace _3dedit
             Scramble(5);
         }
         void Scramble(int N) {
+            dxControl2.ClearMeshes();
+            CubeView=null;
+            GC.Collect();
             Cube.Scramble(N);
             NClicks=0; ClickQual=true;
             RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
