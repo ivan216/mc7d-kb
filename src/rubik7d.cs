@@ -58,8 +58,6 @@ namespace _3dedit
             for(int i=0;i<15;i++) FaceMask[i]=0;
             for(int i=1;i<=7;i++) { GripAxisMask[i]=0; GripLayerNum[i]=1; }
 
-            // Create orbit filter panel before LoadSettings (which may call NewScene → RebuildOrbitChips)
-            SetupOrbitFilterPanel();
             m_orbChipMap=new Dictionary<ushort,CheckBox>();
             m_orbitMaskCache=new Dictionary<ushort,int>();
 
@@ -79,21 +77,6 @@ namespace _3dedit
 
         }
 
-        void SetupOrbitFilterPanel() {
-            var lbl=new Label();
-            lbl.Text="Orbit Filters";
-            lbl.Location=new System.Drawing.Point(6, 566);
-            lbl.Size=new System.Drawing.Size(80, 16);
-            lbl.Font=new System.Drawing.Font("Microsoft Sans Serif",8f);
-            panel1.Controls.Add(lbl);
-
-            m_pnlOrbitFilters=new Panel();
-            m_pnlOrbitFilters.Location=new System.Drawing.Point(6, 584);
-            m_pnlOrbitFilters.Size=new System.Drawing.Size(200, 130);
-            m_pnlOrbitFilters.AutoScroll=true;
-            m_pnlOrbitFilters.BorderStyle=BorderStyle.FixedSingle;
-            panel1.Controls.Add(m_pnlOrbitFilters);
-        }
         int GetDim() {
             if(mi_Puzzle4D.Checked) return 4;
             if(mi_Puzzle5D.Checked) return 5;
@@ -150,7 +133,6 @@ namespace _3dedit
         int[] NColMask;  // -1: only unhighlight, 0: normal (Indeterminate), 1: only highlight
         bool MaskStickers = false;  // true: exclude unchecked stickers from mesh (unclickable), false: only dim them
         int[] FaceMask;
-        Panel m_pnlOrbitFilters;               // scrollable container for orbit chips
         Dictionary<ushort,CheckBox> m_orbChipMap; // sig → chip checkbox
         int[] GripAxisMask = new int[8];  // index 1..7, -1=exclude, 0=neutral, 1=include
         Dictionary<ushort,int> m_orbitMaskCache; // reused by GetOrbitFilterMask
@@ -1515,7 +1497,7 @@ namespace _3dedit
                 if(cVal>=1 && cVal<=7) groups[cVal].Add(allSigs[i]);
             }
 
-            int y=3, chipH=18, gap=8;
+            int y=3, gap=8;
             int panelW=m_pnlOrbitFilters.ClientSize.Width;
             System.Drawing.Font font7=new System.Drawing.Font("Microsoft Sans Serif",8f);
 
@@ -1526,8 +1508,8 @@ namespace _3dedit
                 var lbl=new Label();
                 lbl.Text="C"+c+":";
                 lbl.Location=new System.Drawing.Point(3,y);
-                lbl.Size=new System.Drawing.Size(35,chipH);
                 lbl.Font=font7;
+                lbl.AutoSize=true;
                 lbl.TextAlign=ContentAlignment.MiddleLeft;
                 m_pnlOrbitFilters.Controls.Add(lbl);
 
@@ -1538,7 +1520,7 @@ namespace _3dedit
                 });
 
                 int x=40;
-                int rowH=chipH+gap;
+                int rowH=0;
                 foreach(ushort sig in groups[c]) {
                     int[] tiers=Cube7D.DecodeNonStickerTiers(sig,maxTier);
                     string label="["+string.Join(",",System.Array.ConvertAll(tiers,t=>t.ToString()))+"]";
@@ -1550,12 +1532,12 @@ namespace _3dedit
                     chip.CheckState=CheckState.Indeterminate;
                     chip.Tag=sig;
                     chip.CheckStateChanged+=ChipOrbit_CheckStateChanged;
-                    // Auto-size to fit text, but constrain height
-                    chip.AutoSize=true;
-                    chip.MaximumSize=new System.Drawing.Size(0,chipH);
+                    chip.AutoSize=true; // natural height adapts to DPI
                     chip.Location=new System.Drawing.Point(x,y);
                     m_pnlOrbitFilters.Controls.Add(chip);
                     m_orbChipMap[sig]=chip;
+
+                    if(rowH < chip.Height+gap) rowH=chip.Height+gap;
 
                     // Measure actual width for positioning
                     int chipW=Math.Max(chip.Width,30);

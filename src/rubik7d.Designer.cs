@@ -26,6 +26,8 @@ namespace _3dedit
 		private bool m_panelCollapsed = false;
 		private System.Windows.Forms.Panel panel1;
 		private System.Windows.Forms.Panel panel2;
+		private System.Windows.Forms.Panel m_pnlOrbitFilters;
+		private System.Windows.Forms.Label m_lblOrbitFilters;
         private _3dedit.DXControl dxControl2;
         private StatusStrip statusStrip1;
         private MenuStrip menuStrip1;
@@ -118,21 +120,21 @@ namespace _3dedit
         private CheckBox cb_Show4C;
         private CheckBox cb_HighlightByColors;
         private CheckBox cb_MaskStickers;
-	private Label label_GripAxes;
-	private CheckBox cb_GripAxis1;
-	private CheckBox cb_GripAxis2;
-	private CheckBox cb_GripAxis3;
-	private CheckBox cb_GripAxis4;
-	private CheckBox cb_GripAxis5;
-	private CheckBox cb_GripAxis6;
-	private CheckBox cb_GripAxis7;
-	private NumericUpDown nud_GripLayer1;
-	private NumericUpDown nud_GripLayer2;
-	private NumericUpDown nud_GripLayer3;
-	private NumericUpDown nud_GripLayer4;
-	private NumericUpDown nud_GripLayer5;
-	private NumericUpDown nud_GripLayer6;
-	private NumericUpDown nud_GripLayer7;
+        private Label label_GripAxes;
+        private CheckBox cb_GripAxis1;
+        private CheckBox cb_GripAxis2;
+        private CheckBox cb_GripAxis3;
+        private CheckBox cb_GripAxis4;
+        private CheckBox cb_GripAxis5;
+        private CheckBox cb_GripAxis6;
+        private CheckBox cb_GripAxis7;
+        private NumericUpDown nud_GripLayer1;
+        private NumericUpDown nud_GripLayer2;
+        private NumericUpDown nud_GripLayer3;
+        private NumericUpDown nud_GripLayer4;
+        private NumericUpDown nud_GripLayer5;
+        private NumericUpDown nud_GripLayer6;
+        private NumericUpDown nud_GripLayer7;
         private Button btn_ResetHighlightSelection;
         private Label label9;
         private Label label10;
@@ -271,6 +273,8 @@ namespace _3dedit
             this.trk_BlockSize = new System.Windows.Forms.TrackBar();
             this.label1 = new System.Windows.Forms.Label();
             this.trk_faceSep = new System.Windows.Forms.TrackBar();
+            this.m_lblOrbitFilters = new System.Windows.Forms.Label();
+            this.m_pnlOrbitFilters = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
@@ -438,6 +442,8 @@ namespace _3dedit
             this.panel1.Controls.Add(this.trk_BlockSize);
             this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.trk_faceSep);
+            this.panel1.Controls.Add(this.m_lblOrbitFilters);
+            this.panel1.Controls.Add(this.m_pnlOrbitFilters);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Right;
             this.panel1.AutoScroll = true;
             this.panel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
@@ -445,7 +451,26 @@ namespace _3dedit
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(223, 684);
             this.panel1.TabIndex = 19;
-            // 
+            //
+            // m_lblOrbitFilters
+            //
+            this.m_lblOrbitFilters.AutoSize = true;
+            this.m_lblOrbitFilters.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F);
+            this.m_lblOrbitFilters.Location = new System.Drawing.Point(6, 566);
+            this.m_lblOrbitFilters.Name = "m_lblOrbitFilters";
+            this.m_lblOrbitFilters.Size = new System.Drawing.Size(66, 13);
+            this.m_lblOrbitFilters.TabIndex = 21;
+            this.m_lblOrbitFilters.Text = "Orbit Filters";
+            //
+            // m_pnlOrbitFilters
+            //
+            this.m_pnlOrbitFilters.AutoScroll = true;
+            this.m_pnlOrbitFilters.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.m_pnlOrbitFilters.Location = new System.Drawing.Point(6, 584);
+            this.m_pnlOrbitFilters.Name = "m_pnlOrbitFilters";
+            this.m_pnlOrbitFilters.Size = new System.Drawing.Size(200, 130);
+            this.m_pnlOrbitFilters.TabIndex = 22;
+            //
             // m_RunByClick
             // 
             this.m_RunByClick.AutoSize = true;

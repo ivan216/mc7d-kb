@@ -31,25 +31,6 @@ namespace _3dedit.Properties {
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
         }
-
-        /// <summary>
-        ///   Looks up a localized string for the About dialog text.
-        ///   {0} = version, {1} = build date.
-        /// </summary>
-        internal static string AboutText {
-            get {
-                return ResourceManager.GetString("AboutText", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string for the Usage Guide dialog text.
-        /// </summary>
-        internal static string UsageGuideText {
-            get {
-                return ResourceManager.GetString("UsageGuideText", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
@@ -76,6 +57,41 @@ namespace _3dedit.Properties {
             }
             set {
                 resourceCulture = value;
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Original:
+        ///MC7D v1.31
+        ///(c)2010, Andrey Astrelin
+        ///
+        ///MC7D-KB {0}
+        ///(c)2025, Jessica Chen
+        ///
+        ///Build: {1}
+        ///(c)2026, ivan216.
+        /// </summary>
+        internal static string AboutText {
+            get {
+                return ResourceManager.GetString("AboutText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Keybinds:
+        ///- Twist / Twist2c: grip a facet first, then press the twist key.
+        ///- Twist3c: three-step — 1) grip (optionally with Layer keys); 2-3) choose from / to axes.
+        ///- Macro: press a macro hotkey (1-based index in the Macros list). Hold MacroReverse to play backwards.
+        ///- Layer keys and spinboxes use a binary bitmask (one bit per layer).
+        ///
+        ///Highlighting:
+        ///- Enable Highlighting to activate the filter panel.
+        ///- Show Cubies: checkboxes by C-value (how many colored stickers a piece has).
+        ///- Orbit Filters: tri- [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string UsageGuideText {
+            get {
+                return ResourceManager.GetString("UsageGuideText", resourceCulture);
             }
         }
     }
