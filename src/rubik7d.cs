@@ -48,6 +48,7 @@ namespace _3dedit
 			this.dxControl2.MouseMove += new MouseEventHandler(MouseEvt);
             this.dxControl2.KeyDown += new KeyEventHandler(KeyDownEvt);
             this.dxControl2.KeyUp += new KeyEventHandler(KeyUpEvt);
+            this.dxControl2.Leave += new EventHandler(dxControl2_Leave);
 
 			this.panel2.Controls.Add(this.dxControl2);
             this.panel2.Controls.SetChildIndex(this.dxControl2, 0);
@@ -250,6 +251,14 @@ namespace _3dedit
             if (didTwist)
             {
                 TestBuild();
+            }
+        }
+
+        private void dxControl2_Leave(object sender, EventArgs e) {
+            if(Cube!=null && Cube.Gripped[0]!=-1) {
+                Cube.Grip(-1, 1);
+                ProcessHighLights();
+                Redraw();
             }
         }
 
@@ -681,7 +690,8 @@ namespace _3dedit
         }
 
         /*********** load/save scene ************/
-		void NewScene(){
+		void NewScene(){ NewScene(true); }
+		void NewScene(bool rebuildOrbitChips){
 			dxControl2.ClearMeshes();
             CubeView=null;
             GC.Collect();
@@ -689,7 +699,7 @@ namespace _3dedit
             Cube.Init(GetSize(),GetDim());
             qSolved=true;
 
-            RebuildOrbitChips();
+            if(rebuildOrbitChips) RebuildOrbitChips();
 
             if(Macros==null || !Macros.CheckSize(GetDim(),GetSize())) {
                 Macros=new CMacroFile(GetDim(),GetSize());
@@ -830,7 +840,7 @@ namespace _3dedit
         
 
         private void mi_Reset_Click(object sender,EventArgs e) {
-            NewScene();
+            NewScene(false);
         }
 
         private void mi_Undo_Click(object sender,EventArgs e) {
@@ -934,6 +944,12 @@ namespace _3dedit
                 qSolved=Cube.CheckCube();
                 SetDim(Cube.D);
                 SetSize(Cube.N);
+
+                // Clear macros if they don't match the loaded puzzle
+                if(Macros==null || !Macros.CheckSize(GetDim(),GetSize())) {
+                    Macros=new CMacroFile(GetDim(),GetSize());
+                    InitMacroList();
+                }
             }
         }
 
