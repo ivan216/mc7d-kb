@@ -817,21 +817,7 @@ namespace _3dedit
                     t3c.gripAxis = this.axis;
 
                     // Get layer mask from LayerOverrides (ignore current Gripped state)
-                    int baseMask;
-                    if (Cube.LayerOverrides.Count == 0)
-                    {
-                        // No layer key pressed, default to layer 1
-                        baseMask = 1;
-                    }
-                    else
-                    {
-                        // Combine all layer overrides with OR
-                        baseMask = 0;
-                        foreach (var layer in Cube.LayerOverrides)
-                        {
-                            baseMask |= layer.layerMask;
-                        }
-                    }
+                    int baseMask = Cube.GetLayerOverridesMask();
 
                     // The negative flag in Twist3c controls direction from user perspective:
                     // negative=false means positive direction, negative=true means negative direction
@@ -848,8 +834,6 @@ namespace _3dedit
                     t3c.gripLayerMask = this.negative ? -baseMask : baseMask;
 
                     t3c.step = 1;
-                    // Signal Form to clear mouse click state
-                    t3c.needClearMouseClicks = true;
                     redraw = true;
                 }
                 // Step 2: Set fromAxis

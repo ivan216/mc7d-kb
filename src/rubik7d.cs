@@ -213,7 +213,15 @@ namespace _3dedit
             if (action == null) return;
 
             bool redraw = false, didTwist = false;
+            int prevStep = Cube?.partialTwist3c?.step ?? 0;
             action.OnKeyDown(ref Cube, ref redraw, ref didTwist);
+            // Clear mouse click state when Twist3c grip is first set (step 0 to 1)
+            if (Cube != null && prevStep == 0 && Cube.partialTwist3c.step == 1) {
+                NClicks = 0;
+                FaceClick = 0;
+                FaceFrom = 0;
+                ClickQual = true;
+            }
             PostKeybindAction(redraw, didTwist);
         }
 
@@ -231,15 +239,6 @@ namespace _3dedit
 
         private void PostKeybindAction(bool redraw, bool didTwist)
         {
-            // Check if Twist3c wants to clear mouse click state
-            if (Cube.partialTwist3c.needClearMouseClicks)
-            {
-                NClicks = 0;
-                FaceClick = 0;
-                FaceFrom = 0;
-                ClickQual = true;  // Clear red background state
-                Cube.partialTwist3c.needClearMouseClicks = false;
-            }
 
             if (redraw)
             {
@@ -396,9 +395,6 @@ namespace _3dedit
 		{
 			if (Cube == null) return;
 			if(!HasSelection(GripAxisMask, 1, 7)) return;
-			int N2val = Cube.N + 2;
-			int NClim = 1;
-			for (int p = 0; p < Cube.D; p++) NClim *= N2val;
 
 			for (int axis = 1; axis <= Cube.D; axis++)
 			{
@@ -421,22 +417,7 @@ namespace _3dedit
 				if (oriented > 0) m0 = Cube.reverse(m0);
 
 				int f0 = Math.Abs(oriented) - 1;
-				int m1 = 1 << (Cube.N - 1);
-				int expandedMask = (m0 & 1) + (m0 << 1) + ((m0 & m1) << 2);
-
-				int c0 = 1;
-				for (int p = 0; p < f0; p++) c0 *= N2val;
-
-				for (int i = 0; i < NClim; i++)
-				{
-					int k = (i / c0) % N2val;
-					bool inLayer = (expandedMask & (1 << k)) != 0;
-
-					if (maskVal == 1 && !inLayer)
-						Cube.HighLighted[i] = false;
-					else if (maskVal == -1 && inLayer)
-						Cube.HighLighted[i] = false;
-				}
+				Cube.ApplyGripHighlightToAxis(f0, m0, maskVal == -1);
 			}
 		}
 
@@ -1670,6 +1651,7 @@ namespace _3dedit
             appMacro(false);
         }
         void appMacro(bool qrev){
+            if(RecordingMacroStatus==REC_MACRO_STICKERS || RecordingMacroStatus==REC_MACRO_APPLY) return;
             CurMacro=Macros.GetMacro(m_macroName);
             if(CurMacro==null) {
                 ClickQual=false;
@@ -1695,24 +1677,11 @@ namespace _3dedit
 
         // Execute macro by its 1-based index in the listbox (alphabetical order)
         void ExecuteMacroByIdCmd(int id, bool reverse) {
+            if(RecordingMacroStatus==REC_MACRO_STICKERS || RecordingMacroStatus==REC_MACRO_APPLY) return;
             int index = id - 1;
             if (index < 0 || index >= m_lbMacros.Items.Count) return;
-            string macroName = (string)m_lbMacros.Items[index];
-            CurMacro = Macros.GetMacro(macroName);
-            if (CurMacro == null) return;
-            if (m_cbQuickMacro.Checked && CurMacro.Vectors != null) {
-                int[] cmap = GetFastMacroRef(CurMacro.Vectors, CurMacro.Orient);
-                Cube.ApplyMacro(cmap, CurMacro.Code, CurMacro.LMacro, reverse);
-                ProcessHighLights();
-                TestBuild();
-                Redraw();
-                return;
-            }
-            OldRecMacroStatus = RecordingMacroStatus;
-            RecordingMacroStatus = REC_MACRO_APPLY;
-            LMacroStickers = 0;
-            MacroReverse = reverse;
-            RedrawClickStatus();
+            m_macroName = (string)m_lbMacros.Items[index];
+            appMacro(reverse);
         }
 
         private void DeleteMacro(object sender,EventArgs e) {
