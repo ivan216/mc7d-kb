@@ -334,8 +334,8 @@ namespace _3dedit
 
             public Twist()
             {
-                this.fromAxis = null;
-                this.toAxis = null;
+                this.fromAxis = Axis.X;
+                this.toAxis = Axis.Y;
             }
             public Twist(Axis fromAxis, Axis toAxis) {
                 this.fromAxis = fromAxis;
@@ -409,10 +409,6 @@ namespace _3dedit
             {
                 var axes = Axis.fromString.Keys.ToArray();
 
-                // Use default values if axes are null (for UI setup)
-                Axis displayFromAxis = this.fromAxis ?? Axis.X;
-                Axis displayToAxis = this.toAxis ?? Axis.Y;
-
                 ComboBox fromComboBox = new ComboBox
                 {
                     Anchor = AnchorStyles.Left | AnchorStyles.Top,
@@ -422,7 +418,7 @@ namespace _3dedit
                     Size = new Size(56, 30),
                 };
                 fromComboBox.Items.AddRange(axes);
-                fromComboBox.SelectedIndex = fromComboBox.Items.IndexOf(displayFromAxis.name);
+                fromComboBox.SelectedIndex = fromComboBox.Items.IndexOf(this.fromAxis.name);
                 fromComboBox.SelectedIndexChanged += (object sender, EventArgs e) =>
                 {
                     this.fromAxis = Axis.fromString[(string)((ComboBox)sender).SelectedItem];
@@ -437,7 +433,7 @@ namespace _3dedit
                     Size = new Size(56, 30),
                 };
                 toComboBox.Items.AddRange(axes);
-                toComboBox.SelectedIndex = toComboBox.Items.IndexOf(displayToAxis.name);
+                toComboBox.SelectedIndex = toComboBox.Items.IndexOf(this.toAxis.name);
                 toComboBox.SelectedIndexChanged += (object sender, EventArgs e) =>
                 {
                     this.toAxis = Axis.fromString[(string)((ComboBox)sender).SelectedItem];

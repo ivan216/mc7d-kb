@@ -73,6 +73,8 @@ namespace _3dedit {
 
             Gripped = new int[2] { -1, 1 };
             partialTwist = new Keybindings.Twist();
+            partialTwist.fromAxis = null;
+            partialTwist.toAxis = null;
             partialTwist3c = new PartialTwist3c();
             LayerOverrides = new HashSet<Keybindings.Layer>();
 
@@ -1201,7 +1203,8 @@ _1: ;
         }
 
         public bool IsValid() {
-            return step == 3 && gripAxis != null && fromAxis != null && toAxis != null;
+            return step == 3 && gripAxis != null && fromAxis != null && toAxis != null
+                && gripAxis.idx != fromAxis.idx && fromAxis.idx != toAxis.idx && gripAxis.idx != toAxis.idx;
         }
     }
 }
