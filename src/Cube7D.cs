@@ -73,6 +73,8 @@ namespace _3dedit {
 
             Gripped = new int[2] { -1, 1 };
             partialTwist = new Keybindings.Twist();
+            partialTwist.fromAxis = null;
+            partialTwist.toAxis = null;
             partialTwist3c = new PartialTwist3c();
             LayerOverrides = new HashSet<Keybindings.Layer>();
 
@@ -380,7 +382,10 @@ namespace _3dedit {
             int res = 0;
             foreach( var item in LayerOverrides)
             {
-                res |= item.layerMask;
+                // Normalize negative masks the same way as NormGripMask: -X -> reverse(X)
+                int m = item.layerMask;
+                if (m < 0) m = reverse(-m);
+                res |= m;
             }
 
             if ((Gripped[1]&reverse(1)) != 0)
@@ -388,6 +393,20 @@ namespace _3dedit {
                 res = reverse(res);
             }
 
+            return res;
+        }
+
+        // Get combined mask from LayerOverrides only (ignoring Gripped state)
+        // Returns layer 1 mask if no overrides are active
+        public int GetLayerOverridesMask()
+        {
+            if (LayerOverrides.Count == 0) return 1;
+
+            int res = 0;
+            foreach (var item in LayerOverrides)
+            {
+                res |= item.layerMask;
+            }
             return res;
         }
 
@@ -402,22 +421,27 @@ namespace _3dedit {
             else m0 = reverse(m0);
         }
 
+        // Apply grip highlight for a single axis: un-highlight cells not matching the layer
+        // axisIndex: zero-based axis (0..D-1)
+        // layerMask: normalised layer mask (bit per layer, after orientation/inversion processing)
+        // excludeMode: if true, un-highlight cells IN the layer instead of OUTSIDE
+        public void ApplyGripHighlightToAxis(int axisIndex, int layerMask, bool excludeMode) {
+            int m1 = 1 << (N - 1);
+            int m = (layerMask & 1) + (layerMask << 1) + ((layerMask & m1) << 2);
+            int c0 = Pow(N2, axisIndex);
+            for (int i = 0; i < NC; i++) {
+                int k = (i / c0) % N2;
+                bool inLayer = (m & (1 << k)) != 0;
+                if (excludeMode == inLayer) HighLighted[i] = false;
+            }
+        }
+
         public void HighLightGrip()
         {
             int f0, m0;
             NormGrip(out f0, out m0);
             if (f0 == -1) return;
-
-            f0 = f0 - 1;
-
-            int m1 = 1 << (N - 1);
-            int m = (m0 & 1) + (m0 << 1) + ((m0 & m1) << 2);
-            int c0 = Pow(N2, f0);
-            for (int i = 0; i < NC; i++)
-            {
-                int k = (i / c0) % N2;
-                if ((m & (1 << k)) == 0) HighLighted[i] = false;
-            }
+            ApplyGripHighlightToAxis(f0 - 1, m0, false);
         }
 
         internal int GetFirstSticker(int s,int ClickMode,out int F1) {  // returns FaceClick
@@ -1164,7 +1188,6 @@ _1: ;
         public Keybindings.Axis toAxis;
         public int step; // 0=empty, 1=grip set, 2=from set, 3=complete
         public int negativeCount; // Count of negative flags in step 2 and 3
-        public bool needClearMouseClicks; // Flag to notify Form to clear mouse click state
 
         public PartialTwist3c() {
             Reset();
@@ -1177,11 +1200,11 @@ _1: ;
             toAxis = null;
             step = 0;
             negativeCount = 0;
-            needClearMouseClicks = false;
         }
 
         public bool IsValid() {
-            return step == 3 && gripAxis != null && fromAxis != null && toAxis != null;
+            return step == 3 && gripAxis != null && fromAxis != null && toAxis != null
+                && gripAxis.idx != fromAxis.idx && fromAxis.idx != toAxis.idx && gripAxis.idx != toAxis.idx;
         }
     }
 }
