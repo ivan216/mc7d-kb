@@ -921,6 +921,8 @@ namespace _3dedit
             sf.RestoreDirectory=true;
             if(sf.ShowDialog()==DialogResult.OK) {
                 if(Cube!=null) Cube.partialTwist3c.Reset();
+                // Exit macro sticker selection when loading a different puzzle
+                RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
                 m_FileName=sf.FileName;
                 Text=m_FileName+" - MC7D";
                 Cube.Load(m_FileName);
