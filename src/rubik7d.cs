@@ -836,16 +836,16 @@ namespace _3dedit
         private void mi_Undo_Click(object sender,EventArgs e) {
             bool r=Cube.Undo();
             if(r) {
-                ProcessHighLights();
-                Redraw();
+                if(AltHighlight) Redraw();
+                else { ProcessHighLights(); Redraw(); }
             }
         }
 
         private void mi_Redo_Click(object sender,EventArgs e) {
             bool r=Cube.Redo();
             if(r) {
-                ProcessHighLights();
-                Redraw();
+                if(AltHighlight) Redraw();
+                else { ProcessHighLights(); Redraw(); }
             }
         }
 
@@ -889,7 +889,13 @@ namespace _3dedit
         private void mi_FullUndo_Click(object sender,EventArgs e) {
             m_runUndo=true;
             while(Cube.Undo()) {
-                ProcessHighLights();
+                bool needHL = cb_HighlightByColors.CheckState != CheckState.Unchecked
+                    && (HasSelection(FaceMask, 1, 14)
+                        || HasSelection(NColMask, 1, 7)
+                        || GetOrbitFilterMask() != null
+                        || HasSelection(GripAxisMask, 1, 7)
+                        || (Cube != null && Cube.Gripped[0] != -1));
+                if(needHL) ProcessHighLights();
                 Redraw();
                 dxControl2.SetSceneChanged();
                 dxControl2.Scene.Render3DEnvironment();
@@ -897,12 +903,19 @@ namespace _3dedit
                 Application.DoEvents();
                 if(!m_runUndo) break;
             }
+            ProcessHighLights();
         }
 
         private void mi_FullRedo_Click(object sender,EventArgs e) {
             m_runUndo=true;
             while(Cube.Redo()) {
-                ProcessHighLights();
+                bool needHL = cb_HighlightByColors.CheckState != CheckState.Unchecked
+                    && (HasSelection(FaceMask, 1, 14)
+                        || HasSelection(NColMask, 1, 7)
+                        || GetOrbitFilterMask() != null
+                        || HasSelection(GripAxisMask, 1, 7)
+                        || (Cube != null && Cube.Gripped[0] != -1));
+                if(needHL) ProcessHighLights();
                 Redraw();
                 dxControl2.SetSceneChanged();
                 dxControl2.Scene.Render3DEnvironment();
@@ -910,6 +923,7 @@ namespace _3dedit
                 Application.DoEvents();
                 if(!m_runUndo) break;
             }
+            ProcessHighLights();
         }
 
         private void stopToolStripMenuItem_Click(object sender,EventArgs e) {
