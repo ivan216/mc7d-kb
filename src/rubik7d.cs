@@ -263,6 +263,10 @@ namespace _3dedit
 
         private void CheckKeybindSet(object sender, EventArgs e)
         {
+            // Clear twist3c state when switching keybind layouts
+            if (Cube != null) Cube.partialTwist3c.Reset();
+            RedrawClickStatus();
+
             string active = Keybinds.activeKeybindsName;
             activeKeybind.Text = $"Keybinds: {active}";
             foreach (ToolStripMenuItem item in activeKeybind.DropDownItems)
@@ -747,6 +751,7 @@ namespace _3dedit
             ProcessHighLights();
             dxControl2.SetSceneChanged();
             ShowRevStack();
+            RedrawClickStatus();
             //            dxControl2.Invalidate();
         }
 
@@ -864,6 +869,7 @@ namespace _3dedit
             Scramble(5);
         }
         void Scramble(int N) {
+            if(Cube!=null) Cube.partialTwist3c.Reset();
             dxControl2.ClearMeshes();
             CubeView=null;
             GC.Collect();
@@ -914,6 +920,7 @@ namespace _3dedit
             sf.Filter="MC7D Log file (*.log)|*.log";
             sf.RestoreDirectory=true;
             if(sf.ShowDialog()==DialogResult.OK) {
+                if(Cube!=null) Cube.partialTwist3c.Reset();
                 m_FileName=sf.FileName;
                 Text=m_FileName+" - MC7D";
                 Cube.Load(m_FileName);
