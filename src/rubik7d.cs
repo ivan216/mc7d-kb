@@ -76,6 +76,10 @@ namespace _3dedit
             // Wire up macro hotkey execution
             Keybindings.ExecuteMacroById = ExecuteMacroByIdCmd;
 
+            // Block wheel on TrackBar/NumericUpDown; redirect to parent panel for scrolling
+            Application.AddMessageFilter(new WheelGuard(this));
+            // Click sidebar background → move focus away from sidebar controls
+            panel1.MouseDown += (s, me) => dxControl2.Focus();
         }
 
         int GetDim() {
@@ -1974,5 +1978,26 @@ namespace _3dedit
             KeybindsSetup.WindowState = FormWindowState.Normal;
         }
 
+        // Intercept mouse wheel on TrackBar/NumericUpDown when not focused
+        // Redirect to parent panel for scrolling instead of changing the slider value
+        class WheelGuard : IMessageFilter {
+            public WheelGuard(Form1 form) { }
+            public bool PreFilterMessage(ref Message m) {
+                if (m.Msg != 0x020A) return false;
+                Control c = Control.FromChildHandle(m.HWnd);
+                // NumericUpDown and TrackBar are composite controls;
+                // walk up to find the actual parent control
+                while (c != null && !(c is TrackBar) && !(c is NumericUpDown))
+                    c = c.Parent;
+                if (c == null) return false;
+                if (!c.Focused && c.Parent is System.Windows.Forms.ScrollableControl sc) {
+                    int delta = (short)((m.WParam.ToInt32() >> 16) & 0xFFFF);
+                    int sy = -sc.AutoScrollPosition.Y;
+                    sc.AutoScrollPosition = new System.Drawing.Point(0, sy - delta);
+                    return true;
+                }
+                return false;
+            }
+        }
     }
 }
