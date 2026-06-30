@@ -1995,7 +1995,8 @@ namespace _3dedit
         // Intercept mouse wheel on TrackBar/NumericUpDown when not focused
         // Redirect to parent panel for scrolling instead of changing the slider value
         class WheelGuard : IMessageFilter {
-            public WheelGuard(Form1 form) { }
+            Form1 _form;
+            public WheelGuard(Form1 form) { _form = form; }
             public bool PreFilterMessage(ref Message m) {
                 if (m.Msg != 0x020A) return false;
                 Control c = Control.FromChildHandle(m.HWnd);
@@ -2004,6 +2005,8 @@ namespace _3dedit
                 while (c != null && !(c is TrackBar) && !(c is NumericUpDown))
                     c = c.Parent;
                 if (c == null) return false;
+                // Only apply to controls in the main form, not modal dialogs (e.g. KeybindSetup)
+                if (c.FindForm() != _form) return false;
                 if (!c.Focused && c.Parent is System.Windows.Forms.ScrollableControl sc) {
                     int delta = (short)((m.WParam.ToInt32() >> 16) & 0xFFFF);
                     int sy = -sc.AutoScrollPosition.Y;
