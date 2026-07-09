@@ -981,6 +981,23 @@ namespace _3dedit
             }
         }
 
+        private void mi_SaveStripMarkers_Click(object sender,EventArgs e) {
+            if(m_FileName==null) { mi_SaveStripMarkersAs_Click(sender,e); return; }
+            if(m_TRun) Cube.CTime=DateTime.Now.Ticks-m_TStart;
+            Cube.SaveStripMarkers(m_FileName);
+        }
+
+        private void mi_SaveStripMarkersAs_Click(object sender,EventArgs e) {
+            SaveFileDialog sf=new SaveFileDialog();
+            sf.RestoreDirectory=true;
+            sf.DefaultExt=".log";
+            sf.Filter="MC7D Log file (*.log)|*.log";
+            if(sf.ShowDialog()==DialogResult.OK) {
+                if(m_TRun) Cube.CTime=DateTime.Now.Ticks-m_TStart;
+                Cube.SaveStripMarkers(sf.FileName);
+            }
+        }
+
         bool SettingsSaved=false;
         private void mi_Exit_Click(object sender,EventArgs e) {
             if(!SettingsSaved) {

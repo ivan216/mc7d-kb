@@ -915,6 +915,53 @@ namespace _3dedit {
             }
         }
 
+        public void SaveStripMarkers(string fn) {
+            // Build flat index mapping: filter out macro markers (-1, -2)
+            int flatLShuffle = 0, flatLPtr = 0, flatLSeq = 0;
+            for(int i=0;i<LSeq;i++) {
+                if(Seq[i] < 0) continue;
+                if(i < LShuffle) flatLShuffle = flatLSeq + 1;
+                if(i < LPtr) flatLPtr = flatLSeq + 1;
+                flatLSeq++;
+            }
+            CSum=0;
+            AddCSum(D); AddCSum(N); AddCSum(flatLSeq); AddCSum(flatLShuffle); AddCSum(flatLPtr);
+            AddCSum(CTime/10000);
+            for(int i=0;i<LSeq;i++) if(Seq[i]>=0) AddCSum(Seq[i]);
+            try {
+                StreamWriter sw=new StreamWriter(fn);
+                sw.NewLine="\r\n";
+                sw.WriteLine("MC7D {0} {1} {2} {3} {4}",D,N,flatLSeq,flatLShuffle,flatLPtr);
+                char[] line=new char[257];
+                int p=0;
+                for(int i=0;i<NC;i++) {
+                    int b=Cube[i];
+                    if(b==0) continue;
+                    line[p++]=(char)(b<10 ? b+0x30 : b+0x37);
+                    if(p==256){
+                        sw.WriteLine(new string(line,0,p));
+                        p=0;
+                    }
+                }
+                if(p!=0) sw.WriteLine(new string(line,0,p));
+                sw.WriteLine("#time {0}",CTime/10000);
+                sw.WriteLine("#CRC {0}",RevBit(CSum));
+                sw.WriteLine("*");
+                int idx=0;
+                for(int i=0;i<LSeq;i++) {
+                    if(Seq[i] < 0) continue;
+                    if(idx==flatLShuffle) sw.Write("m| ");
+                    sw.Write("{0} ",Seq[i]);
+                    if(++idx%16==0) sw.WriteLine();
+                }
+                if(idx%16!=0) sw.WriteLine();
+                sw.Close();
+            } catch {
+                System.Windows.Forms.MessageBox.Show("Cannot save file "+fn);
+                return;
+            }
+        }
+
         ulong CSum;
         void AddCSum(long m) {
             CSum=CSum*0x12345675+(ulong)m;
