@@ -665,6 +665,7 @@ namespace _3dedit
 
         void TestBuild() {
             if(qSolved) return;
+            if(Cube.LShuffle == 0) return;
             if(!m_TRun) {
                 m_TStart=DateTime.Now.Ticks-Cube.CTime;
                 m_TRun=true;
