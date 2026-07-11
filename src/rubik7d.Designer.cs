@@ -480,7 +480,7 @@ namespace _3dedit
             this.m_RunByClick.AutoSize = true;
             this.m_RunByClick.Checked = true;
             this.m_RunByClick.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_RunByClick.Location = new System.Drawing.Point(120, 842);
+            this.m_RunByClick.Location = new System.Drawing.Point(118, 842);
             this.m_RunByClick.Name = "m_RunByClick";
             this.m_RunByClick.Size = new System.Drawing.Size(86, 17);
             this.m_RunByClick.TabIndex = 17;
@@ -492,7 +492,7 @@ namespace _3dedit
             this.m_cbQuickMacro.AutoSize = true;
             this.m_cbQuickMacro.Checked = true;
             this.m_cbQuickMacro.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.m_cbQuickMacro.Location = new System.Drawing.Point(120, 820);
+            this.m_cbQuickMacro.Location = new System.Drawing.Point(118, 820);
             this.m_cbQuickMacro.Name = "m_cbQuickMacro";
             this.m_cbQuickMacro.Size = new System.Drawing.Size(98, 17);
             this.m_cbQuickMacro.TabIndex = 17;
@@ -511,7 +511,7 @@ namespace _3dedit
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(9, 252);
+            this.label12.Location = new System.Drawing.Point(9, 240);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(86, 13);
             this.label12.TabIndex = 16;
@@ -831,7 +831,7 @@ namespace _3dedit
             // cb_HighlightByColors
             //
             this.cb_HighlightByColors.AutoSize = true;
-			this.cb_HighlightByColors.Location = new System.Drawing.Point(120, 776);
+			this.cb_HighlightByColors.Location = new System.Drawing.Point(118, 776);
             this.cb_HighlightByColors.Name = "cb_HighlightByColors";
             this.cb_HighlightByColors.Size = new System.Drawing.Size(112, 17);
             this.cb_HighlightByColors.TabIndex = 9;
@@ -844,7 +844,7 @@ namespace _3dedit
             // cb_MaskStickers
             //
             this.cb_MaskStickers.AutoSize = true;
-			this.cb_MaskStickers.Location = new System.Drawing.Point(120, 798);
+			this.cb_MaskStickers.Location = new System.Drawing.Point(118, 798);
             this.cb_MaskStickers.Name = "cb_MaskStickers";
             this.cb_MaskStickers.Size = new System.Drawing.Size(95, 17);
             this.cb_MaskStickers.TabIndex = 11;
@@ -854,7 +854,7 @@ namespace _3dedit
             //
             // btn_ResetHighlightSelection
             //
-			this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(120, 741);
+			this.btn_ResetHighlightSelection.Location = new System.Drawing.Point(118, 741);
             this.btn_ResetHighlightSelection.Name = "btn_ResetHighlightSelection";
             this.btn_ResetHighlightSelection.Size = new System.Drawing.Size(75, 23);
             this.btn_ResetHighlightSelection.TabIndex = 10;
@@ -882,10 +882,11 @@ namespace _3dedit
             // 
             // m_trkFullUndoSpeed
             // 
-            this.m_trkFullUndoSpeed.Location = new System.Drawing.Point(97, 245);
+            this.m_trkFullUndoSpeed.AutoSize = false;
+            this.m_trkFullUndoSpeed.Location = new System.Drawing.Point(97, 237);
             this.m_trkFullUndoSpeed.Maximum = 100;
             this.m_trkFullUndoSpeed.Name = "m_trkFullUndoSpeed";
-            this.m_trkFullUndoSpeed.Size = new System.Drawing.Size(104, 45);
+            this.m_trkFullUndoSpeed.Size = new System.Drawing.Size(104, 30);
             this.m_trkFullUndoSpeed.TabIndex = 7;
             this.m_trkFullUndoSpeed.TickStyle = System.Windows.Forms.TickStyle.None;
             this.m_trkFullUndoSpeed.Value = 15;
@@ -1326,7 +1327,7 @@ namespace _3dedit
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(6, 89);
+            this.label5.Location = new System.Drawing.Point(6, 93);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(63, 13);
             this.label5.TabIndex = 1;
@@ -1345,7 +1346,7 @@ namespace _3dedit
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(6, 66);
+            this.label3.Location = new System.Drawing.Point(6, 70);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(63, 13);
             this.label3.TabIndex = 1;
@@ -1366,7 +1367,7 @@ namespace _3dedit
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(6, 43);
+            this.label2.Location = new System.Drawing.Point(6, 47);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(57, 13);
             this.label2.TabIndex = 1;
@@ -1387,7 +1388,7 @@ namespace _3dedit
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 20);
+            this.label1.Location = new System.Drawing.Point(6, 23);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(85, 13);
             this.label1.TabIndex = 1;

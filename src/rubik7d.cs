@@ -80,6 +80,29 @@ namespace _3dedit
             Application.AddMessageFilter(new WheelGuard(this));
             // Click sidebar background → move focus away from sidebar controls
             panel1.MouseDown += (s, me) => dxControl2.Focus();
+
+            // Undo frame skip control — placed below speed slider
+            nudUndoFrameSkip = new NumericUpDown();
+            nudUndoFrameSkip.Location = new System.Drawing.Point(97, 268);
+            nudUndoFrameSkip.Size = new System.Drawing.Size(76, 20);
+            nudUndoFrameSkip.Minimum = 1;
+            nudUndoFrameSkip.Maximum = 100000;
+            nudUndoFrameSkip.Value = 1;
+            nudUndoFrameSkip.Name = "nudUndoFrameSkip";
+            panel1.Controls.Add(nudUndoFrameSkip);
+
+            lblUndoFrameSkip = new Label();
+            lblUndoFrameSkip.Location = new System.Drawing.Point(9, 270);
+            lblUndoFrameSkip.Size = new System.Drawing.Size(75, 13);
+            lblUndoFrameSkip.Text = "Frame Skip";
+            panel1.Controls.Add(lblUndoFrameSkip);
+
+            // Shift existing controls below the TrackBar down to make room
+            foreach (Control c in panel1.Controls) {
+                if (c.Top >= 277 && c != nudUndoFrameSkip && c != lblUndoFrameSkip) {
+                    c.Top += 23;
+                }
+            }
         }
 
         int GetDim() {
@@ -117,6 +140,8 @@ namespace _3dedit
         Cube7D Cube;
         CubeObj CubeView;
         int TRate=500;
+        NumericUpDown nudUndoFrameSkip;
+        Label lblUndoFrameSkip;
 
         const int CLICK_MODE_2=0;
         const int CLICK_MODE_2_OPP=1;
@@ -889,6 +914,8 @@ namespace _3dedit
         bool m_runUndo=false;
         private void mi_FullUndo_Click(object sender,EventArgs e) {
             m_runUndo=true;
+            int frameSkip=Math.Max(1,(int)nudUndoFrameSkip.Value);
+            int frameCount=0;
             while(Cube.Undo()) {
                 bool needHL = cb_HighlightByColors.CheckState != CheckState.Unchecked
                     && (HasSelection(FaceMask, 1, 14)
@@ -896,19 +923,31 @@ namespace _3dedit
                         || GetOrbitFilterMask() != null
                         || HasSelection(GripAxisMask, 1, 7)
                         || (Cube != null && Cube.Gripped[0] != -1));
-                if(needHL) ProcessHighLights();
-                Redraw();
-                dxControl2.SetSceneChanged();
-                dxControl2.Scene.Render3DEnvironment();
-                Thread.Sleep(TRate);
+                frameCount++;
+                if(frameCount%frameSkip==0) {
+                    if(needHL) ProcessHighLights();
+                    Redraw();
+                    dxControl2.Scene.Render3DEnvironment();
+                    Thread.Sleep(TRate);
+                }
                 Application.DoEvents();
                 if(!m_runUndo) break;
+            }
+            // Catch-up render if the last iteration was skipped
+            if(frameCount%frameSkip!=0) {
+                ShowRevStack();
+                ProcessHighLights();
+                CubeView.Dispose();
+                dxControl2.SetSceneChanged();
+                dxControl2.Scene.Render3DEnvironment();
             }
             ProcessHighLights();
         }
 
         private void mi_FullRedo_Click(object sender,EventArgs e) {
             m_runUndo=true;
+            int frameSkip=Math.Max(1,(int)nudUndoFrameSkip.Value);
+            int frameCount=0;
             while(Cube.Redo()) {
                 bool needHL = cb_HighlightByColors.CheckState != CheckState.Unchecked
                     && (HasSelection(FaceMask, 1, 14)
@@ -916,13 +955,23 @@ namespace _3dedit
                         || GetOrbitFilterMask() != null
                         || HasSelection(GripAxisMask, 1, 7)
                         || (Cube != null && Cube.Gripped[0] != -1));
-                if(needHL) ProcessHighLights();
-                Redraw();
-                dxControl2.SetSceneChanged();
-                dxControl2.Scene.Render3DEnvironment();
-                Thread.Sleep(TRate);
+                frameCount++;
+                if(frameCount%frameSkip==0) {
+                    if(needHL) ProcessHighLights();
+                    Redraw();
+                    dxControl2.Scene.Render3DEnvironment();
+                    Thread.Sleep(TRate);
+                }
                 Application.DoEvents();
                 if(!m_runUndo) break;
+            }
+            // Catch-up render if the last iteration was skipped
+            if(frameCount%frameSkip!=0) {
+                ShowRevStack();
+                ProcessHighLights();
+                CubeView.Dispose();
+                dxControl2.SetSceneChanged();
+                dxControl2.Scene.Render3DEnvironment();
             }
             ProcessHighLights();
         }
@@ -1986,9 +2035,13 @@ namespace _3dedit
         }
 
         private void m_trkUndoSpeed_ValueChanged(object sender,EventArgs e) {
-            double p=(double)(m_trkFullUndoSpeed.Value)/m_trkFullUndoSpeed.Maximum;
-            p=Math.Pow(10,3-2*p);
-            TRate=(int)p;
+            if(m_trkFullUndoSpeed.Value==m_trkFullUndoSpeed.Maximum) {
+                TRate=0;
+            } else {
+                double p=(double)(m_trkFullUndoSpeed.Value)/m_trkFullUndoSpeed.Maximum;
+                p=Math.Pow(10,3-2*p);
+                TRate=(int)p;
+            }
         }
 
         private void m_trkTransparency_ValueChanged(object sender,EventArgs e) {
