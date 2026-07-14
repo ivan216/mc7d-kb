@@ -10,6 +10,7 @@ namespace _3dedit {
     
     public class Cube7D {
         public int N,D;
+        public const int MaxN = 7;
         int NC,N2;
         byte[] Cube,Cube2;
         public BitArray HighLighted;

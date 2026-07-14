@@ -790,10 +790,14 @@ namespace _3dedit
             if (Cube == null) return;
             NumericUpDown[] nuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
                                                          nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
+            int maxVal = (1 << Cube.N) - 1;
+            int minVal = -maxVal;
+            m_setgeom = true;
             for (int i = 0; i < 7; i++) {
-                nuds[i].Maximum = 127;
-                nuds[i].Minimum = -127;
+                nuds[i].Maximum = maxVal;
+                nuds[i].Minimum = minVal;
             }
+            m_setgeom = false;
             // Reset grip state for axes beyond current dimension
             for (int i = Cube.D + 1; i <= 7; i++) {
                 GripAxisMask[i] = 0;
@@ -1123,11 +1127,12 @@ namespace _3dedit
             // Restore grip axis filters
             NumericUpDown[] gnuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
                                                           nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
+            int gnudsMax = (1 << Cube7D.MaxN) - 1;
             for (int i = 0; i < 7; i++)
             {
-                gnuds[i].Maximum = 127;
-                gnuds[i].Minimum = -127;
-                gnuds[i].Value = Math.Max(Math.Min(GripLayerNum[i + 1], 127), -127);
+                gnuds[i].Maximum = gnudsMax;
+                gnuds[i].Minimum = -gnudsMax;
+                gnuds[i].Value = Math.Max(Math.Min(GripLayerNum[i + 1], gnudsMax), -gnudsMax);
             }
             CheckState[] st3 = new CheckState[] { CheckState.Unchecked, CheckState.Indeterminate, CheckState.Checked };
             cb_GripAxis1.CheckState = st3[GripAxisMask[1] + 1];
