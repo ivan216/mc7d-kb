@@ -638,8 +638,7 @@ namespace _3dedit {
 
         internal void Scramble(int nt) {
             if(nt<0) {
-                if(D==5) nt=100;
-                else nt=2*D*(D-1)*N;
+                nt=2*D*(D-1)*N;
             }
             Init(N,D);
             LPtr=0;
