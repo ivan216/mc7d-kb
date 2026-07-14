@@ -789,24 +789,37 @@ namespace _3dedit
             //            dxControl2.Invalidate();
         }
 
-        private void UpdateGripAxisNUDs()
+        private int ClampGripLayerNum(int value, int maxVal)
         {
-            if (Cube == null) return;
+            return Math.Max(Math.Min(value, maxVal), -maxVal);
+        }
+
+        private void SyncGripLayerNUDs(int maxVal)
+        {
             NumericUpDown[] nuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
                                                          nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
-            int maxVal = (1 << Cube.N) - 1;
             int minVal = -maxVal;
             m_setgeom = true;
             for (int i = 0; i < 7; i++) {
+                int clamped = ClampGripLayerNum(GripLayerNum[i + 1], maxVal);
+                GripLayerNum[i + 1] = clamped;
                 nuds[i].Maximum = maxVal;
                 nuds[i].Minimum = minVal;
+                if (nuds[i].Value != clamped) nuds[i].Value = clamped;
             }
             m_setgeom = false;
-            // Reset grip state for axes beyond current dimension
+        }
+
+        private void UpdateGripAxisNUDs()
+        {
+            if (Cube == null) return;
+            int maxVal = (1 << Cube.N) - 1;
+            // Reset grip state for axes beyond current dimension before syncing UI/model.
             for (int i = Cube.D + 1; i <= 7; i++) {
                 GripAxisMask[i] = 0;
                 GripLayerNum[i] = 1;
             }
+            SyncGripLayerNUDs(maxVal);
         }
 
         private void mi_Puzzle4D_Click(object sender,EventArgs e) {
@@ -1135,15 +1148,8 @@ namespace _3dedit
             cb_MaskStickers.Checked = MaskStickers;
 
             // Restore grip axis filters
-            NumericUpDown[] gnuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
-                                                          nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
-            int gnudsMax = (1 << Cube7D.MaxN) - 1;
-            for (int i = 0; i < 7; i++)
-            {
-                gnuds[i].Maximum = gnudsMax;
-                gnuds[i].Minimum = -gnudsMax;
-                gnuds[i].Value = Math.Max(Math.Min(GripLayerNum[i + 1], gnudsMax), -gnudsMax);
-            }
+            int gnudsMax = (Cube != null) ? ((1 << Cube.N) - 1) : ((1 << Cube7D.MaxN) - 1);
+            SyncGripLayerNUDs(gnudsMax);
             CheckState[] st3 = new CheckState[] { CheckState.Unchecked, CheckState.Indeterminate, CheckState.Checked };
             cb_GripAxis1.CheckState = st3[GripAxisMask[1] + 1];
             cb_GripAxis2.CheckState = st3[GripAxisMask[2] + 1];
