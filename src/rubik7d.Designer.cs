@@ -35,7 +35,6 @@ namespace _3dedit
         private ToolStripMenuItem mi_Open;
         private ToolStripMenuItem mi_Save;
         private ToolStripMenuItem mi_SaveAs;
-        private ToolStripMenuItem mi_SaveStripMarkers;
         private ToolStripMenuItem mi_SaveStripMarkersAs;
         private ToolStripSeparator toolStripMenuItem1;
         private ToolStripMenuItem mi_Exit;
@@ -291,7 +290,6 @@ namespace _3dedit
             this.mi_Open = new System.Windows.Forms.ToolStripMenuItem();
             this.mi_Save = new System.Windows.Forms.ToolStripMenuItem();
             this.mi_SaveAs = new System.Windows.Forms.ToolStripMenuItem();
-            this.mi_SaveStripMarkers = new System.Windows.Forms.ToolStripMenuItem();
             this.mi_SaveStripMarkersAs = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.mi_Exit = new System.Windows.Forms.ToolStripMenuItem();
@@ -1500,7 +1498,6 @@ namespace _3dedit
             this.mi_Open,
             this.mi_Save,
             this.mi_SaveAs,
-            this.mi_SaveStripMarkers,
             this.mi_SaveStripMarkersAs,
             this.toolStripMenuItem1,
             this.mi_Exit});
@@ -1530,13 +1527,6 @@ namespace _3dedit
             this.mi_SaveAs.Size = new System.Drawing.Size(146, 22);
             this.mi_SaveAs.Text = "Save As...";
             this.mi_SaveAs.Click += new System.EventHandler(this.mi_SaveAs_Click);
-            //
-            // mi_SaveStripMarkers
-            //
-            this.mi_SaveStripMarkers.Name = "mi_SaveStripMarkers";
-            this.mi_SaveStripMarkers.Size = new System.Drawing.Size(222, 22);
-            this.mi_SaveStripMarkers.Text = "Strip Macros and Save";
-            this.mi_SaveStripMarkers.Click += new System.EventHandler(this.mi_SaveStripMarkers_Click);
             //
             // mi_SaveStripMarkersAs
             //

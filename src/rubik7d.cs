@@ -1034,12 +1034,6 @@ namespace _3dedit
             }
         }
 
-        private void mi_SaveStripMarkers_Click(object sender,EventArgs e) {
-            if(m_FileName==null) { mi_SaveStripMarkersAs_Click(sender,e); return; }
-            if(m_TRun) Cube.CTime=DateTime.Now.Ticks-m_TStart;
-            Cube.SaveStripMarkers(m_FileName);
-        }
-
         private void mi_SaveStripMarkersAs_Click(object sender,EventArgs e) {
             SaveFileDialog sf=new SaveFileDialog();
             sf.RestoreDirectory=true;
