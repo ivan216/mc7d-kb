@@ -722,7 +722,7 @@ namespace _3dedit
             Cube.Init(GetSize(),GetDim());
             qSolved=true;
 
-            if(rebuildOrbitChips) RebuildOrbitChips();
+            if(rebuildOrbitChips) RebuildOrbitChips(false);
 
             if(Macros==null || !Macros.CheckSize(GetDim(),GetSize())) {
                 Macros=new CMacroFile(GetDim(),GetSize());
@@ -1032,7 +1032,7 @@ namespace _3dedit
                 m_FileName=sf.FileName;
                 Text=m_FileName+" - MC7D";
                 Cube.Load(m_FileName);
-                RebuildOrbitChips();
+                RebuildOrbitChips(false);
                 ShowCube();
                 dxControl2.ParkCamera(true);
                 NClicks=0; ClickQual=true;
@@ -1307,7 +1307,7 @@ namespace _3dedit
                 m_pendingOrbitChipStates.Clear();
                 Cube=new Cube7D();
                 Cube.Load(m_FileName);
-                RebuildOrbitChips();
+                RebuildOrbitChips(false);
                 ShowCube();
                 SetDim(Cube.D); SetSize(Cube.N);
                 dxControl2.ParkCamera(true);
@@ -1590,7 +1590,12 @@ namespace _3dedit
         }
 
         void RebuildOrbitChips() {
-            CaptureOrbitChipStates();
+            RebuildOrbitChips(true);
+        }
+
+        void RebuildOrbitChips(bool preserveState) {
+            if(preserveState) CaptureOrbitChipStates();
+            else m_pendingOrbitChipStates.Clear();
             m_pnlOrbitFilters.Controls.Clear();
             m_orbChipMap.Clear();
 
@@ -1653,18 +1658,18 @@ namespace _3dedit
                 y+=rowH+4;
             }
 
-            ApplyPendingOrbitChipStates();
+            if(preserveState) ApplyPendingOrbitChipStates();
             m_setgeom = false;
         }
 
         void ChipOrbit_CheckStateChanged(object sender,EventArgs e) {
+            if(m_setgeom) return;
             CheckBox chip = sender as CheckBox;
             if(chip != null && chip.Tag is int) {
                 int orbitKey = (int)chip.Tag;
                 if(chip.CheckState == CheckState.Indeterminate) m_pendingOrbitChipStates.Remove(orbitKey);
                 else m_pendingOrbitChipStates[orbitKey] = chip.CheckState;
             }
-            if(m_setgeom) return;
             ProcessHighLights();
             Redraw();
         }
