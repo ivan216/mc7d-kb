@@ -59,8 +59,9 @@ namespace _3dedit
             for(int i=0;i<15;i++) FaceMask[i]=0;
             for(int i=1;i<=7;i++) { GripAxisMask[i]=0; GripLayerNum[i]=1; }
 
-            m_orbChipMap=new Dictionary<ushort,CheckBox>();
-            m_orbitMaskCache=new Dictionary<ushort,int>();
+            m_orbChipMap=new Dictionary<int,CheckBox>();
+            m_orbitMaskCache=new Dictionary<int,int>();
+            m_pendingOrbitChipStates=new Dictionary<int,CheckState>();
 
             LoadSettings("MC7D_settings.txt");
             Macros=new CMacroFile(GetDim(),GetSize());
@@ -166,10 +167,12 @@ namespace _3dedit
         bool AltHighlight=false;
         int[] NColMask;  // -1: only unhighlight, 0: normal (Indeterminate), 1: only highlight
         bool MaskStickers = false;  // true: exclude unchecked stickers from mesh (unclickable), false: only dim them
+        CheckState HighlightByColorsState = CheckState.Unchecked;
         int[] FaceMask;
-        Dictionary<ushort,CheckBox> m_orbChipMap; // sig → chip checkbox
+        Dictionary<int,CheckBox> m_orbChipMap; // orbit key → chip checkbox
         int[] GripAxisMask = new int[8];  // index 1..7, -1=exclude, 0=neutral, 1=include
-        Dictionary<ushort,int> m_orbitMaskCache; // reused by GetOrbitFilterMask
+        Dictionary<int,int> m_orbitMaskCache; // reused by GetOrbitFilterMask
+        Dictionary<int,CheckState> m_pendingOrbitChipStates; // persisted across chip rebuilds
         int[] GripLayerNum = new int[8];  // index 1..7, layer numbers 1..N
 
         int DiffLight=150;
@@ -331,7 +334,7 @@ namespace _3dedit
             int[] effectiveNColMask = (cb_HighlightByColors.CheckState != CheckState.Unchecked) ? NColMask : null;
 
             // Compute orbit chip mask — only when highlighting is on
-            Dictionary<ushort,int> rawOrbitMask = (cb_HighlightByColors.CheckState != CheckState.Unchecked)
+            Dictionary<int,int> rawOrbitMask = (cb_HighlightByColors.CheckState != CheckState.Unchecked)
                 ? GetOrbitFilterMask() : null;
 
             // Build effective orbit mask (Cube7D only handles exclusion: val < 0)
@@ -346,15 +349,15 @@ namespace _3dedit
             // a "checked" chip is expanded into exclusions of all OTHER same-C-value
             // orbits that lack a checked chip of their own.
             //
-            Dictionary<ushort,int> effectiveOrbitMask = null;
+            Dictionary<int,int> effectiveOrbitMask = null;
             if(rawOrbitMask != null && effectiveNColMask != null) {
                 bool ncolCloned = false;
-                ushort[] allSigs = null;
+                int[] allOrbitKeys = null;
 
-                foreach(KeyValuePair<ushort,int> kv in rawOrbitMask) {
-                    ushort sig = kv.Key;
+                foreach(KeyValuePair<int,int> kv in rawOrbitMask) {
+                    int orbitKey = kv.Key;
                     int chipVal = kv.Value;
-                    int c = Cube7D.GetStkNColsFromSig(sig);
+                    int c = Cube7D.GetStkNColsFromOrbitKey(orbitKey);
 
                     // C-values hidden by Show Cubies (-1) ignore all chip states
                     if(effectiveNColMask[c] == -1) continue;
@@ -362,9 +365,9 @@ namespace _3dedit
                     if(chipVal == -1) {
                         // ── Unchecked chip → exclude this orbit ──
                         if(effectiveOrbitMask == null)
-                            effectiveOrbitMask = new Dictionary<ushort,int>();
-                        if(!effectiveOrbitMask.ContainsKey(sig))
-                            effectiveOrbitMask[sig] = -1;
+                            effectiveOrbitMask = new Dictionary<int,int>();
+                        if(!effectiveOrbitMask.ContainsKey(orbitKey))
+                            effectiveOrbitMask[orbitKey] = -1;
                     } else {
                         // ── Checked chip → activate C-value if neutral ──
                         if(effectiveNColMask[c] == 0) {
@@ -376,18 +379,18 @@ namespace _3dedit
                         }
 
                         // ── Exclude all other orbits of this C-value ──
-                        if(allSigs == null)
-                            allSigs = Cube.GetAllSignatures();
-                        foreach(ushort other in allSigs) {
-                            if(Cube7D.GetStkNColsFromSig(other) != c) continue;
-                            if(other == sig) continue; // the checked one survives
+                        if(allOrbitKeys == null)
+                            allOrbitKeys = Cube.GetAllOrbitKeys();
+                        foreach(int other in allOrbitKeys) {
+                            if(Cube7D.GetStkNColsFromOrbitKey(other) != c) continue;
+                            if(other == orbitKey) continue; // the checked one survives
 
                             // If this other orbit lacks a checked chip → exclude it
                             int otherVal;
                             bool hasOther = rawOrbitMask.TryGetValue(other, out otherVal);
                             if(!hasOther || otherVal <= 0) {
                                 if(effectiveOrbitMask == null)
-                                    effectiveOrbitMask = new Dictionary<ushort,int>();
+                                    effectiveOrbitMask = new Dictionary<int,int>();
                                 if(!effectiveOrbitMask.ContainsKey(other))
                                     effectiveOrbitMask[other] = -1;
                             }
@@ -709,11 +712,12 @@ namespace _3dedit
         }
 
         /*********** load/save scene ************/
-		void NewScene(){ NewScene(true); }
+        void NewScene(){ NewScene(true); }
 		void NewScene(bool rebuildOrbitChips){
 			dxControl2.ClearMeshes();
             CubeView=null;
             GC.Collect();
+            m_pendingOrbitChipStates.Clear();
             Cube=new Cube7D();
             Cube.Init(GetSize(),GetDim());
             qSolved=true;
@@ -1024,6 +1028,7 @@ namespace _3dedit
                 if(Cube!=null) Cube.partialTwist3c.Reset();
                 // Exit macro sticker selection when loading a different puzzle
                 RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
+                m_pendingOrbitChipStates.Clear();
                 m_FileName=sf.FileName;
                 Text=m_FileName+" - MC7D";
                 Cube.Load(m_FileName);
@@ -1145,6 +1150,7 @@ namespace _3dedit
             trk_LightDiff.Value=DiffLight;
             trk_LightSpec.Value=SpecLight;
             m_trkTransparency.Value=255-CubeObj.Transparency;
+            cb_HighlightByColors.CheckState = HighlightByColorsState;
             cb_MaskStickers.Checked = MaskStickers;
 
             // Restore grip axis filters
@@ -1223,34 +1229,12 @@ namespace _3dedit
                 for(int i=1;i<=14;i++) ln+=" "+CubeObj.Colors[i];
                 sw.WriteLine(ln);
                 sw.WriteLine("ClickMode {0}",ClickMode+1);
-                ln="ShowFaces";
-                for(int i=1;i<=14;i++) ln+=" "+FaceMask[i];
-                sw.WriteLine(ln);
-                ln="ShowNColors";
-                for(int i=1;i<=7;i++) ln+=" "+NColMask[i];
-                sw.WriteLine(ln);
+                sw.WriteLine("HighlightMode {0}", (int)cb_HighlightByColors.CheckState);
                 sw.WriteLine("MaskStickers {0}",MaskStickers ? "T" : "F");
                 sw.WriteLine("DiffLight {0}",DiffLight);
                 sw.WriteLine("SpecLight {0}",SpecLight);
                 sw.WriteLine("Transparency {0}",CubeObj.Transparency);
                 sw.WriteLine("QuickMacro {0}",m_cbQuickMacro.Checked ? "T" : "F");
-                string lnGripAxes = "GripAxes";
-                for (int i = 1; i <= 7; i++) lnGripAxes += " " + GripAxisMask[i];
-                sw.WriteLine(lnGripAxes);
-                string lnGripLayers = "GripLayers";
-                for (int i = 1; i <= 7; i++) lnGripLayers += " " + GripLayerNum[i];
-                sw.WriteLine(lnGripLayers);
-                if(m_orbChipMap != null && m_orbChipMap.Count > 0) {
-                    bool any=false;
-                    string lnOrbits = "OrbitChips";
-                    foreach(var kv in m_orbChipMap) {
-                        int val=0;
-                        if(kv.Value.CheckState==CheckState.Checked) val=1;
-                        else if(kv.Value.CheckState==CheckState.Unchecked) val=-1;
-                        if(val!=0) { lnOrbits += " " + kv.Key + "=" + val; any=true; }
-                    }
-                    if(any) sw.WriteLine(lnOrbits);
-                }
                 if(m_FileName!=null) sw.WriteLine("FileName "+m_FileName);
                 sw.Close();
             } catch { }
@@ -1284,6 +1268,13 @@ namespace _3dedit
                             case "ClickMode":
                                 ClickMode=int.Parse(pars[1])-1;
                                 break;
+                            case "HighlightMode":
+                                int highlightMode;
+                                if(int.TryParse(pars[1], out highlightMode)
+                                    && highlightMode >= (int)CheckState.Unchecked
+                                    && highlightMode <= (int)CheckState.Indeterminate)
+                                    HighlightByColorsState = (CheckState)highlightMode;
+                                break;
                             case "FileName":
                                 m_FileName=ln.Substring(9);
                                 break;
@@ -1296,42 +1287,11 @@ namespace _3dedit
                             case "Transparency":
                                 CubeObj.Transparency=int.Parse(pars[1]);
                                 break;
-                            case "ShowFaces":
-                                for(int i=1;i<=14;i++) FaceMask[i]=int.Parse(pars[i]);
-                                break;
-                            case "ShowNColors":
-                                for(int i=1;i<=7;i++) NColMask[i]=int.Parse(pars[i]);
-                                break;
                             case "MaskStickers":
                                 MaskStickers = (pars[1][0]=='T');
                                 break;
                             case "QuickMacro":
                                 m_cbQuickMacro.Checked=(pars[1][0]=='T');
-                                break;
-                            case "GripAxes":
-                                for (int i = 1; i <= 7 && i < pars.Length; i++)
-                                    GripAxisMask[i] = int.Parse(pars[i]);
-                                break;
-                            case "GripLayers":
-                                for (int i = 1; i <= 7 && i < pars.Length; i++)
-                                    GripLayerNum[i] = int.Parse(pars[i]);
-                                break;
-                            case "OrbitChips":
-                                if(m_orbChipMap != null) {
-                                    for(int i=1;i<pars.Length;i++) {
-                                        string[] p=pars[i].Split('=');
-                                        if(p.Length==2) {
-                                            ushort sig=ushort.Parse(p[0]);
-                                            int val=int.Parse(p[1]);
-                                            CheckBox chip;
-                                            if(m_orbChipMap.TryGetValue(sig,out chip)) {
-                                                chip.CheckState = (val>0) ? CheckState.Checked
-                                                            : (val<0) ? CheckState.Unchecked
-                                                            : CheckState.Indeterminate;
-                                            }
-                                        }
-                                    }
-                                }
                                 break;
                         }
                     }
@@ -1344,10 +1304,11 @@ namespace _3dedit
             if(m_FileName==null) NewScene();
             else {
                 Text=m_FileName+" - MC7D";
+                m_pendingOrbitChipStates.Clear();
                 Cube=new Cube7D();
                 Cube.Load(m_FileName);
-                ShowCube();
                 RebuildOrbitChips();
+                ShowCube();
                 SetDim(Cube.D); SetSize(Cube.N);
                 dxControl2.ParkCamera(true);
                 NClicks=0; ClickQual=true;
@@ -1471,6 +1432,8 @@ namespace _3dedit
             }
         }
         private void cb_HighlightByColors_CheckedChanged(object sender,EventArgs e) {
+            HighlightByColorsState = cb_HighlightByColors.CheckState;
+            if(m_setgeom || Cube == null) return;
             ProcessHighLights();
             Redraw();
         }
@@ -1591,27 +1554,64 @@ namespace _3dedit
             }
         }
 
+        private int CompareOrbitKeysForUi(int a, int b) {
+            ushort sigA = Cube7D.GetTierSigFromOrbitKey(a);
+            ushort sigB = Cube7D.GetTierSigFromOrbitKey(b);
+            int t1a = (sigA >> 3) & 7, t1b = (sigB >> 3) & 7; if(t1a != t1b) return t1a.CompareTo(t1b);
+            int t2a = (sigA >> 6) & 7, t2b = (sigB >> 6) & 7; if(t2a != t2b) return t2a.CompareTo(t2b);
+            int t3a = (sigA >> 9) & 7, t3b = (sigB >> 9) & 7; if(t3a != t3b) return t3a.CompareTo(t3b);
+            int t4a = (sigA >> 12) & 7, t4b = (sigB >> 12) & 7; if(t4a != t4b) return t4a.CompareTo(t4b);
+
+            int kindA = Cube7D.GetOrbitKind(a);
+            int kindB = Cube7D.GetOrbitKind(b);
+            if(kindA == kindB) return 0;
+            if(kindA == 0) return -1;
+            if(kindB == 0) return 1;
+            return kindA.CompareTo(kindB);
+        }
+
+        private void CaptureOrbitChipStates() {
+            if(m_orbChipMap == null) return;
+            if(m_orbChipMap.Count == 0) return;
+            m_pendingOrbitChipStates.Clear();
+            foreach(var kv in m_orbChipMap) {
+                if(kv.Value.CheckState != CheckState.Indeterminate)
+                    m_pendingOrbitChipStates[kv.Key] = kv.Value.CheckState;
+            }
+        }
+
+        private void ApplyPendingOrbitChipStates() {
+            if(m_orbChipMap == null || m_pendingOrbitChipStates == null) return;
+            foreach(var kv in m_pendingOrbitChipStates) {
+                CheckBox chip;
+                if(m_orbChipMap.TryGetValue(kv.Key, out chip))
+                    chip.CheckState = kv.Value;
+            }
+        }
+
         void RebuildOrbitChips() {
+            CaptureOrbitChipStates();
             m_pnlOrbitFilters.Controls.Clear();
             m_orbChipMap.Clear();
 
             if(Cube==null) return;
 
-            ushort[] allSigs=Cube.GetAllSignatures();
-            if(allSigs.Length==0) return;
+            int[] allOrbitKeys = Cube.GetAllOrbitKeys();
+            if(allOrbitKeys.Length==0) return;
 
             int maxTier=(Cube.N-1)/2;
 
-            List<ushort>[] groups=new List<ushort>[8];
-            for(int c=1;c<=7;c++) groups[c]=new List<ushort>();
-            for(int i=0;i<allSigs.Length;i++) {
-                int cVal=Cube7D.GetStkNColsFromSig(allSigs[i]);
-                if(cVal>=1 && cVal<=7) groups[cVal].Add(allSigs[i]);
+            List<int>[] groups=new List<int>[8];
+            for(int c=1;c<=7;c++) groups[c]=new List<int>();
+            for(int i=0;i<allOrbitKeys.Length;i++) {
+                int cVal=Cube7D.GetStkNColsFromOrbitKey(allOrbitKeys[i]);
+                if(cVal>=1 && cVal<=7) groups[cVal].Add(allOrbitKeys[i]);
             }
 
             int y=3, gap=8;
             int panelW=m_pnlOrbitFilters.ClientSize.Width;
             System.Drawing.Font font7=new System.Drawing.Font("Microsoft Sans Serif",8f);
+            m_setgeom = true;
 
             for(int c=1;c<=7;c++) {
                 if(groups[c].Count==0) continue;
@@ -1625,30 +1625,22 @@ namespace _3dedit
                 lbl.TextAlign=ContentAlignment.MiddleLeft;
                 m_pnlOrbitFilters.Controls.Add(lbl);
 
-                groups[c].Sort((a,b)=>{
-                    int t1a=(a>>3)&7,t1b=(b>>3)&7; if(t1a!=t1b) return t1a.CompareTo(t1b);
-                    int t2a=(a>>6)&7,t2b=(b>>6)&7; if(t2a!=t2b) return t2a.CompareTo(t2b);
-                    int t3a=(a>>9)&7,t3b=(b>>9)&7; if(t3a!=t3b) return t3a.CompareTo(t3b);
-                    int t4a=(a>>12)&7,t4b=(b>>12)&7; return t4a.CompareTo(t4b);
-                });
+                groups[c].Sort(CompareOrbitKeysForUi);
 
                 int x=40;
                 int rowH=0;
-                foreach(ushort sig in groups[c]) {
-                    int[] tiers=Cube7D.DecodeNonStickerTiers(sig,maxTier);
-                    string label="["+string.Join(",",System.Array.ConvertAll(tiers,t=>t.ToString()))+"]";
-
+                foreach(int orbitKey in groups[c]) {
                     var chip=new CheckBox();
-                    chip.Text=label;
+                    chip.Text=Cube7D.FormatOrbitKeyLabel(orbitKey,maxTier);
                     chip.Font=font7;
                     chip.ThreeState=true;
                     chip.CheckState=CheckState.Indeterminate;
-                    chip.Tag=sig;
+                    chip.Tag=orbitKey;
                     chip.CheckStateChanged+=ChipOrbit_CheckStateChanged;
                     chip.AutoSize=true; // natural height adapts to DPI
                     chip.Location=new System.Drawing.Point(x,y);
                     m_pnlOrbitFilters.Controls.Add(chip);
-                    m_orbChipMap[sig]=chip;
+                    m_orbChipMap[orbitKey]=chip;
 
                     if(rowH < chip.Height+gap) rowH=chip.Height+gap;
 
@@ -1660,16 +1652,25 @@ namespace _3dedit
                 }
                 y+=rowH+4;
             }
+
+            ApplyPendingOrbitChipStates();
+            m_setgeom = false;
         }
 
         void ChipOrbit_CheckStateChanged(object sender,EventArgs e) {
+            CheckBox chip = sender as CheckBox;
+            if(chip != null && chip.Tag is int) {
+                int orbitKey = (int)chip.Tag;
+                if(chip.CheckState == CheckState.Indeterminate) m_pendingOrbitChipStates.Remove(orbitKey);
+                else m_pendingOrbitChipStates[orbitKey] = chip.CheckState;
+            }
             if(m_setgeom) return;
             ProcessHighLights();
             Redraw();
         }
 
         // Build orbit filter mask from chip states:  -1=exclude, 0=neutral, 1=include
-        Dictionary<ushort,int> GetOrbitFilterMask() {
+        Dictionary<int,int> GetOrbitFilterMask() {
             if(m_orbChipMap==null || m_orbChipMap.Count==0) return null;
 
             m_orbitMaskCache.Clear();
@@ -1687,6 +1688,7 @@ namespace _3dedit
 
         // Reset all orbit chips to neutral
         void ResetOrbitChips() {
+            m_pendingOrbitChipStates.Clear();
             if(m_orbChipMap==null) return;
             foreach(var chip in m_orbChipMap.Values) {
                 chip.CheckState=CheckState.Indeterminate;
