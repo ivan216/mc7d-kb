@@ -32,7 +32,7 @@ namespace _3dedit {
         public PartialTwist3c partialTwist3c;
         public HashSet<Keybindings.Layer> LayerOverrides;
 
-        public short[] Seq;
+        public int[] Seq;
         public int LSeq,LPtr,LShuffle;
         public int NTwists;
         public long CTime;
@@ -82,7 +82,7 @@ namespace _3dedit {
             InitCube();
             InitStkMap();
             LSeq=LPtr=LShuffle=0;
-            Seq=new short[10000];
+            Seq=new int[10000];
             CTime=0;
         }
 
@@ -334,11 +334,11 @@ namespace _3dedit {
             if(LPtr>LShuffle && Seq[LPtr-1]==rcode) LPtr--;
             else {
                 CheckSeqLen();
-                Seq[LPtr++]=(short)code;
+                Seq[LPtr++]=code;
             }
 #else
             CheckSeqLen();
-            Seq[LPtr++]=(short)code;
+            Seq[LPtr++]=code;
 #endif
             NTwists++;
             LSeq=LPtr;
@@ -348,7 +348,7 @@ namespace _3dedit {
 
         void CheckSeqLen() {
             if(Seq.Length==LPtr) {
-                short[] p2=new short[2*LPtr];
+                int[] p2=new int[2*LPtr];
                 for(int i=0;i<LPtr;i++) p2[i]=Seq[i];
                 Seq=p2;
             }
@@ -654,7 +654,7 @@ namespace _3dedit {
                 f2=(f1+f2+1)%(D-1);
                 f1=(f0+f1+1)%D;
                 f2=(f0+f2+1)%D;
-                Seq[LPtr++]=(short)((((f0*D+f1)*D+f2)<<N)+m);
+                Seq[LPtr++]=(((f0*D+f1)*D+f2)<<N)+m;
             }
             LShuffle=LSeq=LPtr;
             NTwists=0;
@@ -1014,7 +1014,7 @@ namespace _3dedit {
                         else goto _1;
                         while(p<lp && line[p]=='0') p++;                        
                     }
-                    if(Seq.Length<lseq) Seq=new short[2*lseq];
+                    if(Seq.Length<lseq) Seq=new int[2*lseq];
                     for(;;) {
                         line=sw.ReadLine();
                         if(line==null) break;
@@ -1033,10 +1033,10 @@ namespace _3dedit {
                             if(cc=="m|") LShuffle=i;
                             else if(cc!=""){
                                 if(i==lseq) goto _1;
-                                short c=0;
+                                int c=0;
                                 if(cc=="m[") c=-2;
                                 else if(cc=="m]") c=-1;
-                                else c=short.Parse(cc);
+                                else c=int.Parse(cc);
                                 Seq[i]=c;
                                 i++;
                             }
@@ -1119,7 +1119,7 @@ _1: ;
             return res;
         }
 
-        public void ApplyMacro(int[] map,short[] macro,int lmacro,bool qrev) {
+        public void ApplyMacro(int[] map,int[] macro,int lmacro,bool qrev) {
             StartMacro();
             if(qrev) {
                 for(int i=lmacro-1;i>=0;i--) {
