@@ -125,6 +125,8 @@ namespace _3dedit
             if(mi_PuzzleSize5.Checked) return 5;
             if(mi_PuzzleSize6.Checked) return 6;
             if(mi_PuzzleSize7.Checked) return 7;
+            if(mi_PuzzleSize8.Checked) return 8;
+            if(mi_PuzzleSize9.Checked) return 9;
             return 3;
         }
         void SetSize(int n)
@@ -135,6 +137,8 @@ namespace _3dedit
             mi_PuzzleSize5.Checked=(n==5);
             mi_PuzzleSize6.Checked = (n == 6);
             mi_PuzzleSize7.Checked = (n == 7);
+            mi_PuzzleSize8.Checked = (n == 8);
+            mi_PuzzleSize9.Checked = (n == 9);
         }
 
         Cube7D Cube;
@@ -577,8 +581,8 @@ namespace _3dedit
                                 }
                             } else {
                                 TwistMask=0;
-                                int d=GetDim();
-                                for(int i=0;i<d;i++) {
+                                int n=GetSize();
+                                for(int i=0;i<n;i++) {
                                     if((S3DirectX.GetAsyncKeyState(0x31+i) & 0x8000) != 0) TwistMask|=(1<<i);
                                 }
                                 if(TwistMask==0) TwistMask=1;
@@ -854,6 +858,18 @@ namespace _3dedit
         private void mi_PuzzleSize7_Click(object sender, EventArgs e)
         {
             SetSize(7);
+            NewScene();
+        }
+
+        private void mi_PuzzleSize8_Click(object sender, EventArgs e)
+        {
+            SetSize(8);
+            NewScene();
+        }
+
+        private void mi_PuzzleSize9_Click(object sender, EventArgs e)
+        {
+            SetSize(9);
             NewScene();
         }
         
@@ -1606,7 +1622,8 @@ namespace _3dedit
                 groups[c].Sort((a,b)=>{
                     int t1a=(a>>3)&7,t1b=(b>>3)&7; if(t1a!=t1b) return t1a.CompareTo(t1b);
                     int t2a=(a>>6)&7,t2b=(b>>6)&7; if(t2a!=t2b) return t2a.CompareTo(t2b);
-                    int t3a=(a>>9)&7,t3b=(b>>9)&7; return t3a.CompareTo(t3b);
+                    int t3a=(a>>9)&7,t3b=(b>>9)&7; if(t3a!=t3b) return t3a.CompareTo(t3b);
+                    int t4a=(a>>12)&7,t4b=(b>>12)&7; return t4a.CompareTo(t4b);
                 });
 
                 int x=40;

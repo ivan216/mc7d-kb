@@ -10,7 +10,7 @@ namespace _3dedit {
     
     public class Cube7D {
         public int N,D;
-        public const int MaxN = 7;
+        public const int MaxN = 9;
         int NC,N2;
         byte[] Cube,Cube2;
         public BitArray HighLighted;
@@ -185,7 +185,7 @@ namespace _3dedit {
             for(int i=0;i<NC;i++) {
                 int a=i,b=0;
                 int nst=0;
-                int t1=0,t2=0,t3=0;
+                int t1=0,t2=0,t3=0,t4=0;
                 for(int n=1;n<=D;n++) {
                     int p=a%N2; a/=N2;
                     if(p==0 || p==N2-1) {
@@ -198,11 +198,12 @@ namespace _3dedit {
                         if(tier==1) t1++;
                         else if(tier==2) t2++;
                         else if(tier==3) t3++;
+                        else if(tier==4) t4++;
                     }
                 }
                 Cube[i]=(byte)(b<0 ? 0 : b);
                 StkNCols[i]=(byte)nst;
-                TierSig[i]=(ushort)(nst|(t1<<3)|(t2<<6)|(t3<<9));
+                TierSig[i]=(ushort)(nst|(t1<<3)|(t2<<6)|(t3<<9)|(t4<<12));
             }
             HighLighted.SetAll(true);
             _signaturesDirty = true;
