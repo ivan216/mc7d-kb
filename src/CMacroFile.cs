@@ -10,10 +10,10 @@ namespace _3dedit {
         internal int NStickers;
         internal int[] Stickers;
         internal int LMacro;
-        internal short[] Code;
+        internal int[] Code;
         internal double[] Vectors;
         internal int[] Orient;
-        internal CMacro(string name,int nstk,int[] stk,int lcode,short[] code,int from) {
+        internal CMacro(string name,int nstk,int[] stk,int lcode,int[] code,int from) {
             Name=name.Replace(' ','_');
             NStickers=nstk;
             Stickers=new int[nstk];
@@ -21,7 +21,7 @@ namespace _3dedit {
             int lm=0;
             for(int i=0;i<lcode;i++) if(code[from+i]>=0) lm++;
             LMacro=lm;
-            Code=new short[lm];
+            Code=new int[lm];
             lm=0;
             for(int i=0;i<lcode;i++) if(code[from+i]>=0) Code[lm++]=code[from+i];
         }
@@ -110,7 +110,7 @@ namespace _3dedit {
                     int nstk=int.Parse(ss[1]);
                     int lm=int.Parse(ss[2]);
                     int[] stk=new int[nstk];
-                    short[] code=new short[lm];
+                    int[] code=new int[lm];
                     double[] V=null;
                     int[] Or=null;
                     ln=sr.ReadLine();
@@ -130,7 +130,7 @@ namespace _3dedit {
                         ss=ln.Split(' ');
                         for(int j=0;j<ss.Length;j++) {
                             if(p==lm) break;
-                            if(ss[j]!="") code[p++]=short.Parse(ss[j]);
+                            if(ss[j]!="") code[p++]=int.Parse(ss[j]);
                         }
                     }
                     CMacro mm=new CMacro(name,nstk,stk,lm,code,0);

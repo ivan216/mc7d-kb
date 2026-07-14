@@ -125,6 +125,8 @@ namespace _3dedit
             if(mi_PuzzleSize5.Checked) return 5;
             if(mi_PuzzleSize6.Checked) return 6;
             if(mi_PuzzleSize7.Checked) return 7;
+            if(mi_PuzzleSize8.Checked) return 8;
+            if(mi_PuzzleSize9.Checked) return 9;
             return 3;
         }
         void SetSize(int n)
@@ -135,6 +137,8 @@ namespace _3dedit
             mi_PuzzleSize5.Checked=(n==5);
             mi_PuzzleSize6.Checked = (n == 6);
             mi_PuzzleSize7.Checked = (n == 7);
+            mi_PuzzleSize8.Checked = (n == 8);
+            mi_PuzzleSize9.Checked = (n == 9);
         }
 
         Cube7D Cube;
@@ -577,8 +581,8 @@ namespace _3dedit
                                 }
                             } else {
                                 TwistMask=0;
-                                int d=GetDim();
-                                for(int i=0;i<d;i++) {
+                                int n=GetSize();
+                                for(int i=0;i<n;i++) {
                                     if((S3DirectX.GetAsyncKeyState(0x31+i) & 0x8000) != 0) TwistMask|=(1<<i);
                                 }
                                 if(TwistMask==0) TwistMask=1;
@@ -785,20 +789,37 @@ namespace _3dedit
             //            dxControl2.Invalidate();
         }
 
+        private int ClampGripLayerNum(int value, int maxVal)
+        {
+            return Math.Max(Math.Min(value, maxVal), -maxVal);
+        }
+
+        private void SyncGripLayerNUDs(int maxVal)
+        {
+            NumericUpDown[] nuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
+                                                         nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
+            int minVal = -maxVal;
+            m_setgeom = true;
+            for (int i = 0; i < 7; i++) {
+                int clamped = ClampGripLayerNum(GripLayerNum[i + 1], maxVal);
+                GripLayerNum[i + 1] = clamped;
+                nuds[i].Maximum = maxVal;
+                nuds[i].Minimum = minVal;
+                if (nuds[i].Value != clamped) nuds[i].Value = clamped;
+            }
+            m_setgeom = false;
+        }
+
         private void UpdateGripAxisNUDs()
         {
             if (Cube == null) return;
-            NumericUpDown[] nuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
-                                                         nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
-            for (int i = 0; i < 7; i++) {
-                nuds[i].Maximum = 127;
-                nuds[i].Minimum = -127;
-            }
-            // Reset grip state for axes beyond current dimension
+            int maxVal = (1 << Cube.N) - 1;
+            // Reset grip state for axes beyond current dimension before syncing UI/model.
             for (int i = Cube.D + 1; i <= 7; i++) {
                 GripAxisMask[i] = 0;
                 GripLayerNum[i] = 1;
             }
+            SyncGripLayerNUDs(maxVal);
         }
 
         private void mi_Puzzle4D_Click(object sender,EventArgs e) {
@@ -850,6 +871,18 @@ namespace _3dedit
         private void mi_PuzzleSize7_Click(object sender, EventArgs e)
         {
             SetSize(7);
+            NewScene();
+        }
+
+        private void mi_PuzzleSize8_Click(object sender, EventArgs e)
+        {
+            SetSize(8);
+            NewScene();
+        }
+
+        private void mi_PuzzleSize9_Click(object sender, EventArgs e)
+        {
+            SetSize(9);
             NewScene();
         }
         
@@ -1030,12 +1063,6 @@ namespace _3dedit
             }
         }
 
-        private void mi_SaveStripMarkers_Click(object sender,EventArgs e) {
-            if(m_FileName==null) { mi_SaveStripMarkersAs_Click(sender,e); return; }
-            if(m_TRun) Cube.CTime=DateTime.Now.Ticks-m_TStart;
-            Cube.SaveStripMarkers(m_FileName);
-        }
-
         private void mi_SaveStripMarkersAs_Click(object sender,EventArgs e) {
             SaveFileDialog sf=new SaveFileDialog();
             sf.RestoreDirectory=true;
@@ -1121,14 +1148,8 @@ namespace _3dedit
             cb_MaskStickers.Checked = MaskStickers;
 
             // Restore grip axis filters
-            NumericUpDown[] gnuds = new NumericUpDown[] { nud_GripLayer1, nud_GripLayer2, nud_GripLayer3, nud_GripLayer4,
-                                                          nud_GripLayer5, nud_GripLayer6, nud_GripLayer7 };
-            for (int i = 0; i < 7; i++)
-            {
-                gnuds[i].Maximum = 127;
-                gnuds[i].Minimum = -127;
-                gnuds[i].Value = Math.Max(Math.Min(GripLayerNum[i + 1], 127), -127);
-            }
+            int gnudsMax = (Cube != null) ? ((1 << Cube.N) - 1) : ((1 << Cube7D.MaxN) - 1);
+            SyncGripLayerNUDs(gnudsMax);
             CheckState[] st3 = new CheckState[] { CheckState.Unchecked, CheckState.Indeterminate, CheckState.Checked };
             cb_GripAxis1.CheckState = st3[GripAxisMask[1] + 1];
             cb_GripAxis2.CheckState = st3[GripAxisMask[2] + 1];
@@ -1607,7 +1628,8 @@ namespace _3dedit
                 groups[c].Sort((a,b)=>{
                     int t1a=(a>>3)&7,t1b=(b>>3)&7; if(t1a!=t1b) return t1a.CompareTo(t1b);
                     int t2a=(a>>6)&7,t2b=(b>>6)&7; if(t2a!=t2b) return t2a.CompareTo(t2b);
-                    int t3a=(a>>9)&7,t3b=(b>>9)&7; return t3a.CompareTo(t3b);
+                    int t3a=(a>>9)&7,t3b=(b>>9)&7; if(t3a!=t3b) return t3a.CompareTo(t3b);
+                    int t4a=(a>>12)&7,t4b=(b>>12)&7; return t4a.CompareTo(t4b);
                 });
 
                 int x=40;

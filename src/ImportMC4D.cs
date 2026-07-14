@@ -6,7 +6,7 @@ namespace _3dedit {
         internal int Size;
         internal int LSeq;
         internal int LShuffle;
-        internal short[] Seq;
+        internal int[] Seq;
 
         static short[] scvt=new short[]{
             31,23,0, 23,31,0, 23,13,0, 13,23,0, 32,31,0, 31,32,0, 13,32,0, 32,13,0, 
@@ -28,7 +28,7 @@ namespace _3dedit {
                 int ls=int.Parse(ss[3]);
                 Size=int.Parse(ss[5]);
                 if(Size<3 || Size>5) return false;
-                Seq=new short[2*Math.Max(ls,100)];
+                Seq=new int[2*Math.Max(ls,100)];
 
                 while(line!="*" && line!=null) line=sw.ReadLine();
                 if(line==null) return false;
@@ -100,11 +100,11 @@ namespace _3dedit {
 
         private void AddSeq(int v,ref int p) {
             if(p==Seq.Length) {
-                short[] sq=new short[2*p];
+                int[] sq=new int[2*p];
                 for(int i=0;i<p;i++) sq[i]=Seq[i];
                 Seq=sq;
             }
-            Seq[p++]=(short)v;
+            Seq[p++]=v;
         }
     }
 }
