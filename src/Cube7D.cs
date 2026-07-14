@@ -16,8 +16,16 @@ namespace _3dedit {
         public BitArray HighLighted;
         public byte[] StkNCols;
         public ushort[] TierSig;
-        ushort[] _cachedSignatures; // cached by GetAllSignatures, invalidated by InitCube
-        bool _signaturesDirty = true;
+        public int[] OrbitKey;
+        int[] _cachedOrbitKeys; // cached by GetAllOrbitKeys, invalidated by InitCube
+        bool _orbitKeysDirty = true;
+
+        const int OrbitSigMask = 0x7FFF;
+        const int OrbitKindShift = 15;
+        const int OrbitKindMask = 0x3 << OrbitKindShift;
+        const int OrbitKindNormal = 0;
+        const int OrbitKindPositive = 1;
+        const int OrbitKindNegative = 2;
 
         int NStk;
         int NStk0,NStk1;
@@ -66,6 +74,7 @@ namespace _3dedit {
             HighLighted=new BitArray(NC);
             StkNCols=new byte[NC];
             TierSig=new ushort[NC];
+            OrbitKey=new int[NC];
 
             Orient=new int[7];
             for(int i=0;i<D;i++) Orient[i]=i+1;
@@ -204,9 +213,49 @@ namespace _3dedit {
                 Cube[i]=(byte)(b<0 ? 0 : b);
                 StkNCols[i]=(byte)nst;
                 TierSig[i]=(ushort)(nst|(t1<<3)|(t2<<6)|(t3<<9)|(t4<<12));
+                OrbitKey[i] = BuildOrbitKey(i);
             }
             HighLighted.SetAll(true);
-            _signaturesDirty = true;
+            _orbitKeysDirty = true;
+        }
+
+        private int BuildOrbitKey(int cellIndex) {
+            int orbitKey = TierSig[cellIndex];
+            int orbitKind;
+            if(TryGetChiralOrbitKind(cellIndex, out orbitKind))
+                orbitKey |= (orbitKind << OrbitKindShift);
+            return orbitKey;
+        }
+
+        private bool TryGetChiralOrbitKind(int cellIndex, out int orbitKind) {
+            orbitKind = OrbitKindNormal;
+            if(StkNCols[cellIndex] != 1) return false;
+
+            int[] coords = new int[D];
+            int negCount = 0;
+            int inversionCount = 0;
+            int t = cellIndex;
+            for(int axis = 0; axis < D; axis++) {
+                int p = t % N2;
+                t /= N2;
+
+                // Centered lattice coordinate for the cubie position on this axis.
+                int coord = 2 * p - (N + 1);
+                if(coord == 0) return false;
+
+                int absCoord = Math.Abs(coord);
+                for(int prev = 0; prev < axis; prev++) {
+                    int prevAbs = Math.Abs(coords[prev]);
+                    if(prevAbs == absCoord) return false;
+                    if(prevAbs > absCoord) inversionCount++;
+                }
+
+                if(coord < 0) negCount++;
+                coords[axis] = coord;
+            }
+
+            orbitKind = ((negCount + inversionCount) & 1) == 0 ? OrbitKindPositive : OrbitKindNegative;
+            return true;
         }
 
         void InitStkMap() {
@@ -687,27 +736,50 @@ namespace _3dedit {
         // Highlight all stickers belonging to pieces in the same orbit as the clicked sticker
         internal void FindStickersByOrbit(int stk) {
             HighLighted.SetAll(false);
-            ushort target=TierSig[StkMap[stk]];
+            int target=OrbitKey[StkMap[stk]];
             for(int i=0;i<NC;i++)
-                if(Cube[i]!=0 && TierSig[i]==target)
+                if(Cube[i]!=0 && OrbitKey[i]==target)
                     HighLighted[i]=true;
         }
 
-        // Return all unique tier signatures present in the current puzzle (for UI)
-        public ushort[] GetAllSignatures() {
-            if(!_signaturesDirty && _cachedSignatures != null)
-                return _cachedSignatures;
+        // Return all unique orbit keys present in the current puzzle (for UI and filters)
+        public int[] GetAllOrbitKeys() {
+            if(!_orbitKeysDirty && _cachedOrbitKeys != null)
+                return _cachedOrbitKeys;
 
-            HashSet<ushort> set=new HashSet<ushort>();
+            HashSet<int> set=new HashSet<int>();
             for(int i=0;i<NC;i++)
-                if(Cube[i]!=0) set.Add(TierSig[i]);
-            _cachedSignatures=new ushort[set.Count]; set.CopyTo(_cachedSignatures);
-            _signaturesDirty=false;
-            return _cachedSignatures;
+                if(Cube[i]!=0) set.Add(OrbitKey[i]);
+            _cachedOrbitKeys=new int[set.Count];
+            set.CopyTo(_cachedOrbitKeys);
+            _orbitKeysDirty=false;
+            return _cachedOrbitKeys;
         }
 
         // Extract C-value (count_0) from a tier signature
         public static int GetStkNColsFromSig(ushort sig) { return sig&7; }
+
+        public static ushort GetTierSigFromOrbitKey(int orbitKey) {
+            return (ushort)(orbitKey & OrbitSigMask);
+        }
+
+        public static int GetOrbitKind(int orbitKey) {
+            return (orbitKey & OrbitKindMask) >> OrbitKindShift;
+        }
+
+        public static int GetStkNColsFromOrbitKey(int orbitKey) {
+            return GetStkNColsFromSig(GetTierSigFromOrbitKey(orbitKey));
+        }
+
+        public static string FormatOrbitKeyLabel(int orbitKey, int maxTier) {
+            ushort sig = GetTierSigFromOrbitKey(orbitKey);
+            int[] tiers = DecodeNonStickerTiers(sig, maxTier);
+            string label = "[" + string.Join(",", Array.ConvertAll(tiers, t => t.ToString())) + "]";
+            int kind = GetOrbitKind(orbitKey);
+            if(kind == OrbitKindPositive) return "+" + label;
+            if(kind == OrbitKindNegative) return "-" + label;
+            return label;
+        }
 
         // Decode non-sticker tier counts for display: [count_1, count_2, ...]
         public static int[] DecodeNonStickerTiers(ushort sig,int maxTier) {
@@ -734,7 +806,7 @@ namespace _3dedit {
             FindStickersByMask(hmask, cAll, ncolMask, null);
         }
 
-        internal void FindStickersByMask(int[] hmask,bool cAll,int[] ncolMask, Dictionary<ushort,int> orbitMask) {  // array indexed by 1..14, hmask=-1,0,1; ncolMask indexed by 1..7, values: -1=exclude (dark), 0=neutral/gray, 1=include (highlight)
+        internal void FindStickersByMask(int[] hmask,bool cAll,int[] ncolMask, Dictionary<int,int> orbitMask) {  // array indexed by 1..14, hmask=-1,0,1; ncolMask indexed by 1..7, values: -1=exclude (dark), 0=neutral/gray, 1=include (highlight)
             HighLighted.SetAll(false);
 
             // Check if any color is selected (black check)
@@ -827,7 +899,7 @@ namespace _3dedit {
                 for(int i=0;i<NC;i++) {
                     if(Cube[i]==0) continue;
                     int val;
-                    if(orbitMask.TryGetValue(TierSig[i],out val)) {
+                    if(orbitMask.TryGetValue(OrbitKey[i],out val)) {
                         if(val < 0) HighLighted[i]=false;
                     }
                 }
@@ -842,7 +914,7 @@ namespace _3dedit {
             HighlightAll(ncolMask, null);
         }
 
-        internal void HighlightAll(int[] ncolMask, Dictionary<ushort,int> orbitMask) {
+        internal void HighlightAll(int[] ncolMask, Dictionary<int,int> orbitMask) {
             if(ncolMask == null) {
                 HighLighted.SetAll(true);
                 for(int i=0;i<NC;i++) {
@@ -867,7 +939,7 @@ namespace _3dedit {
                 for(int i=0;i<NC;i++) {
                     if(Cube[i]==0) continue;
                     int val;
-                    if(orbitMask.TryGetValue(TierSig[i],out val)) {
+                    if(orbitMask.TryGetValue(OrbitKey[i],out val)) {
                         if(val < 0) HighLighted[i]=false;
                     }
                 }
