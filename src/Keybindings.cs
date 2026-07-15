@@ -1069,7 +1069,7 @@ namespace _3dedit
                 {
                     Width = 56,
                     Minimum = 1,
-                    Maximum = 99999,
+                    Maximum = Int32.MaxValue,
                     Value = id,
                 };
                 idInput.ValueChanged += (object sender, EventArgs e) => this.id = (int)((NumericUpDown)sender).Value;
