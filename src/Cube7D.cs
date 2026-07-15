@@ -14,8 +14,6 @@ namespace _3dedit {
         int NC,N2;
         byte[] Cube,Cube2;
         public BitArray HighLighted;
-        public byte[] StkNCols;
-        public ushort[] TierSig;
         public int[] OrbitKey;
         int[] _cachedOrbitKeys; // cached by GetAllOrbitKeys, invalidated by InitCube
         bool _orbitKeysDirty = true;
@@ -72,8 +70,6 @@ namespace _3dedit {
             for(int _i=0;_i<NStk;_i++) Coord[_i]=new float[28];
             StkMap=new int[NStk];
             HighLighted=new BitArray(NC);
-            StkNCols=new byte[NC];
-            TierSig=new ushort[NC];
             OrbitKey=new int[NC];
 
             Orient=new int[7];
@@ -211,25 +207,23 @@ namespace _3dedit {
                     }
                 }
                 Cube[i]=(byte)(b<0 ? 0 : b);
-                StkNCols[i]=(byte)nst;
-                TierSig[i]=(ushort)(nst|(t1<<3)|(t2<<6)|(t3<<9)|(t4<<12));
-                OrbitKey[i] = BuildOrbitKey(i);
+                ushort tierSig=(ushort)(nst|(t1<<3)|(t2<<6)|(t3<<9)|(t4<<12));
+                OrbitKey[i] = BuildOrbitKey(i,tierSig,nst);
             }
             HighLighted.SetAll(true);
             _orbitKeysDirty = true;
         }
 
-        private int BuildOrbitKey(int cellIndex) {
-            int orbitKey = TierSig[cellIndex];
+        private int BuildOrbitKey(int cellIndex,ushort tierSig,int nst) {
+            int orbitKey = tierSig;
             int orbitKind;
-            if(TryGetChiralOrbitKind(cellIndex, out orbitKind))
+            if(nst == 1 && TryGetChiralOrbitKind(cellIndex, out orbitKind))
                 orbitKey |= (orbitKind << OrbitKindShift);
             return orbitKey;
         }
 
         private bool TryGetChiralOrbitKind(int cellIndex, out int orbitKind) {
             orbitKind = OrbitKindNormal;
-            if(StkNCols[cellIndex] != 1) return false;
 
             int[] coords = new int[D];
             int negCount = 0;
@@ -310,11 +304,10 @@ namespace _3dedit {
                 StkMap[u++]=m;
             }
         }
-        public int GetStickers(out byte[] col,out int[] map,out float[][] coord,out BitArray hlight,out byte []ncol) {
+        public int GetStickers(out byte[] col,out int[] map,out float[][] coord,out BitArray hlight) {
             col=Cube;
             map=StkMap;
             coord=Coord;
-            ncol=StkNCols;
             hlight=HighLighted;
             return NStk;
         }
@@ -756,9 +749,6 @@ namespace _3dedit {
             return _cachedOrbitKeys;
         }
 
-        // Extract C-value (count_0) from a tier signature
-        public static int GetStkNColsFromSig(ushort sig) { return sig&7; }
-
         public static ushort GetTierSigFromOrbitKey(int orbitKey) {
             return (ushort)(orbitKey & OrbitSigMask);
         }
@@ -768,7 +758,7 @@ namespace _3dedit {
         }
 
         public static int GetStkNColsFromOrbitKey(int orbitKey) {
-            return GetStkNColsFromSig(GetTierSigFromOrbitKey(orbitKey));
+            return orbitKey&7;
         }
 
         public static string FormatOrbitKeyLabel(int orbitKey, int maxTier) {
@@ -878,7 +868,7 @@ namespace _3dedit {
 
                 for(int i=0;i<NC;i++) {
                     if(Cube[i]==0) continue;
-                    int ncol = StkNCols[i];
+                    int ncol = GetStkNColsFromOrbitKey(OrbitKey[i]);
 
                     if(hasNColBlackCheck) {
                         // If there are black checks, only keep those with black check
@@ -929,7 +919,7 @@ namespace _3dedit {
                         continue;
                     }
 
-                    int ncol = StkNCols[i];
+                    int ncol = GetStkNColsFromOrbitKey(OrbitKey[i]);
                     HighLighted[i] = hasNColBlackCheck ? (ncolMask[ncol] > 0) : (ncolMask[ncol] >= 0);
                 }
             }

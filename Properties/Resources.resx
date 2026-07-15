@@ -138,7 +138,7 @@ Build: {1}
 Highlighting:
 - Enable Highlighting to activate the filter panel.
 - Show Cubies: checkboxes by C-value (how many colored stickers a piece has).
-- Orbit Filters: tri-state checkboxes for each orbit (tier-signature group). Pieces with the same C-value but different tier structures can never reach each other via twists — each is in its own orbit.
+- Orbit Filters: tri-state checkboxes for each orbit. Pieces with the same C-value but different tier structures or handedness can never reach each other via twists — each is in its own orbit.
   • Checked  = show only this orbit
   • Unchecked = hide this orbit
   • Gray (default) = no opinion, follow other filters
