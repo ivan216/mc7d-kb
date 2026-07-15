@@ -758,8 +758,6 @@ namespace _3dedit
             this.nud_GripLayer1.Location = new System.Drawing.Point(29, 427);
             this.nud_GripLayer1.Name = "nud_GripLayer1";
             this.nud_GripLayer1.Size = new System.Drawing.Size(36, 20);
-            this.nud_GripLayer1.Minimum = -127;
-            this.nud_GripLayer1.Maximum = 127;
             this.nud_GripLayer1.Value = 1;
             this.nud_GripLayer1.TabIndex = 28;
             this.nud_GripLayer1.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
@@ -769,8 +767,6 @@ namespace _3dedit
             this.nud_GripLayer2.Location = new System.Drawing.Point(67, 427);
             this.nud_GripLayer2.Name = "nud_GripLayer2";
             this.nud_GripLayer2.Size = new System.Drawing.Size(36, 20);
-            this.nud_GripLayer2.Minimum = -127;
-            this.nud_GripLayer2.Maximum = 127;
             this.nud_GripLayer2.Value = 1;
             this.nud_GripLayer2.TabIndex = 29;
             this.nud_GripLayer2.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
@@ -780,8 +776,6 @@ namespace _3dedit
             this.nud_GripLayer3.Location = new System.Drawing.Point(105, 427);
             this.nud_GripLayer3.Name = "nud_GripLayer3";
             this.nud_GripLayer3.Size = new System.Drawing.Size(36, 20);
-            this.nud_GripLayer3.Minimum = -127;
-            this.nud_GripLayer3.Maximum = 127;
             this.nud_GripLayer3.Value = 1;
             this.nud_GripLayer3.TabIndex = 30;
             this.nud_GripLayer3.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
@@ -791,8 +785,6 @@ namespace _3dedit
             this.nud_GripLayer4.Location = new System.Drawing.Point(143, 427);
             this.nud_GripLayer4.Name = "nud_GripLayer4";
             this.nud_GripLayer4.Size = new System.Drawing.Size(36, 20);
-            this.nud_GripLayer4.Minimum = -127;
-            this.nud_GripLayer4.Maximum = 127;
             this.nud_GripLayer4.Value = 1;
             this.nud_GripLayer4.TabIndex = 31;
             this.nud_GripLayer4.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
@@ -802,8 +794,6 @@ namespace _3dedit
             this.nud_GripLayer5.Location = new System.Drawing.Point(67, 471);
             this.nud_GripLayer5.Name = "nud_GripLayer5";
             this.nud_GripLayer5.Size = new System.Drawing.Size(36, 20);
-            this.nud_GripLayer5.Minimum = -127;
-            this.nud_GripLayer5.Maximum = 127;
             this.nud_GripLayer5.Value = 1;
             this.nud_GripLayer5.TabIndex = 32;
             this.nud_GripLayer5.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
@@ -813,8 +803,6 @@ namespace _3dedit
             this.nud_GripLayer6.Location = new System.Drawing.Point(105, 471);
             this.nud_GripLayer6.Name = "nud_GripLayer6";
             this.nud_GripLayer6.Size = new System.Drawing.Size(36, 20);
-            this.nud_GripLayer6.Minimum = -127;
-            this.nud_GripLayer6.Maximum = 127;
             this.nud_GripLayer6.Value = 1;
             this.nud_GripLayer6.TabIndex = 33;
             this.nud_GripLayer6.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);
@@ -824,8 +812,6 @@ namespace _3dedit
             this.nud_GripLayer7.Location = new System.Drawing.Point(143, 471);
             this.nud_GripLayer7.Name = "nud_GripLayer7";
             this.nud_GripLayer7.Size = new System.Drawing.Size(36, 20);
-            this.nud_GripLayer7.Minimum = -127;
-            this.nud_GripLayer7.Maximum = 127;
             this.nud_GripLayer7.Value = 1;
             this.nud_GripLayer7.TabIndex = 34;
             this.nud_GripLayer7.ValueChanged += new System.EventHandler(this.nud_GripLayer_ValueChanged);

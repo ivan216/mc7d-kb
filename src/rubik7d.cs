@@ -779,11 +779,10 @@ namespace _3dedit
             byte[] col;
             float[][] coord;
             int[] map;
-            byte[] stkncol;
             BitArray hmask;
 
-            int nstk=Cube.GetStickers(out col,out map,out coord,out hmask,out stkncol);
-            CubeView.SetCoords(col,map,coord,stkncol,hmask,NColMask,nstk);
+            int nstk=Cube.GetStickers(out col,out map,out coord,out hmask);
+            CubeView.SetCoords(col,map,coord,hmask,NColMask,nstk);
             CubeView.MaskStickers = MaskStickers;
             UpdateGripAxisNUDs();
             ProcessHighLights();

@@ -18,7 +18,6 @@ namespace _3dedit {
         float[][] coord;
         int[] map;
         int nstk;
-        byte[] stkNcol;
         BitArray hmask;
         int[] ncolMask;
         bool maskStickers;
@@ -31,13 +30,12 @@ namespace _3dedit {
             Meshes=null;
         }
 
-        public void SetCoords(byte[] _col,int[] _map,float[][] _coord,byte[] _stkNcol,BitArray _hmask,int []_ncmask,int _nstk) {
+        public void SetCoords(byte[] _col,int[] _map,float[][] _coord,BitArray _hmask,int []_ncmask,int _nstk) {
             Dispose();
             col=_col;
             map=_map;
             coord=_coord;
             nstk=_nstk;
-            stkNcol=_stkNcol;
             hmask=_hmask;
             ncolMask=_ncmask;
         }
