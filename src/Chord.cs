@@ -237,6 +237,50 @@ namespace _3dedit
             return ModifierKeyCodes.Contains(key);
         }
 
+        /// <summary>
+        /// Convert a chord string to a Keys value (with modifier flags set).
+        /// Returns Keys.None on failure.
+        /// </summary>
+        public static Keys ChordToKeys(string chord)
+        {
+            var parsed = Parse(chord);
+            if (parsed == null || parsed.PrimaryKey == null) return Keys.None;
+            Keys pk = ParseKeys(parsed.PrimaryKey);
+            if (pk == Keys.None) return Keys.None;
+            if (parsed.Ctrl) pk |= Keys.Control;
+            if (parsed.Shift) pk |= Keys.Shift;
+            if (parsed.Alt) pk |= Keys.Alt;
+            return pk;
+        }
+
+        /// <summary>
+        /// Check if a chord matches any ToolStripMenuItem's ShortcutKeys in a MenuStrip.
+        /// </summary>
+        public static bool IsMenuShortcutChord(string chord, MenuStrip menuStrip)
+        {
+            Keys chordKey = ChordToKeys(chord);
+            if (chordKey == Keys.None) return false;
+
+            foreach (ToolStripMenuItem topItem in menuStrip.Items)
+            {
+                if (MenuItemHasShortcut(topItem, chordKey))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool MenuItemHasShortcut(ToolStripMenuItem item, Keys chordKey)
+        {
+            if (item.ShortcutKeys != Keys.None && item.ShortcutKeys == chordKey)
+                return true;
+            foreach (ToolStripMenuItem sub in item.DropDownItems.OfType<ToolStripMenuItem>())
+            {
+                if (MenuItemHasShortcut(sub, chordKey))
+                    return true;
+            }
+            return false;
+        }
+
         // ---- .NET 3.5 compatibility helpers ----
 
         /// <summary>

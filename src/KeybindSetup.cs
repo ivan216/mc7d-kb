@@ -16,6 +16,7 @@ namespace _3dedit
         Keybindings keybinds;
         string curKeybindsName;
         Keybindings.KeybindSet curKeybinds;
+        Form _mainForm;
 
         /// <summary>Per-TextBox capture state for the chord-capture state machine.</summary>
         class CaptureState
@@ -50,9 +51,10 @@ namespace _3dedit
             { "MacroReverse", () => new Keybindings.MacroReverse() },
         };
 
-        public KeybindSetup(Keybindings keybinds)
+        public KeybindSetup(Keybindings keybinds, Form mainForm)
         {
             InitializeComponent();
+            _mainForm = mainForm;
             this.keybinds = keybinds;
         }
 
@@ -170,7 +172,8 @@ namespace _3dedit
             comboBox.MouseWheel += (object sender, MouseEventArgs e) => ((HandledMouseEventArgs)e).Handled = true;
             comboBox.SelectedIndexChanged += (object sender, EventArgs e) =>
             {
-                action = actionList[(string)comboBox.SelectedItem]();
+                capState.OriginalAction = actionList[(string)comboBox.SelectedItem]();
+                action = capState.OriginalAction;
                 extra.Controls.Clear();
                 extra.Controls.AddRange(action.SetupControls());
 
@@ -420,46 +423,14 @@ namespace _3dedit
         }
 
         /// <summary>
-        /// Check whether a chord is reserved by a WinForms menu shortcut.
-        /// Iterates all MenuStrip / ToolStripMenuItem ShortcutKeys on this form.
+        /// Check whether a chord is reserved by a WinForms menu shortcut
+        /// on the main form's MenuStrip.
         /// </summary>
         private bool IsMenuShortcut(string chord)
         {
-            // Convert "Ctrl+Shift+A" style chord to a Keys value for comparison
-            var parsed = ChordUtils.Parse(chord);
-            if (parsed == null || parsed.PrimaryKey == null) return false;
-            Keys pk = ChordUtils.ParseKeys(parsed.PrimaryKey);
-            if (pk == Keys.None) return false;
-
-            Keys chordKey = pk;
-            if (parsed.Ctrl) chordKey |= Keys.Control;
-            if (parsed.Shift) chordKey |= Keys.Shift;
-            if (parsed.Alt) chordKey |= Keys.Alt;
-
-            foreach (Control c in Controls)
-            {
-                if (c is MenuStrip ms)
-                {
-                    foreach (ToolStripMenuItem item in ms.Items)
-                    {
-                        if (IsMenuItemShortcut(item, chord, chordKey))
-                            return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        private bool IsMenuItemShortcut(ToolStripMenuItem item, string chord, Keys chordKey)
-        {
-            if (item.ShortcutKeys != Keys.None && item.ShortcutKeys == chordKey)
-                return true;
-            foreach (ToolStripMenuItem sub in item.DropDownItems.OfType<ToolStripMenuItem>())
-            {
-                if (IsMenuItemShortcut(sub, chord, chordKey))
-                    return true;
-            }
-            return false;
+            MenuStrip ms = _mainForm?.Controls.OfType<MenuStrip>().FirstOrDefault();
+            if (ms == null) return false;
+            return ChordUtils.IsMenuShortcutChord(chord, ms);
         }
     }
 }

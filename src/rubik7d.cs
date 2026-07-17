@@ -282,6 +282,9 @@ namespace _3dedit
             }
 
             // ---- Primary key pressed ----
+            // Suppress OS key repeat: if this key is already locked, skip
+            if (_lockedChords.ContainsKey(keyName)) return;
+
             string chord = ChordUtils.BuildChord(_rtlCtrlDown, _rtlShiftDown, _rtlAltDown, keyName);
 
             var action = Keybinds.GetActionWithFallback(chord, out string matchedChord);
@@ -351,11 +354,17 @@ namespace _3dedit
         }
 
         private void dxControl2_Leave(object sender, EventArgs e) {
+            // Clear keyboard grip
             if(Cube!=null && Cube.Gripped[0]!=-1) {
                 Cube.Grip(-1, 1);
                 ProcessHighLights();
                 Redraw();
             }
+            // Reset all tracked keyboard state to avoid stale modifiers/locks
+            _rtlCtrlDown = false;
+            _rtlShiftDown = false;
+            _rtlAltDown = false;
+            _lockedChords.Clear();
         }
 
         private void CheckKeybindSet(object sender, EventArgs e)
@@ -1395,6 +1404,14 @@ namespace _3dedit
 
         void LoadKeybinds(string fn)
         {
+            // Register menu-shortcut predicate so Deserialize can reject reserved chords
+            Keybindings.IsChordReserved = chord =>
+            {
+                MenuStrip ms = menuStrip1;
+                if (ms == null) return false;
+                return ChordUtils.IsMenuShortcutChord(chord, ms);
+            };
+
             StreamReader sr = null;
             if (File.Exists(fn))
             {
@@ -2145,7 +2162,7 @@ namespace _3dedit
         {
             if (KeybindsSetup == null || KeybindsSetup.IsDisposed)
             {
-                KeybindsSetup = new KeybindSetup(this.Keybinds);
+                KeybindsSetup = new KeybindSetup(this.Keybinds, this);
             }
             KeybindsSetup.Show();
             KeybindsSetup.Focus();

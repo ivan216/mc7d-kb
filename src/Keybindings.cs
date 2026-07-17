@@ -16,6 +16,9 @@ namespace _3dedit
         public static Keybindings loaded;
         public static Action<int, bool> ExecuteMacroById;
         public static bool MacroReverseHeld;
+        /// <summary>Optional predicate: return true if a chord is reserved (e.g., menu shortcut).
+        /// Checked during Deserialize; reserved chords are skipped with a warning.</summary>
+        public static Predicate<string> IsChordReserved { get; set; }
 
         public event EventHandler KeybindLayoutsChanged;
         public event EventHandler ActiveLayoutChanged;
@@ -304,6 +307,15 @@ namespace _3dedit
                         {
                             MessageBox.Show(
                                 $"Skipping duplicate chord \"{chordKey}\" in keybind set \"{keybindSetName ?? ""}\" — keeping the first occurrence",
+                                "Load warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            continue;
+                        }
+
+                        // Check against menu shortcuts (if a predicate was registered)
+                        if (IsChordReserved != null && IsChordReserved(chordKey))
+                        {
+                            MessageBox.Show(
+                                $"Skipping reserved chord \"{chordKey}\" in keybind set \"{keybindSetName ?? ""}\" — this chord is reserved by a menu shortcut",
                                 "Load warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             continue;
                         }
