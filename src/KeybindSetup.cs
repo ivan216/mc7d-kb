@@ -196,12 +196,14 @@ namespace _3dedit
             };
             delete.Click += (object sender, EventArgs e) =>
             {
-                var confirmResult = MessageBox.Show($"Are you sure you want to delete {comboBox.SelectedItem} keybind for \"{key}\"?",
+                var confirmResult = MessageBox.Show($"Are you sure you want to delete {comboBox.SelectedItem} keybind for \"{textBox.Text}\"?",
                                     "Confirm Delete",
                                     MessageBoxButtons.YesNo);
                 if (confirmResult == DialogResult.Yes)
                 {
-                    if (curKeybinds.binds.ContainsKey(key)) curKeybinds.binds.Remove(key);
+                    string curKey = textBox.Text;
+                    if (!string.IsNullOrEmpty(curKey) && curKeybinds.binds.ContainsKey(curKey))
+                        curKeybinds.binds.Remove(curKey);
                     keybindsPanel.Controls.Remove(panel);
                 }
             };
