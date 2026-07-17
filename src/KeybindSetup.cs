@@ -17,6 +17,25 @@ namespace _3dedit
         string curKeybindsName;
         Keybindings.KeybindSet curKeybinds;
 
+        /// <summary>Per-TextBox capture state for the chord-capture state machine.</summary>
+        class CaptureState
+        {
+            // Currently held modifier flags
+            public bool CtrlHeld, ShiftHeld, AltHeld;
+            // Modifier flags ever seen during this capture session
+            public bool EverCtrl, EverShift, EverAlt;
+            // Locked primary key info
+            public bool HasPrimaryKey;
+            public string PrimaryKeyName;
+            // Whether capture has been finalised (chord locked or invalid)
+            public bool IsDone;
+            // The binding key before editing (to restore on cancel / reject)
+            public string OriginalKey;
+            public Keybindings.IAction OriginalAction;
+        }
+
+        Dictionary<TextBox, CaptureState> _captureStates = new Dictionary<TextBox, CaptureState>();
+
         static Dictionary<string, Func<Keybindings.IAction>> actionList = new Dictionary<string, Func<Keybindings.IAction>>
         {
             { "Grip", () => new Keybindings.Grip() },
@@ -39,6 +58,7 @@ namespace _3dedit
 
         private void SetLayout(string name)
         {
+            _captureStates.Clear();
             Control addButton = keybindsPanel.Controls[keybindsPanel.Controls.Count - 1];
             foreach (Button btn in keybindSetsPanel.Controls)
             {
@@ -89,21 +109,40 @@ namespace _3dedit
                 Size = new Size(96, 24),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left,
             };
-            textBox.KeyUp += new KeyEventHandler(this.Hotkey_KeyUp);
-            textBox.KeyUp += (object sender, KeyEventArgs e) =>
+
+            // Set up chord-capture state machine
+            var capState = new CaptureState
             {
-                var tb = (TextBox)sender;
-                if (curKeybinds.binds.ContainsKey(tb.Text))
+                OriginalKey = key,
+                OriginalAction = action,
+                IsDone = true, // idle until this TextBox gets focus
+            };
+            _captureStates[textBox] = capState;
+
+            textBox.Enter += (s, e) =>
+            {
+                // Reset state when user starts editing this box
+                var state = _captureStates[(TextBox)s];
+                state.CtrlHeld = state.ShiftHeld = state.AltHeld = false;
+                state.EverCtrl = state.EverShift = state.EverAlt = false;
+                state.HasPrimaryKey = false;
+                state.PrimaryKeyName = null;
+                state.IsDone = false;
+            };
+
+            textBox.KeyDown += Capture_KeyDown;
+            textBox.KeyUp += Capture_KeyUp;
+
+            textBox.Leave += (s, e) =>
+            {
+                var tb = (TextBox)s;
+                var state = _captureStates[tb];
+                // If capture was not completed, restore original key
+                if (!state.IsDone || string.IsNullOrEmpty(tb.Text))
                 {
-                    MessageBox.Show($"{tb.Text} is already bound to {curKeybinds.binds[tb.Text].Serialize()}");
-                    tb.Text = key;
+                    tb.Text = state.OriginalKey;
                 }
-                else
-                {
-                    curKeybinds.binds.Remove(key);
-                    curKeybinds.binds.Add(tb.Text, action);
-                    key = tb.Text;
-                }
+                state.IsDone = true;
             };
 
             ComboBox comboBox = new ComboBox
@@ -243,21 +282,184 @@ namespace _3dedit
             keybindsPanel.Controls.Add(addButton);
         }
 
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
         private void SwitchLayout_Click(object sender, EventArgs e)
         {
             Button btn = (Button)sender;
             SetLayout(btn.Text);
         }
 
-        private void Hotkey_KeyUp(object sender, KeyEventArgs e)
+        private void Capture_KeyDown(object sender, KeyEventArgs e)
         {
-            Control ctrl = (Control)sender;
-            ctrl.Text = e.KeyCode.ToString();
+            var tb = (TextBox)sender;
+            var state = _captureStates[tb];
+            e.SuppressKeyPress = true;
+
+            if (state.IsDone) return;
+
+            Keys keyCode = e.KeyCode;
+
+            // ---- Modifier key pressed ----
+            if (ChordUtils.IsModifierKey(keyCode))
+            {
+                var flag = ChordUtils.GetModifierFlag(keyCode);
+                if (flag == Keys.Control) { state.CtrlHeld = true; state.EverCtrl = true; }
+                if (flag == Keys.Shift)  { state.ShiftHeld = true; state.EverShift = true; }
+                if (flag == Keys.Alt)    { state.AltHeld = true; state.EverAlt = true; }
+
+                // Don't finalise yet — a primary key may follow
+                return;
+            }
+
+            // ---- Primary key pressed ----
+            string keyName = keyCode.ToString();
+
+            if (state.HasPrimaryKey)
+            {
+                // Second primary key → reject
+                state.IsDone = true;
+                tb.Text = state.OriginalKey;
+                MessageBox.Show("Only one primary key is allowed", "Invalid chord",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // First primary key in this session → lock the chord
+            state.HasPrimaryKey = true;
+            state.PrimaryKeyName = keyName;
+
+            string chord = ChordUtils.BuildChord(state.CtrlHeld, state.ShiftHeld, state.AltHeld, keyName);
+            FinaliseCapture(tb, state, chord);
+        }
+
+        private void Capture_KeyUp(object sender, KeyEventArgs e)
+        {
+            var tb = (TextBox)sender;
+            var state = _captureStates[tb];
+
+            if (state.IsDone) return;
+
+            Keys keyCode = e.KeyCode;
+
+            if (!ChordUtils.IsModifierKey(keyCode))
+            {
+                // Primary key released — nothing more to do here (already locked in KeyDown)
+                return;
+            }
+
+            // Modifier released — update state
+            var flag = ChordUtils.GetModifierFlag(keyCode);
+            if (flag == Keys.Control) state.CtrlHeld = false;
+            if (flag == Keys.Shift) state.ShiftHeld = false;
+            if (flag == Keys.Alt) state.AltHeld = false;
+
+            // Still holding some modifiers, or already have a primary key → keep waiting
+            if (state.CtrlHeld || state.ShiftHeld || state.AltHeld || state.HasPrimaryKey)
+                return;
+
+            // ---- All modifiers released, no primary key appeared ----
+            int modifierCount = (state.EverCtrl ? 1 : 0)
+                              + (state.EverShift ? 1 : 0)
+                              + (state.EverAlt ? 1 : 0);
+
+            if (modifierCount == 1)
+            {
+                // Single modifier key → use as primary key
+                string chord = ChordUtils.BuildChord(false, false, false, keyCode.ToString());
+                FinaliseCapture(tb, state, chord);
+            }
+            else
+            {
+                // Multiple modifier keys, no primary key → reject
+                state.IsDone = true;
+                tb.Text = state.OriginalKey;
+                MessageBox.Show("A primary key is required", "Invalid chord",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Called when a valid chord has been captured.
+        /// Updates the TextBox, validates against duplicates and menu shortcuts,
+        /// and commits the binding.
+        /// </summary>
+        private void FinaliseCapture(TextBox tb, CaptureState state, string chord)
+        {
+            state.IsDone = true;
+
+            // Normalise the chord string
+            chord = ChordUtils.Normalize(chord);
+            if (chord == null)
+            {
+                tb.Text = state.OriginalKey;
+                return;
+            }
+
+            // Reject if same as the current layout's existing key (and it changed)
+            if (chord != state.OriginalKey && curKeybinds.binds.ContainsKey(chord))
+            {
+                tb.Text = state.OriginalKey;
+                MessageBox.Show($"This chord is already used in the current layout",
+                    "Duplicate chord", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Reject if reserved by a menu shortcut
+            if (IsMenuShortcut(chord))
+            {
+                tb.Text = state.OriginalKey;
+                MessageBox.Show($"This chord is reserved by a menu shortcut",
+                    "Reserved chord", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Commit the binding update
+            tb.Text = chord;
+            curKeybinds.binds.Remove(state.OriginalKey);
+            curKeybinds.binds.Add(chord, state.OriginalAction);
+            state.OriginalKey = chord;
+        }
+
+        /// <summary>
+        /// Check whether a chord is reserved by a WinForms menu shortcut.
+        /// Iterates all MenuStrip / ToolStripMenuItem ShortcutKeys on this form.
+        /// </summary>
+        private bool IsMenuShortcut(string chord)
+        {
+            // Convert "Ctrl+Shift+A" style chord to a Keys value for comparison
+            var parsed = ChordUtils.Parse(chord);
+            if (parsed == null || parsed.PrimaryKey == null) return false;
+            Keys pk = ChordUtils.ParseKeys(parsed.PrimaryKey);
+            if (pk == Keys.None) return false;
+
+            Keys chordKey = pk;
+            if (parsed.Ctrl) chordKey |= Keys.Control;
+            if (parsed.Shift) chordKey |= Keys.Shift;
+            if (parsed.Alt) chordKey |= Keys.Alt;
+
+            foreach (Control c in Controls)
+            {
+                if (c is MenuStrip ms)
+                {
+                    foreach (ToolStripMenuItem item in ms.Items)
+                    {
+                        if (IsMenuItemShortcut(item, chord, chordKey))
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool IsMenuItemShortcut(ToolStripMenuItem item, string chord, Keys chordKey)
+        {
+            if (item.ShortcutKeys != Keys.None && item.ShortcutKeys == chordKey)
+                return true;
+            foreach (ToolStripMenuItem sub in item.DropDownItems.OfType<ToolStripMenuItem>())
+            {
+                if (IsMenuItemShortcut(sub, chord, chordKey))
+                    return true;
+            }
+            return false;
         }
     }
 }

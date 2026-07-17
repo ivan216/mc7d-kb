@@ -241,36 +241,97 @@ namespace _3dedit
 			}
 		}
 
+        // ---- Runtime modifier state tracking ----
+        bool _rtlCtrlDown, _rtlShiftDown, _rtlAltDown;
+
+        class LockedChordEntry
+        {
+            public string Chord;
+            public Keybindings.IAction Action;
+        }
+        // Maps key name → locked chord info for KeyUp dispatch
+        Dictionary<string, LockedChordEntry> _lockedChords
+            = new Dictionary<string, LockedChordEntry>();
+
         private void KeyDownEvt(object sender, KeyEventArgs e)
         {
-            string key = e.KeyCode.ToString();
-            var action = Keybinds.GetAction(key);
+            Keys keyCode = e.KeyCode;
+            string keyName = keyCode.ToString();
 
+            // ---- Modifier key pressed ----
+            if (ChordUtils.IsModifierKey(keyCode))
+            {
+                var flag = ChordUtils.GetModifierFlag(keyCode);
+                if (flag == Keys.Control) _rtlCtrlDown = true;
+                if (flag == Keys.Shift)   _rtlShiftDown = true;
+                if (flag == Keys.Alt)     _rtlAltDown = true;
+
+                // Check for bare modifier-as-primary binding (e.g. "ShiftKey")
+                string bareChord = ChordUtils.BuildChord(false, false, false, keyName);
+                var modAction = Keybinds.GetAction(bareChord);
+                if (modAction != null && !_lockedChords.ContainsKey(keyName))
+                {
+                    _lockedChords[keyName] = new LockedChordEntry { Chord = bareChord, Action = modAction };
+                    bool redraw = false, didTwist = false;
+                    int prevStep = Cube?.partialTwist3c?.step ?? 0;
+                    modAction.OnKeyDown(ref Cube, ref redraw, ref didTwist);
+                    HandleTwist3cTransition(prevStep);
+                    PostKeybindAction(redraw, didTwist);
+                }
+                return;
+            }
+
+            // ---- Primary key pressed ----
+            string chord = ChordUtils.BuildChord(_rtlCtrlDown, _rtlShiftDown, _rtlAltDown, keyName);
+
+            var action = Keybinds.GetActionWithFallback(chord, out string matchedChord);
             if (action == null) return;
 
-            bool redraw = false, didTwist = false;
-            int prevStep = Cube?.partialTwist3c?.step ?? 0;
-            action.OnKeyDown(ref Cube, ref redraw, ref didTwist);
-            // Clear mouse click state when Twist3c grip is first set (step 0 to 1)
-            if (Cube != null && prevStep == 0 && Cube.partialTwist3c.step == 1) {
+            // Lock this primary key's chord for KeyUp dispatch
+            _lockedChords[keyName] = new LockedChordEntry { Chord = matchedChord, Action = action };
+
+            bool redrawFlag = false, didTwist2 = false;
+            int prevStep2 = Cube?.partialTwist3c?.step ?? 0;
+            action.OnKeyDown(ref Cube, ref redrawFlag, ref didTwist2);
+            HandleTwist3cTransition(prevStep2);
+            PostKeybindAction(redrawFlag, didTwist2);
+        }
+
+        private void KeyUpEvt(object sender, KeyEventArgs e)
+        {
+            Keys keyCode = e.KeyCode;
+            string keyName = keyCode.ToString();
+
+            // Update modifier state
+            if (ChordUtils.IsModifierKey(keyCode))
+            {
+                var flag = ChordUtils.GetModifierFlag(keyCode);
+                if (flag == Keys.Control) _rtlCtrlDown = false;
+                if (flag == Keys.Shift)   _rtlShiftDown = false;
+                if (flag == Keys.Alt)     _rtlAltDown = false;
+            }
+
+            // Dispatch KeyUp for any locked chord on this key
+            LockedChordEntry entry;
+            if (_lockedChords.TryGetValue(keyName, out entry))
+            {
+                _lockedChords.Remove(keyName);
+                bool redraw = false, didTwist = false;
+                entry.Action.OnKeyUp(ref Cube, ref redraw, ref didTwist);
+                PostKeybindAction(redraw, didTwist);
+            }
+        }
+
+        /// <summary>Handle Twist3c state transition (step 0 → 1) to clear click state.</summary>
+        private void HandleTwist3cTransition(int prevStep)
+        {
+            if (Cube != null && prevStep == 0 && Cube.partialTwist3c.step == 1)
+            {
                 NClicks = 0;
                 FaceClick = 0;
                 FaceFrom = 0;
                 ClickQual = true;
             }
-            PostKeybindAction(redraw, didTwist);
-        }
-
-        private void KeyUpEvt(object sender, KeyEventArgs e)
-        {
-            string key = e.KeyCode.ToString();
-            var action = Keybinds.GetAction(key);
-
-            if (action == null) return;
-
-            bool redraw = false, didTwist = false;
-            action.OnKeyUp(ref Cube, ref redraw, ref didTwist);
-            PostKeybindAction(redraw, didTwist);
         }
 
         private void PostKeybindAction(bool redraw, bool didTwist)

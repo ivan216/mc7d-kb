@@ -111,6 +111,27 @@ namespace _3dedit
             return action;
         }
 
+        /// <summary>
+        /// Look up an action with fallback: tries the full chord first,
+        /// then falls back through the priority chain (Ctrl+Shift+Alt → ... → bare key).
+        /// </summary>
+        /// <param name="chord">The full chord from the current modifier + primary key.</param>
+        /// <param name="matchedChord">The actual chord string that matched, or null.</param>
+        /// <returns>The matched action, or null if nothing matched.</returns>
+        public IAction GetActionWithFallback(string chord, out string matchedChord)
+        {
+            foreach (var fallback in ChordUtils.GetFallbackChain(chord))
+            {
+                if (activeKeybinds.binds.TryGetValue(fallback, out IAction action))
+                {
+                    matchedChord = fallback;
+                    return action;
+                }
+            }
+            matchedChord = null;
+            return null;
+        }
+
         public string Serialize()
         {
             List<string> res = new List<string>();
@@ -265,6 +286,28 @@ namespace _3dedit
                         string[] p2 = item.Split(',');
                         if (p2.Length < 2) continue;
 
+                        // Validate chord format
+                        string chordKey = p2[0];
+                        if (!ChordUtils.IsValid(chordKey, out string validationError))
+                        {
+                            MessageBox.Show(
+                                $"Skipping invalid chord \"{chordKey}\" in keybind set \"{keybindSetName ?? ""}\": {validationError}",
+                                "Load warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            continue;
+                        }
+
+                        // Normalise to canonical form
+                        chordKey = ChordUtils.Normalize(chordKey);
+
+                        // Check for duplicate within this layout
+                        if (binds.ContainsKey(chordKey))
+                        {
+                            MessageBox.Show(
+                                $"Skipping duplicate chord \"{chordKey}\" in keybind set \"{keybindSetName ?? ""}\" — keeping the first occurrence",
+                                "Load warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            continue;
+                        }
+
                         IAction action = null;
 
                         switch (p2[1])
@@ -303,9 +346,8 @@ namespace _3dedit
 
                         if (action != null)
                         {
-                            string k = p2[0];
                             action.Deserialize(item);
-                            binds.Add(k, action);
+                            binds.Add(chordKey, action);
                         }
                     }
                     catch (Exception e)
