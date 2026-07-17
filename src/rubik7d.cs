@@ -82,6 +82,10 @@ namespace _3dedit
             // Click sidebar background → move focus away from sidebar controls
             panel1.MouseDown += (s, me) => dxControl2.Focus();
 
+            // Release held keyboard state when a menu opens or the form loses focus
+            menuStrip1.MenuActivate += (s, me) => ReleaseAllKeyboardState();
+            this.Deactivate += (s, me) => ReleaseAllKeyboardState();
+
             // Undo frame skip control — placed below speed slider
             nudUndoFrameSkip = new NumericUpDown();
             nudUndoFrameSkip.Location = new System.Drawing.Point(97, 268);
@@ -353,30 +357,41 @@ namespace _3dedit
             }
         }
 
-        private void dxControl2_Leave(object sender, EventArgs e) {
-            // Clear keyboard grip
-            if(Cube!=null && Cube.Gripped[0]!=-1) {
-                Cube.Grip(-1, 1);
-                ProcessHighLights();
-                Redraw();
-            }
-            // Dispatch OnKeyUp for all still-locked actions before dropping state,
-            // so Layer, MacroReverse, Grip etc. can unwind properly.
-            if (Cube != null && _lockedChords.Count > 0)
+        /// <summary>
+        /// Release all held keyboard state: grip, locked chords, and modifier tracking.
+        /// Called when focus leaves dxControl2, when a menu is activated, or when the form deactivates.
+        /// </summary>
+        private void ReleaseAllKeyboardState()
+        {
+            if (Cube != null)
             {
-                bool redraw = false, didTwist = false;
-                foreach (var entry in _lockedChords.Values)
+                // Release cube grip
+                if (Cube.Gripped[0] != -1)
                 {
-                    entry.Action.OnKeyUp(ref Cube, ref redraw, ref didTwist);
+                    Cube.Grip(-1, 1);
+                    ProcessHighLights();
+                    Redraw();
                 }
-                if (redraw) { ProcessHighLights(); Redraw(); }
+                // Dispatch OnKeyUp for all still-locked actions before dropping state
+                if (_lockedChords.Count > 0)
+                {
+                    bool redraw = false, didTwist = false;
+                    foreach (var entry in _lockedChords.Values)
+                    {
+                        entry.Action.OnKeyUp(ref Cube, ref redraw, ref didTwist);
+                    }
+                    if (redraw) { ProcessHighLights(); Redraw(); }
+                }
             }
-
-            // Reset all tracked keyboard state to avoid stale modifiers/locks
+            // Reset all tracked keyboard state
             _rtlCtrlDown = false;
             _rtlShiftDown = false;
             _rtlAltDown = false;
             _lockedChords.Clear();
+        }
+
+        private void dxControl2_Leave(object sender, EventArgs e) {
+            ReleaseAllKeyboardState();
         }
 
         private void CheckKeybindSet(object sender, EventArgs e)
