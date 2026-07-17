@@ -20,6 +20,21 @@ namespace _3dedit
         /// Checked during Deserialize; reserved chords are skipped with a warning.</summary>
         public static Predicate<string> IsChordReserved { get; set; }
 
+        /// <summary>Action type name → factory for creating default instances.</summary>
+        public static readonly Dictionary<string, Func<IAction>> ActionFactories = new Dictionary<string, Func<IAction>>
+        {
+            { "Grip", () => new Grip() },
+            { "Twist", () => new Twist() },
+            { "GripTwist", () => new GripTwist() },
+            { "Twist2c", () => new Twist2c() },
+            { "Twist3c", () => new Twist3c() },
+            { "Layer", () => new Layer() },
+            { "Recenter", () => new Recenter() },
+            { "ChangeLayout", () => new ChangeLayout() },
+            { "Macro", () => new Macro() },
+            { "MacroReverse", () => new MacroReverse() },
+        };
+
         public event EventHandler KeybindLayoutsChanged;
         public event EventHandler ActiveLayoutChanged;
 
@@ -242,13 +257,13 @@ namespace _3dedit
             public int idx;
             public bool inverted;
 
-            public Axis(string name, int idx)
+            private Axis(string name, int idx)
             {
                 this.name = name;
                 this.idx = idx;
                 this.inverted = false;
             }
-            public Axis(string name, int idx, bool inverted)
+            private Axis(string name, int idx, bool inverted)
             {
                 this.name = name;
                 this.idx = idx;
@@ -322,38 +337,9 @@ namespace _3dedit
 
                         IAction action = null;
 
-                        switch (p2[1])
+                        if (ActionFactories.TryGetValue(p2[1], out var factory))
                         {
-                            case "Grip":
-                                action = new Grip();
-                                break;
-                            case "Twist":
-                                action = new Twist();
-                                break;
-                            case "Recenter":
-                                action = new Recenter();
-                                break;
-                            case "GripTwist":
-                                action = new GripTwist();
-                                break;
-                            case "Twist2c":
-                                action = new Twist2c();
-                                break;
-                            case "Twist3c":
-                                action = new Twist3c();
-                                break;
-                            case "Layer":
-                                action = new Layer();
-                                break;
-                            case "ChangeLayout":
-                                action = new ChangeLayout();
-                                break;
-                            case "Macro":
-                                action = new Macro();
-                                break;
-                            case "MacroReverse":
-                                action = new MacroReverse();
-                                break;
+                            action = factory();
                         }
 
                         if (action != null)

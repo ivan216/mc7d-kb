@@ -145,19 +145,6 @@ namespace _3dedit
                 return false;
             }
 
-            // Check for multiple primary keys (e.g. "A+B")
-            var parts = chord.Split('+');
-            int primaryCount = parts.Count(p =>
-                !string.Equals(p, "Ctrl", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(p, "Shift", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(p, "Alt", StringComparison.OrdinalIgnoreCase));
-
-            if (primaryCount > 1)
-            {
-                error = "Only one primary key is allowed";
-                return false;
-            }
-
             // A primary key named exactly like a modifier label is not allowed
             if (ModifierLabels.Contains(parsed.PrimaryKey))
             {

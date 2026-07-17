@@ -39,20 +39,6 @@ namespace _3dedit
 
         Dictionary<TextBox, CaptureState> _captureStates = new Dictionary<TextBox, CaptureState>();
 
-        static Dictionary<string, Func<Keybindings.IAction>> actionList = new Dictionary<string, Func<Keybindings.IAction>>
-        {
-            { "Grip", () => new Keybindings.Grip() },
-            { "Twist", () => new Keybindings.Twist() },
-            { "GripTwist", () => new Keybindings.GripTwist() },
-            { "Twist2c", () => new Keybindings.Twist2c() },
-            { "Twist3c", () => new Keybindings.Twist3c() },
-            { "Layer", () => new Keybindings.Layer() },
-            { "Recenter", () => new Keybindings.Recenter() },
-            { "ChangeLayout", () => new Keybindings.ChangeLayout() },
-            { "Macro", () => new Keybindings.Macro() },
-            { "MacroReverse", () => new Keybindings.MacroReverse() },
-        };
-
         public KeybindSetup(Keybindings keybinds, Form mainForm, MenuStrip menuStrip)
         {
             InitializeComponent();
@@ -172,13 +158,13 @@ namespace _3dedit
             var extras = action.SetupControls();
             extra.Controls.AddRange(extras);
 
-            var actions = actionList.Keys.ToArray();
+            var actions = Keybindings.ActionFactories.Keys.ToArray();
             comboBox.Items.AddRange(actions);
             comboBox.SelectedIndex = comboBox.Items.IndexOf(action.GetType().Name);
             comboBox.MouseWheel += (object sender, MouseEventArgs e) => ((HandledMouseEventArgs)e).Handled = true;
             comboBox.SelectedIndexChanged += (object sender, EventArgs e) =>
             {
-                capState.OriginalAction = actionList[(string)comboBox.SelectedItem]();
+                capState.OriginalAction = Keybindings.ActionFactories[(string)comboBox.SelectedItem]();
                 action = capState.OriginalAction;
                 extra.Controls.Clear();
                 extra.Controls.AddRange(action.SetupControls());
