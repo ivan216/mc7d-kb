@@ -360,6 +360,18 @@ namespace _3dedit
                 ProcessHighLights();
                 Redraw();
             }
+            // Dispatch OnKeyUp for all still-locked actions before dropping state,
+            // so Layer, MacroReverse, Grip etc. can unwind properly.
+            if (Cube != null && _lockedChords.Count > 0)
+            {
+                bool redraw = false, didTwist = false;
+                foreach (var entry in _lockedChords.Values)
+                {
+                    entry.Action.OnKeyUp(ref Cube, ref redraw, ref didTwist);
+                }
+                if (redraw) { ProcessHighLights(); Redraw(); }
+            }
+
             // Reset all tracked keyboard state to avoid stale modifiers/locks
             _rtlCtrlDown = false;
             _rtlShiftDown = false;
