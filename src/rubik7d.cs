@@ -2197,7 +2197,7 @@ namespace _3dedit
         {
             if (KeybindsSetup == null || KeybindsSetup.IsDisposed)
             {
-                KeybindsSetup = new KeybindSetup(this.Keybinds, this);
+                KeybindsSetup = new KeybindSetup(this.Keybinds, this, menuStrip1);
             }
             KeybindsSetup.Show();
             KeybindsSetup.Focus();

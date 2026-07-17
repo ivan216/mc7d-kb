@@ -16,7 +16,7 @@ namespace _3dedit
         Keybindings keybinds;
         string curKeybindsName;
         Keybindings.KeybindSet curKeybinds;
-        Form _mainForm;
+        MenuStrip _menuStrip;
 
         /// <summary>Per-TextBox capture state for the chord-capture state machine.</summary>
         class CaptureState
@@ -30,6 +30,8 @@ namespace _3dedit
             public string PrimaryKeyName;
             // Whether capture has been finalised (chord locked or invalid)
             public bool IsDone;
+            // Whether a chord was committed since the TextBox was last entered
+            public bool WasCaptured;
             // The binding key before editing (to restore on cancel / reject)
             public string OriginalKey;
             public Keybindings.IAction OriginalAction;
@@ -51,10 +53,10 @@ namespace _3dedit
             { "MacroReverse", () => new Keybindings.MacroReverse() },
         };
 
-        public KeybindSetup(Keybindings keybinds, Form mainForm)
+        public KeybindSetup(Keybindings keybinds, Form mainForm, MenuStrip menuStrip)
         {
             InitializeComponent();
-            _mainForm = mainForm;
+            _menuStrip = menuStrip;
             this.keybinds = keybinds;
         }
 
@@ -108,7 +110,7 @@ namespace _3dedit
             {
                 Text = key,
                 Name = "textBox" + key,
-                Size = new Size(96, 24),
+                Size = new Size(192, 24),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left,
             };
 
@@ -130,10 +132,14 @@ namespace _3dedit
                 state.HasPrimaryKey = false;
                 state.PrimaryKeyName = null;
                 state.IsDone = false;
+                state.WasCaptured = false;
             };
 
             textBox.KeyDown += Capture_KeyDown;
             textBox.KeyUp += Capture_KeyUp;
+            // Suppress all character insertion — the TextBox content is
+            // entirely controlled by the capture state machine via tb.Text.
+            textBox.KeyPress += (s, e) => e.Handled = true;
 
             textBox.Leave += (s, e) =>
             {
@@ -297,7 +303,25 @@ namespace _3dedit
             var state = _captureStates[tb];
             e.SuppressKeyPress = true;
 
-            if (state.IsDone) return;
+            if (state.IsDone)
+            {
+                // Previous capture completed or rejected — starting fresh.
+                // Sync modifier flags from the actual physical key state
+                // (KeyUp events were suppressed by IsDone, so the tracked
+                // state may be stale).
+                state.IsDone = false;
+                state.HasPrimaryKey = false;
+                state.PrimaryKeyName = null;
+                state.WasCaptured = false;
+                Keys mods = Control.ModifierKeys;
+                state.CtrlHeld = (mods & Keys.Control) != 0;
+                state.ShiftHeld = (mods & Keys.Shift) != 0;
+                state.AltHeld = (mods & Keys.Alt) != 0;
+                state.EverCtrl = state.CtrlHeld;
+                state.EverShift = state.ShiftHeld;
+                state.EverAlt = state.AltHeld;
+                // Fall through to process this key
+            }
 
             Keys keyCode = e.KeyCode;
 
@@ -360,6 +384,26 @@ namespace _3dedit
                 return;
 
             // ---- All modifiers released, no primary key appeared ----
+
+            // If a chord was previously committed, these are stale modifier
+            // releases from the old capture. Don't show an error — just
+            // wait for the next key press to start a fresh capture.
+            if (state.WasCaptured)
+            {
+                state.IsDone = true;
+                return;
+            }
+
+            // After a rejection, Ever* flags were cleared by the re-capture
+            // path in KeyDown. If a stale KeyUp sneaks in here, treat it as
+            // idle rather than showing an error.
+            if (!state.EverCtrl && !state.EverShift && !state.EverAlt
+                && !state.CtrlHeld && !state.ShiftHeld && !state.AltHeld
+                && !state.HasPrimaryKey)
+            {
+                return;
+            }
+
             int modifierCount = (state.EverCtrl ? 1 : 0)
                               + (state.EverShift ? 1 : 0)
                               + (state.EverAlt ? 1 : 0);
@@ -420,6 +464,7 @@ namespace _3dedit
             curKeybinds.binds.Remove(state.OriginalKey);
             curKeybinds.binds.Add(chord, state.OriginalAction);
             state.OriginalKey = chord;
+            state.WasCaptured = true;
         }
 
         /// <summary>
@@ -428,9 +473,8 @@ namespace _3dedit
         /// </summary>
         private bool IsMenuShortcut(string chord)
         {
-            MenuStrip ms = _mainForm?.Controls.OfType<MenuStrip>().FirstOrDefault();
-            if (ms == null) return false;
-            return ChordUtils.IsMenuShortcutChord(chord, ms);
+            if (_menuStrip == null) return false;
+            return ChordUtils.IsMenuShortcutChord(chord, _menuStrip);
         }
     }
 }
