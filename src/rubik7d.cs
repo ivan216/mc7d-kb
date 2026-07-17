@@ -85,6 +85,14 @@ namespace _3dedit
             // Release held keyboard state when a menu opens or the form loses focus
             menuStrip1.MenuActivate += (s, me) => ReleaseAllKeyboardState();
             this.Deactivate += (s, me) => ReleaseAllKeyboardState();
+            // MenuActivate only fires ONCE when the strip first enters menu mode.
+            // Navigating between top-level items (File → Edit → View) does NOT re-fire it,
+            // so if grip/key state gets re-engaged during the dropdown transition, it stays stuck.
+            // Subscribe DropDownOpened on each item to catch every dropdown opening.
+            foreach (ToolStripMenuItem item in menuStrip1.Items)
+            {
+                item.DropDownOpened += (s, me) => ReleaseAllKeyboardState();
+            }
 
             // Undo frame skip control — placed below speed slider
             nudUndoFrameSkip = new NumericUpDown();
