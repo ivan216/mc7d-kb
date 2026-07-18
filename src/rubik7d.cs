@@ -74,6 +74,11 @@ namespace _3dedit
             this.UpdateKeybindMenu(null, EventArgs.Empty);
             Keybindings.loaded = Keybinds;
 
+            // Add "Keybinds Reference" menu item after "Edit Keybinds"
+            _refMenuItem = new ToolStripMenuItem("Keybinds Reference");
+            _refMenuItem.Click += (s, me) => ToggleKeybindsReference();
+            viewToolStripMenuItem.DropDownItems.Add(_refMenuItem);
+
             // Wire up macro hotkey execution
             Keybindings.ExecuteMacroById = ExecuteMacroByIdCmd;
 
@@ -171,6 +176,8 @@ namespace _3dedit
 
         Keybindings Keybinds = new Keybindings();
         Form KeybindsSetup;
+        KeybindsReference KeybindsRef;
+        ToolStripMenuItem _refMenuItem;
 
         /// <summary>Tracks actions activated by currently held keys.
         /// Used for consumed-modifier calculation and KeyUp dispatch.</summary>
@@ -280,6 +287,9 @@ namespace _3dedit
                 ClickQual = true;
             }
             PostKeybindAction(redraw, didTwist);
+
+            if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+                KeybindsRef.RefreshDisplay();
         }
 
         private void KeyUpEvt(object sender, KeyEventArgs e)
@@ -287,13 +297,20 @@ namespace _3dedit
             Keys keyCode = e.KeyCode;
 
             if (!_activeKeyActions.TryGetValue(keyCode, out var action))
+            {
+                if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+                    KeybindsRef.RefreshDisplay();
                 return;
+            }
 
             _activeKeyActions.Remove(keyCode);
 
             bool redraw = false, didTwist = false;
             action.OnKeyUp(ref Cube, ref redraw, ref didTwist);
             PostKeybindAction(redraw, didTwist);
+
+            if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+                KeybindsRef.RefreshDisplay();
         }
 
         /// <summary>
@@ -2153,6 +2170,23 @@ namespace _3dedit
             KeybindsSetup.Show();
             KeybindsSetup.Focus();
             KeybindsSetup.WindowState = FormWindowState.Normal;
+        }
+
+        private void ToggleKeybindsReference()
+        {
+            if (KeybindsRef == null || KeybindsRef.IsDisposed)
+            {
+                KeybindsRef = new KeybindsReference(Keybinds);
+                KeybindsRef.Show(this);
+                KeybindsRef.FormClosed += (s, fce) => { _refMenuItem.Checked = false; };
+                _refMenuItem.Checked = true;
+            }
+            else
+            {
+                KeybindsRef.Close();
+                KeybindsRef = null;
+                _refMenuItem.Checked = false;
+            }
         }
 
         // Intercept mouse wheel on TrackBar/NumericUpDown when not focused
