@@ -161,18 +161,6 @@ namespace _3dedit
                 : null;
         }
 
-        // ---- Modifier primary key detection ----
-
-        public static bool IsModifierPrimaryKey(string chord)
-        {
-            var parsed = Parse(chord);
-            if (parsed == null || parsed.PrimaryKey == null) return false;
-            if (parsed.Ctrl || parsed.Shift || parsed.Alt) return false;
-
-            Keys key = ParseKeys(parsed.PrimaryKey);
-            return ModifierKeyCodes.Contains(key);
-        }
-
         // ---- Menu shortcut detection ----
 
         /// <summary>

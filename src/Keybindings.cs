@@ -120,15 +120,6 @@ namespace _3dedit
         }
 
         /// <summary>
-        /// Exact chord lookup — matches the chord string as-is.
-        /// </summary>
-        public IAction GetAction(string key)
-        {
-            bool res = activeKeybinds.binds.TryGetValue(key, out IAction action);
-            return action;
-        }
-
-        /// <summary>
         /// Resolve a key press to an action using Hyperspeedcube's
         /// consumed-modifier approach.
         ///
