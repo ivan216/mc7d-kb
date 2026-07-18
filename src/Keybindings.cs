@@ -24,6 +24,20 @@ namespace _3dedit
         public KeybindSet activeKeybinds;
         public string activeKeybindsName;
 
+        public static readonly Dictionary<string, Func<IAction>> ActionFactories = new Dictionary<string, Func<IAction>>
+        {
+            { "Grip", () => new Grip() },
+            { "Twist", () => new Twist() },
+            { "GripTwist", () => new GripTwist() },
+            { "Twist2c", () => new Twist2c() },
+            { "Twist3c", () => new Twist3c() },
+            { "Layer", () => new Layer() },
+            { "Recenter", () => new Recenter() },
+            { "ChangeLayout", () => new ChangeLayout() },
+            { "Macro", () => new Macro() },
+            { "MacroReverse", () => new MacroReverse() },
+        };
+
         public static Dictionary<string, KeybindSet> defaultBinds = new Dictionary<string, KeybindSet> {
             { "5D_2key",  new KeybindSet(new Dictionary<string, IAction> {
                 { "D", new Grip(Axis.W, 1) },
@@ -105,10 +119,54 @@ namespace _3dedit
             switchKeybindSet("5D_2key");
         }
 
-        public IAction GetAction(string key)
+        /// <summary>
+        /// Resolve a key press to an action using Hyperspeedcube's
+        /// consumed-modifier approach.
+        ///
+        /// Iterates all bindings and checks:
+        ///   primary key matches AND
+        ///   (binding_mods & ~consumedMods) == (pressed_mods & ~consumedMods)
+        ///
+        /// Among matches, selects the one with the most modifiers (most specific).
+        /// </summary>
+        public IAction GetActionWithFallback(string keyName, bool ctrl, bool shift, bool alt, Keys consumedMods)
         {
-            bool res = activeKeybinds.binds.TryGetValue(key, out IAction action);
-            return action;
+            // Build the effective "pressed modifier bitmask" after removing consumed mods
+            Keys pressedMods = 0;
+            if (ctrl) pressedMods |= Keys.Control;
+            if (shift) pressedMods |= Keys.Shift;
+            if (alt)   pressedMods |= Keys.Alt;
+            Keys mask = ~consumedMods;
+            Keys effectivePressed = pressedMods & mask;
+
+            IAction bestAction = null;
+            int bestModCount = -1;
+
+            foreach (var kvp in activeKeybinds.binds)
+            {
+                var parsed = ChordUtils.Parse(kvp.Key);
+                if (parsed == null || parsed.PrimaryKey != keyName)
+                    continue;
+
+                Keys bindingMods = 0;
+                if (parsed.Ctrl)  bindingMods |= Keys.Control;
+                if (parsed.Shift) bindingMods |= Keys.Shift;
+                if (parsed.Alt)   bindingMods |= Keys.Alt;
+
+                // Core Hyperspeedcube check: match after masking consumed mods
+                if ((bindingMods & mask) != effectivePressed)
+                    continue;
+
+                // Pick the most specific match (most modifiers)
+                int modCount = (parsed.Ctrl ? 1 : 0) + (parsed.Shift ? 1 : 0) + (parsed.Alt ? 1 : 0);
+                if (modCount > bestModCount)
+                {
+                    bestModCount = modCount;
+                    bestAction = kvp.Value;
+                }
+            }
+
+            return bestAction;
         }
 
         public string Serialize()
@@ -267,43 +325,17 @@ namespace _3dedit
 
                         IAction action = null;
 
-                        switch (p2[1])
-                        {
-                            case "Grip":
-                                action = new Grip();
-                                break;
-                            case "Twist":
-                                action = new Twist();
-                                break;
-                            case "Recenter":
-                                action = new Recenter();
-                                break;
-                            case "GripTwist":
-                                action = new GripTwist();
-                                break;
-                            case "Twist2c":
-                                action = new Twist2c();
-                                break;
-                            case "Twist3c":
-                                action = new Twist3c();
-                                break;
-                            case "Layer":
-                                action = new Layer();
-                                break;
-                            case "ChangeLayout":
-                                action = new ChangeLayout();
-                                break;
-                            case "Macro":
-                                action = new Macro();
-                                break;
-                            case "MacroReverse":
-                                action = new MacroReverse();
-                                break;
-                        }
+                        if (ActionFactories.TryGetValue(p2[1], out var factory))
+                            action = factory();
 
                         if (action != null)
                         {
                             string k = p2[0];
+
+                            // Skip bindings with invalid chord keys
+                            if (string.IsNullOrEmpty(k) || !ChordUtils.IsValid(k, out _))
+                                continue;
+
                             action.Deserialize(item);
                             binds.Add(k, action);
                         }

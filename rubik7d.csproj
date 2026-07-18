@@ -176,6 +176,8 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="src\Keybindings.cs" />
+    <Compile Include="src\KeyCombo.cs" />
+    <Compile Include="src\ChordUtils.cs" />
     <Compile Include="src\CMacroFile.cs" />
     <Compile Include="src\Cube7D.cs" />
     <Compile Include="src\ImportMC4D.cs" />
