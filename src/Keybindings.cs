@@ -340,6 +340,11 @@ namespace _3dedit
                         if (action != null)
                         {
                             string k = p2[0];
+
+                            // Skip bindings with invalid chord keys
+                            if (string.IsNullOrEmpty(k) || !ChordUtils.IsValid(k, out _))
+                                continue;
+
                             action.Deserialize(item);
                             binds.Add(k, action);
                         }

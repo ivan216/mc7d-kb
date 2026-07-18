@@ -82,6 +82,14 @@ namespace _3dedit
             // Click sidebar background → move focus away from sidebar controls
             panel1.MouseDown += (s, me) => dxControl2.Focus();
 
+            // Release grip/key state when menu is opened (dxControl2 loses focus
+            // but keyboard events may not fire cleanly during menu navigation).
+            menuStrip1.MenuActivate += (s, me) => ReleaseAllKeyboardState();
+            foreach (ToolStripMenuItem item in menuStrip1.Items)
+            {
+                item.DropDownOpened += (s, me) => ReleaseAllKeyboardState();
+            }
+
             // Undo frame skip control — placed below speed slider
             nudUndoFrameSkip = new NumericUpDown();
             nudUndoFrameSkip.Location = new System.Drawing.Point(97, 268);
@@ -305,6 +313,34 @@ namespace _3dedit
             return consumed;
         }
 
+        /// <summary>
+        /// Release all active key actions and grip state.
+        /// Called when the control loses focus or the menu is activated.
+        /// </summary>
+        private void ReleaseAllKeyboardState()
+        {
+            // Release all tracked key actions (layers, grips, etc.)
+            foreach (var kvp in _activeKeyActions)
+            {
+                bool redraw = false, didTwist = false;
+                kvp.Value.OnKeyUp(ref Cube, ref redraw, ref didTwist);
+                if (redraw)
+                {
+                    ProcessHighLights();
+                    Redraw();
+                }
+            }
+            _activeKeyActions.Clear();
+
+            // Release Cube grip if any
+            if (Cube != null && Cube.Gripped[0] != -1)
+            {
+                Cube.Grip(-1, 1);
+                ProcessHighLights();
+                Redraw();
+            }
+        }
+
         private void PostKeybindAction(bool redraw, bool didTwist)
         {
 
@@ -322,11 +358,7 @@ namespace _3dedit
         }
 
         private void dxControl2_Leave(object sender, EventArgs e) {
-            if(Cube!=null && Cube.Gripped[0]!=-1) {
-                Cube.Grip(-1, 1);
-                ProcessHighLights();
-                Redraw();
-            }
+            ReleaseAllKeyboardState();
         }
 
         private void CheckKeybindSet(object sender, EventArgs e)
