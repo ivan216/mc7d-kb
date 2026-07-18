@@ -480,7 +480,7 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return $"Twist {fromAxis.name}→{toAxis.name}";
+                return string.Format(ActionDisplay.Twist, fromAxis.name, toAxis.name);
             }
         }
 
@@ -576,7 +576,7 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return $"Grip {axis.name} {layerMask}";
+                return string.Format(ActionDisplay.Grip, axis.name, layerMask);
             }
         }
 
@@ -601,7 +601,7 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return "Recenter";
+                return ActionDisplay.Recenter;
             }
         }
 
@@ -663,7 +663,7 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return $"GripTwist {grip.axis.name}→{twist.toAxis.name}";
+                return string.Format(ActionDisplay.GripTwist, grip.axis.name, twist.toAxis.name);
             }
         }
 
@@ -780,7 +780,7 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return $"2c {(negative ? "-" : "+")} {axis.name}";
+                return string.Format(ActionDisplay.Twist2c, negative ? "-" : "+", axis.name);
             }
         }
 
@@ -840,7 +840,7 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return $"Layer {layerMask}";
+                return string.Format(ActionDisplay.Layer, layerMask);
             }
         }
 
@@ -972,7 +972,7 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return $"3c {(negative ? "-" : "+")} {axis.name}";
+                return string.Format(ActionDisplay.Twist3c, negative ? "-" : "+", axis.name);
             }
         }
 
@@ -1032,7 +1032,7 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return $"Layout:{layout}";
+                return string.Format(ActionDisplay.ChangeLayout, layout);
             }
         }
 
@@ -1092,7 +1092,7 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return $"Macro#{id}";
+                return string.Format(ActionDisplay.Macro, id);
             }
         }
 
@@ -1124,8 +1124,27 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return "MacroRev";
+                return ActionDisplay.MacroRev;
             }
         }
+    }
+
+    /// <summary>
+    /// All keybind display text — edit here to change what appears on the
+    /// keyboard reference. Each entry stores a format pattern; the action's
+    /// runtime data (axis names, layer masks, etc.) is filled in at display time.
+    /// </summary>
+    public static class ActionDisplay
+    {
+        public static readonly string Twist       = "Twist\n{0}→{1}";
+        public static readonly string Grip        = "Grip\n{0} {1}";
+        public static readonly string Recenter    = "Recenter";
+        public static readonly string GripTwist   = "GripTwist\n{0}→{1}";
+        public static readonly string Twist2c     = "Twist2c\n{0} {1}";
+        public static readonly string Layer       = "Layer\n{0}";
+        public static readonly string Twist3c     = "Twist3c\n{0} {1}";
+        public static readonly string ChangeLayout = "Layout\n{0}";
+        public static readonly string Macro       = "Macro\n#{0}";
+        public static readonly string MacroRev    = "MacroRev";
     }
 }

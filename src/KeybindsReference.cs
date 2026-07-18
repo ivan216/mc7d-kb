@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -29,7 +31,7 @@ namespace _3dedit
 
         static KeyDef[] KeyLayout = BuildLayout();
         static readonly float GRID_W = 19.0f;
-        static readonly float GRID_H = 6.0f;
+        static readonly float GRID_H = 5.85f;
 
         static KeyDef[] BuildLayout()
         {
@@ -217,6 +219,7 @@ namespace _3dedit
         // ---- Instance members ----
 
         Keybindings _keybinds;
+        MenuStrip _menu;
         ToolTip _tooltip;
         int _hoverIndex = -1;
 
@@ -225,9 +228,10 @@ namespace _3dedit
         /// <summary>Forwards physical key releases when this window has focus.</summary>
         public Action<Keys> PhysicalKeyUp;
 
-        public KeybindsReference(Keybindings keybinds)
+        public KeybindsReference(Keybindings keybinds, MenuStrip menu)
         {
             _keybinds = keybinds;
+            _menu = menu;
             _tooltip = new ToolTip();
             _tooltip.ShowAlways = true;
 
@@ -252,6 +256,9 @@ namespace _3dedit
             this.KeyPreview = true;
             this.KeyDown += (s, ke) => { if (PhysicalKeyDown != null) PhysicalKeyDown(ke.KeyCode); };
             this.KeyUp += (s, ke) => { if (PhysicalKeyUp != null) PhysicalKeyUp(ke.KeyCode); };
+
+            // Refresh when the user switches keybind layouts
+            _keybinds.ActiveLayoutChanged += (s, e) => { if (!_collapsed) Invalidate(); };
         }
 
         /// <summary>Set size and clamp position to keep window on-screen.</summary>
@@ -469,9 +476,9 @@ namespace _3dedit
                     fill = Color.White;
 
                 using (var b = new SolidBrush(fill))
-                using (var p = new Pen(Color.FromArgb(80, 80, 80), Math.Max(1f, scale * 0.06f)))
+                using (var p = new Pen(Color.FromArgb(80, 80, 80), Math.Max(1f, scale * 0.04f)))
                 {
-                    float pad = scale * 0.08f;
+                    float pad = scale * 0.03f;
                     var rect = new RectangleF(rx + pad, ry + pad, rw - pad * 2, rh - pad * 2);
                     g.FillRoundedRect(b, rect, scale * 0.15f);
                     g.DrawRoundedRect(p, rect, scale * 0.15f);
@@ -479,27 +486,45 @@ namespace _3dedit
 
                 if (!string.IsNullOrEmpty(k.Label))
                 {
-                    float labelSize = scale * 0.22f;
+                    float labelSize = scale * 0.24f;
                     using (var f = new Font("Segoe UI", labelSize, FontStyle.Regular, GraphicsUnit.Pixel))
                     using (var b = new SolidBrush(Color.FromArgb(60, 60, 60)))
                     {
                         var sz = g.MeasureString(k.Label, f);
                         g.DrawString(k.Label, f, b,
                             rx + (rw - sz.Width) / 2f,
-                            ry + scale * 0.1f);
+                            ry + scale * 0.005f);
                     }
                 }
 
                 if (!string.IsNullOrEmpty(desc))
                 {
-                    float descSize = scale * 0.2f;
-                    using (var f = new Font("Segoe UI", descSize, FontStyle.Regular, GraphicsUnit.Pixel))
-                    using (var b = new SolidBrush(Color.FromArgb(30, 100, 180)))
+                    string line1, line2;
+                    int sp = desc.IndexOf('\n');
+                    if (sp > 0) { line1 = desc.Substring(0, sp); line2 = desc.Substring(sp + 1); }
+                    else        { line1 = desc; line2 = null; }
+
+                    float t1 = scale * 0.28f;
+                    using (var f1 = new Font("Segoe UI", t1, FontStyle.Bold, GraphicsUnit.Pixel))
+                    using (var b1 = new SolidBrush(Color.FromArgb(30, 100, 180)))
                     {
-                        var sz = g.MeasureString(desc, f);
-                        g.DrawString(desc, f, b,
+                        var sz = g.MeasureString(line1, f1);
+                        g.DrawString(line1, f1, b1,
                             rx + (rw - sz.Width) / 2f,
-                            ry + rh * 0.55f);
+                            ry + rh * 0.30f);
+                    }
+
+                    if (line2 != null)
+                    {
+                        float t2 = scale * 0.24f;
+                        using (var f2 = new Font("Segoe UI", t2, FontStyle.Bold, GraphicsUnit.Pixel))
+                        using (var b2 = new SolidBrush(Color.FromArgb(60, 120, 190)))
+                        {
+                            var sz = g.MeasureString(line2, f2);
+                            g.DrawString(line2, f2, b2,
+                                rx + (rw - sz.Width) / 2f,
+                                ry + rh * 0.60f);
+                        }
                     }
                 }
             }
@@ -526,17 +551,88 @@ namespace _3dedit
                 g.DrawLine(p, 0, BAR_HEIGHT - 1, this.ClientSize.Width, BAR_HEIGHT - 1);
         }
 
+        /// <summary>
+        /// Editable map of menu shortcut Keys → display text shown on the keyboard.
+        /// Modify this collection to customise how each shortcut is labelled.
+        /// </summary>
+        static readonly Dictionary<Keys, string> MenuShortcutNames = new Dictionary<Keys, string>
+        {
+            { Keys.Control | Keys.O, "Open"      },
+            { Keys.Control | Keys.S, "Save"      },
+            { Keys.Alt   | Keys.F4, "Exit"       },
+            { Keys.Control | Keys.R, "Reset"     },
+            { Keys.Control | Keys.Z, "Undo"      },
+            { Keys.Control | Keys.Y, "Redo"      },
+            { Keys.Control | Keys.C, "Stop"      },
+            { Keys.Control | Keys.M, "M_Rec" },
+            { Keys.F1, "Ex\nStart"    },
+            { Keys.F2, "Ex\nStop"    },
+            { Keys.F3, "Unwind"   },
+            { Keys.F4, "Commu"   },
+        };
+
+        /// <summary>Look up a menu shortcut matching the given key + modifiers.</summary>
+        string FindMenuShortcutDescription(Keys keyCode, bool ctrl, bool shift, bool alt)
+        {
+            if (keyCode == Keys.None) return null;
+
+            // Build the Keys value with modifier flags for comparison
+            Keys target = keyCode;
+            if (ctrl)  target |= Keys.Control;
+            if (shift) target |= Keys.Shift;
+            if (alt)   target |= Keys.Alt;
+
+            // Check the user-editable dictionary first
+            string name;
+            if (MenuShortcutNames.TryGetValue(target, out name))
+                return name;
+
+            // Fallback: walk the menu hierarchy
+            foreach (ToolStripMenuItem top in _menu.Items)
+            {
+                string result = SearchMenuItem(top, target);
+                if (result != null) return result;
+            }
+            return null;
+        }
+
+        static string SearchMenuItem(ToolStripMenuItem item, Keys target)
+        {
+            if (item.ShortcutKeys == target)
+                return item.Text.Replace("&", "");
+
+            foreach (ToolStripMenuItem sub in item.DropDownItems.OfType<ToolStripMenuItem>())
+            {
+                string result = SearchMenuItem(sub, target);
+                if (result != null) return result;
+            }
+            return null;
+        }
+
         string ResolveDescription(KeyDef k)
         {
             if (_keybinds == null || _keybinds.activeKeybinds == null)
                 return "";
 
-            string keyName = k.Code.ToString();
-            var action = _keybinds.GetActionWithFallback(keyName, false, false, false, Keys.None);
-            if (action == null)
-                return "";
+            // Detect currently pressed modifiers so the description shows
+            // Shift+Key / Ctrl+Key / Shift+Ctrl+Key bindings when appropriate.
+            bool ctrl  = (GetAsyncKeyState((int)Keys.ControlKey) & 0x8000) != 0
+                      || (GetAsyncKeyState((int)Keys.LControlKey) & 0x8000) != 0;
+            bool shift = (GetAsyncKeyState((int)Keys.ShiftKey) & 0x8000) != 0
+                      || (GetAsyncKeyState((int)Keys.LShiftKey) & 0x8000) != 0;
+            bool alt   = (GetAsyncKeyState((int)Keys.Menu) & 0x8000) != 0
+                      || (GetAsyncKeyState((int)Keys.LMenu) & 0x8000) != 0;
 
-            return action.GetDescription();
+            string keyName = k.Code.ToString();
+            var action = _keybinds.GetActionWithFallback(keyName, ctrl, shift, alt, Keys.None);
+            if (action != null)
+                return action.GetDescription();
+
+            // Check WinForms menu shortcuts (Ctrl+O, Ctrl+S, F1-F4, etc.)
+            if (_menu != null)
+                return FindMenuShortcutDescription(k.Code, ctrl, shift, alt);
+
+            return "";
         }
 
     }

@@ -2183,7 +2183,7 @@ namespace _3dedit
         {
             if (KeybindsRef == null || KeybindsRef.IsDisposed)
             {
-                KeybindsRef = new KeybindsReference(Keybinds);
+                KeybindsRef = new KeybindsReference(Keybinds, menuStrip1);
                 KeybindsRef.PhysicalKeyDown = (key) => { var e = new KeyEventArgs(key); KeyDownEvt(null, e); };
                 KeybindsRef.PhysicalKeyUp = (key) => { var e = new KeyEventArgs(key); KeyUpEvt(null, e); };
                 KeybindsRef.Show(this);
