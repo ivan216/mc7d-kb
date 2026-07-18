@@ -2184,6 +2184,8 @@ namespace _3dedit
             if (KeybindsRef == null || KeybindsRef.IsDisposed)
             {
                 KeybindsRef = new KeybindsReference(Keybinds);
+                KeybindsRef.PhysicalKeyDown = (key) => { var e = new KeyEventArgs(key); KeyDownEvt(null, e); };
+                KeybindsRef.PhysicalKeyUp = (key) => { var e = new KeyEventArgs(key); KeyUpEvt(null, e); };
                 KeybindsRef.Show(this);
                 KeybindsRef.FormClosed += (s, fce) => { _refMenuItem.Checked = false; };
                 _refMenuItem.Checked = true;

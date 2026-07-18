@@ -220,6 +220,11 @@ namespace _3dedit
         ToolTip _tooltip;
         int _hoverIndex = -1;
 
+        /// <summary>Forwards physical key presses when this window has focus.</summary>
+        public Action<Keys> PhysicalKeyDown;
+        /// <summary>Forwards physical key releases when this window has focus.</summary>
+        public Action<Keys> PhysicalKeyUp;
+
         public KeybindsReference(Keybindings keybinds)
         {
             _keybinds = keybinds;
@@ -241,6 +246,12 @@ namespace _3dedit
             this.MouseMove += OnMouseMove;
             this.MouseUp += OnMouseUp;
             this.MouseLeave += (s, e) => { _hoverIndex = -1; Invalidate(); };
+
+            // Forward physical key events to the main form when this window
+            // (accidentally) gets focus, so shortcuts still execute.
+            this.KeyPreview = true;
+            this.KeyDown += (s, ke) => { if (PhysicalKeyDown != null) PhysicalKeyDown(ke.KeyCode); };
+            this.KeyUp += (s, ke) => { if (PhysicalKeyUp != null) PhysicalKeyUp(ke.KeyCode); };
         }
 
         /// <summary>Set size and clamp position to keep window on-screen.</summary>
