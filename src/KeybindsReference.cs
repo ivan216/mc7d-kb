@@ -179,93 +179,239 @@ namespace _3dedit
                 list.Add(new KeyDef(code, label, gx, gy, gw, gh));
         }
 
+        // ---- Layout constants ----
+
+        const int BAR_HEIGHT = 28;
+        const int KB_X = 5;              // horizontal padding
+        const int BOTTOM_PAD = 5;        // bottom padding
+        // Total non-keyboard vertical pixels
+        int NonKbV() { return BAR_HEIGHT + 3 + BOTTOM_PAD; }
+
+        // Window client width → total client height (keyboard keeps GRID ratio)
+        int WindowHFromW(int w)   { return (int)(NonKbV() + (w - KB_X * 2f) / GRID_W * GRID_H); }
+        // Total client height → window client width
+        int WindowWFromH(int h)   { return (int)(KB_X * 2f + (h - NonKbV()) * GRID_W / GRID_H); }
+
+        // ---- Dragging and collapse ----
+
+        const int COLLAPSED_W = 200;
+        bool _collapsed = false;
+        Size _lastExpandedSize;
+        Point _dragStart = Point.Empty;
+
+        [DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(int vKey);
+
+        [DllImport("user32.dll")]
+        static extern bool ReleaseCapture();
+
+        [DllImport("user32.dll")]
+        static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+
+        const int WM_NCLBUTTONDOWN = 0xA1;
+        const int HTCAPTION = 2;
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct RECT { public int left, top, right, bottom; }
+
         // ---- Instance members ----
 
         Keybindings _keybinds;
         ToolTip _tooltip;
         int _hoverIndex = -1;
-        int _chromeH, _chromeW;
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct RECT { public int left, top, right, bottom; }
-
-        [DllImport("user32.dll")]
-        static extern short GetAsyncKeyState(int vKey);
 
         public KeybindsReference(Keybindings keybinds)
         {
             _keybinds = keybinds;
             _tooltip = new ToolTip();
+            _tooltip.ShowAlways = true;
 
-            this.Text = "Keybinds Reference";
-            this.Size = new Size(950, 350);
-            this.MinimumSize = new Size(400, 150);
+            this.Text = "";
+            this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(100, 100);
-            this.FormBorderStyle = FormBorderStyle.SizableToolWindow;
             this.DoubleBuffered = true;
             this.BackColor = Color.FromArgb(240, 240, 240);
 
-            // Cache chrome size after handle created
-            this.HandleCreated += (s, e) =>
-            {
-                _chromeH = this.Height - this.ClientSize.Height;
-                _chromeW = this.Width - this.ClientSize.Width;
-            };
+            _lastExpandedSize = new Size(950, WindowHFromW(950));
+            ApplySize(_lastExpandedSize);
 
-            // Repaint during live resize
             this.Resize += (s, e) => Invalidate();
-
-            // Receive keyboard events even without focusable controls
-            this.KeyPreview = true;
-            this.KeyDown += (s, ke) => Invalidate();
-            this.KeyUp += (s, ke) => Invalidate();
-
+            this.MouseDown += OnMouseDown;
             this.MouseMove += OnMouseMove;
+            this.MouseUp += OnMouseUp;
             this.MouseLeave += (s, e) => { _hoverIndex = -1; Invalidate(); };
+        }
+
+        /// <summary>Set size and clamp position to keep window on-screen.</summary>
+        void ApplySize(Size s)
+        {
+            this.Size = s;
+            var screen = Screen.FromControl(this).WorkingArea;
+            int x = this.Left, y = this.Top;
+            if (x < screen.Left) x = screen.Left;
+            if (y < screen.Top) y = screen.Top;
+            if (x + this.Width > screen.Right) x = screen.Right - this.Width;
+            if (y + this.Height > screen.Bottom) y = screen.Bottom - this.Height;
+            if (x != this.Left || y != this.Top) this.Location = new Point(x, y);
         }
 
         protected override void WndProc(ref Message m)
         {
+            const int WM_MOUSEACTIVATE = 0x0021;
+            const int MA_NOACTIVATE = 3;
+
+            const int WM_NCHITTEST = 0x84;
+            const int HTCLIENT = 1;
+            const int HTLEFT = 10, HTRIGHT = 11;
+            const int HTTOP = 12, HTTOPLEFT = 13, HTTOPRIGHT = 14;
+            const int HTBOTTOM = 15, HTBOTTOMLEFT = 16, HTBOTTOMRIGHT = 17;
+
             const int WM_SIZING = 0x0214;
-            const int WMSZ_LEFT = 1, WMSZ_RIGHT = 2;
             const int WMSZ_TOP = 3, WMSZ_BOTTOM = 6;
-            if (m.Msg == WM_SIZING && _chromeH > 0 && this.WindowState == FormWindowState.Normal)
+
+            const int EDGE = 5;
+
+            if (m.Msg == WM_MOUSEACTIVATE)
             {
-                RECT r = (RECT)Marshal.PtrToStructure(m.LParam, typeof(RECT));
-                int clientW = (r.right - r.left) - _chromeW;
-                int clientH = (r.bottom - r.top) - _chromeH;
-                if (clientW > 0 && clientH > 0)
+                // Prevent focus-stealing; mouse events still arrive normally
+                m.Result = (IntPtr)MA_NOACTIVATE;
+                return;
+            }
+
+            if (m.Msg == WM_NCHITTEST)
+            {
+                base.WndProc(ref m);
+                if (m.Result != (IntPtr)HTCLIENT) return;
+
+                int x = m.LParam.ToInt32() & 0xFFFF;
+                int y = (m.LParam.ToInt32() >> 16) & 0xFFFF;
+                Point p = this.PointToClient(new Point(x, y));
+
+                if (_collapsed) return;
+
+                bool l = p.X < EDGE, r = p.X >= this.ClientSize.Width - EDGE;
+                bool t = p.Y < EDGE, b = p.Y >= this.ClientSize.Height - EDGE;
+
+                if      (l && t) m.Result = (IntPtr)HTTOPLEFT;
+                else if (r && t) m.Result = (IntPtr)HTTOPRIGHT;
+                else if (l && b) m.Result = (IntPtr)HTBOTTOMLEFT;
+                else if (r && b) m.Result = (IntPtr)HTBOTTOMRIGHT;
+                else if (l)      m.Result = (IntPtr)HTLEFT;
+                else if (r)      m.Result = (IntPtr)HTRIGHT;
+                else if (t)      m.Result = (IntPtr)HTTOP;
+                else if (b)      m.Result = (IntPtr)HTBOTTOM;
+                return;
+            }
+
+            if (m.Msg == WM_SIZING && !_collapsed)
+            {
+                RECT rc = (RECT)Marshal.PtrToStructure(m.LParam, typeof(RECT));
+                int w = rc.right - rc.left;
+                int h = rc.bottom - rc.top;
+                if (w > 0 && h > 0)
                 {
                     int edge = m.WParam.ToInt32();
                     if (edge == WMSZ_TOP || edge == WMSZ_BOTTOM)
                     {
-                        clientW = (int)(clientH / GRID_H * GRID_W);
-                        r.right = r.left + clientW + _chromeW;
-                    }
-                    else if (edge == WMSZ_LEFT || edge == WMSZ_RIGHT)
-                    {
-                        clientH = (int)(clientW / GRID_W * GRID_H);
-                        r.bottom = r.top + clientH + _chromeH;
+                        // Height-driven: derive width
+                        int newW = WindowWFromH(h);
+                        if (newW >= COLLAPSED_W) rc.right = rc.left + newW;
                     }
                     else
                     {
-                        float target = GRID_W / GRID_H;
-                        if ((float)clientW / clientH > target)
-                            r.bottom = r.top + (int)(clientW / target) + _chromeH;
-                        else
-                            r.right = r.left + (int)(clientH * target) + _chromeW;
+                        // Width-driven (or corner): derive height
+                        int newH = WindowHFromW(w);
+                        if (newH >= NonKbV() + 20) rc.bottom = rc.top + newH;
                     }
-                    Marshal.StructureToPtr(r, m.LParam, false);
+                    Marshal.StructureToPtr(rc, m.LParam, false);
                 }
             }
+
             base.WndProc(ref m);
+        }
+
+        // ---- Toggle collapse ----
+
+        void ToggleCollapse()
+        {
+            _collapsed = !_collapsed;
+            if (_collapsed)
+            {
+                _lastExpandedSize = this.Size;
+                ApplySize(new Size(COLLAPSED_W, BAR_HEIGHT + 2));
+            }
+            else
+                ApplySize(_lastExpandedSize);
+            Invalidate();
+        }
+
+        // ---- Mouse handlers ----
+
+        void OnMouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && e.Y <= BAR_HEIGHT)
+                _dragStart = e.Location;
+        }
+
+        void OnMouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && _dragStart != Point.Empty)
+            {
+                _dragStart = Point.Empty;
+                ToggleCollapse();
+            }
+            _dragStart = Point.Empty;
+        }
+
+        void OnMouseMove(object sender, MouseEventArgs e)
+        {
+            if (_dragStart != Point.Empty && e.Button == MouseButtons.Left)
+            {
+                int dx = e.X - _dragStart.X;
+                int dy = e.Y - _dragStart.Y;
+                if (Math.Abs(dx) > 3 || Math.Abs(dy) > 3)
+                {
+                    _dragStart = Point.Empty;
+                    ReleaseCapture();
+                    SendMessage(this.Handle, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+                    return;
+                }
+            }
+
+            _hoverIndex = -1;
+            if (!_collapsed)
+            {
+                float scale = (this.ClientSize.Width - 10) / GRID_W;
+                float ox = 5f;
+                float oy = BAR_HEIGHT + 3f;
+
+                for (int i = 0; i < KeyLayout.Length; i++)
+                {
+                    var k = KeyLayout[i];
+                    float rx = ox + k.GX * scale;
+                    float ry = oy + k.GY * scale;
+                    float rw = k.GW * scale;
+                    float rh = k.GH * scale;
+
+                    if (e.X >= rx && e.X <= rx + rw && e.Y >= ry && e.Y <= ry + rh)
+                    {
+                        _hoverIndex = i;
+                        string desc = ResolveDescription(k);
+                        if (!string.IsNullOrEmpty(desc))
+                            _tooltip.SetToolTip(this, $"{k.Label} ({k.Code}): {desc}");
+                        else
+                            _tooltip.SetToolTip(this, $"{k.Label} ({k.Code})");
+                        break;
+                    }
+                }
+            }
         }
 
         /// <summary>Call from the main form on key events to refresh the display.</summary>
         public void RefreshDisplay()
         {
-            Invalidate();
+            if (!_collapsed) Invalidate();
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -274,13 +420,19 @@ namespace _3dedit
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            float scale = (this.ClientSize.Width - 10) / GRID_W;
-            float ox = 5f;
-            float oy = 5f;
-
             // Draw background
             using (var bg = new SolidBrush(Color.FromArgb(220, 220, 220)))
                 g.FillRectangle(bg, this.ClientRectangle);
+
+            // Draw the bar
+            DrawBar(g);
+
+            if (_collapsed) return;
+
+            // Draw keyboard below the bar
+            float scale = (this.ClientSize.Width - 10) / GRID_W;
+            float ox = 5f;
+            float oy = BAR_HEIGHT + 3f;
 
             for (int i = 0; i < KeyLayout.Length; i++)
             {
@@ -342,6 +494,27 @@ namespace _3dedit
             }
         }
 
+        void DrawBar(Graphics g)
+        {
+            var barRect = new Rectangle(0, 0, this.ClientSize.Width, BAR_HEIGHT);
+            using (var bg = new SolidBrush(Color.FromArgb(55, 55, 65)))
+                g.FillRectangle(bg, barRect);
+
+            string text = _collapsed ? "▶  Keybinds" : "▼  Keybinds";
+            using (var f = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel))
+            using (var b = new SolidBrush(Color.FromArgb(220, 220, 220)))
+            {
+                var sz = g.MeasureString(text, f);
+                g.DrawString(text, f, b,
+                    (this.ClientSize.Width - sz.Width) / 2f,
+                    (BAR_HEIGHT - sz.Height) / 2f);
+            }
+
+            // Thin highlight line at bottom of bar
+            using (var p = new Pen(Color.FromArgb(90, 90, 100)))
+                g.DrawLine(p, 0, BAR_HEIGHT - 1, this.ClientSize.Width, BAR_HEIGHT - 1);
+        }
+
         string ResolveDescription(KeyDef k)
         {
             if (_keybinds == null || _keybinds.activeKeybinds == null)
@@ -355,39 +528,6 @@ namespace _3dedit
             return action.GetDescription();
         }
 
-        void OnMouseMove(object sender, MouseEventArgs e)
-        {
-            float scale = (this.ClientSize.Width - 10) / GRID_W;
-            float ox = 5f;
-            float oy = 5f;
-
-            int oldIndex = _hoverIndex;
-            _hoverIndex = -1;
-
-            for (int i = 0; i < KeyLayout.Length; i++)
-            {
-                var k = KeyLayout[i];
-                float rx = ox + k.GX * scale;
-                float ry = oy + k.GY * scale;
-                float rw = k.GW * scale;
-                float rh = k.GH * scale;
-
-                if (e.X >= rx && e.X <= rx + rw && e.Y >= ry && e.Y <= ry + rh)
-                {
-                    _hoverIndex = i;
-
-                    string desc = ResolveDescription(k);
-                    if (!string.IsNullOrEmpty(desc))
-                        _tooltip.SetToolTip(this, $"{k.Label} ({k.Code}): {desc}");
-                    else
-                        _tooltip.SetToolTip(this, $"{k.Label} ({k.Code})");
-                    break;
-                }
-            }
-
-            if (_hoverIndex != oldIndex)
-                Invalidate();
-        }
     }
 
     // Extension method for rounded rectangle drawing

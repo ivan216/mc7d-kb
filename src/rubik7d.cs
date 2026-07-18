@@ -84,6 +84,8 @@ namespace _3dedit
 
             // Block wheel on TrackBar/NumericUpDown; redirect to parent panel for scrolling
             Application.AddMessageFilter(new WheelGuard(this));
+            // Catch ALL key up/down messages before any control filters them
+            Application.AddMessageFilter(new KeybindsRefreshFilter(this));
             // Click sidebar background → move focus away from sidebar controls
             panel1.MouseDown += (s, me) => dxControl2.Focus();
 
@@ -272,7 +274,12 @@ namespace _3dedit
             var action = Keybinds.GetActionWithFallback(
                 keyCode.ToString(), combo.Ctrl, combo.Shift, combo.Alt, consumedMods);
 
-            if (action == null) return;
+            if (action == null)
+            {
+                if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+                    KeybindsRef.RefreshDisplay();
+                return;
+            }
 
             _activeKeyActions[keyCode] = action;
 
@@ -2209,6 +2216,25 @@ namespace _3dedit
                     int sy = -sc.AutoScrollPosition.Y;
                     sc.AutoScrollPosition = new System.Drawing.Point(0, sy - delta);
                     return true;
+                }
+                return false;
+            }
+        }
+
+        // Intercept all WM_KEYDOWN / WM_KEYUP at the message-queue level so the
+        // keyboard reference refreshes even when focus is on a child control
+        // (Tab/arrows get consumed for focus navigation and never reach KeyUpEvt).
+        class KeybindsRefreshFilter : IMessageFilter
+        {
+            Form1 _form;
+            public KeybindsRefreshFilter(Form1 form) { _form = form; }
+            public bool PreFilterMessage(ref Message m)
+            {
+                if (m.Msg == 0x100 || m.Msg == 0x101) // WM_KEYDOWN or WM_KEYUP
+                {
+                    var r = _form.KeybindsRef;
+                    if (r != null && !r.IsDisposed)
+                        r.RefreshDisplay();
                 }
                 return false;
             }
