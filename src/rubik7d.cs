@@ -164,6 +164,10 @@ namespace _3dedit
         Keybindings Keybinds = new Keybindings();
         Form KeybindsSetup;
 
+        /// <summary>Tracks actions activated by currently held keys.
+        /// Used for consumed-modifier calculation and KeyUp dispatch.</summary>
+        Dictionary<Keys, Keybindings.IAction> _activeKeyActions = new Dictionary<Keys, Keybindings.IAction>();
+
         bool AltHighlight=false;
         int[] NColMask;  // -1: only unhighlight, 0: normal (Indeterminate), 1: only highlight
         bool MaskStickers = false;  // true: exclude unchecked stickers from mesh (unclickable), false: only dim them
@@ -243,10 +247,19 @@ namespace _3dedit
 
         private void KeyDownEvt(object sender, KeyEventArgs e)
         {
-            string key = e.KeyCode.ToString();
-            var action = Keybinds.GetAction(key);
+            Keys keyCode = e.KeyCode;
+
+            // Build a self-excluding KeyCombo from the OS modifier state
+            KeyCombo combo = KeyCombo.FromKeyPress(keyCode);
+
+            // Resolve with consumed-modifier awareness
+            Keys consumedMods = GetConsumedModifiers();
+            var action = Keybinds.GetActionWithFallback(
+                keyCode.ToString(), combo.Ctrl, combo.Shift, combo.Alt, consumedMods);
 
             if (action == null) return;
+
+            _activeKeyActions[keyCode] = action;
 
             bool redraw = false, didTwist = false;
             int prevStep = Cube?.partialTwist3c?.step ?? 0;
@@ -263,14 +276,33 @@ namespace _3dedit
 
         private void KeyUpEvt(object sender, KeyEventArgs e)
         {
-            string key = e.KeyCode.ToString();
-            var action = Keybinds.GetAction(key);
+            Keys keyCode = e.KeyCode;
 
-            if (action == null) return;
+            if (!_activeKeyActions.TryGetValue(keyCode, out var action))
+                return;
+
+            _activeKeyActions.Remove(keyCode);
 
             bool redraw = false, didTwist = false;
             action.OnKeyUp(ref Cube, ref redraw, ref didTwist);
             PostKeybindAction(redraw, didTwist);
+        }
+
+        /// <summary>
+        /// Calculate the set of modifier flags that are "consumed" —
+        /// modifier keys that are currently held with an active action.
+        /// Consumed modifiers are excluded when resolving other key presses,
+        /// so holding Shift (for a grip) doesn't prevent other keys from
+        /// matching their bindings.
+        /// </summary>
+        private Keys GetConsumedModifiers()
+        {
+            Keys consumed = Keys.None;
+            foreach (Keys key in _activeKeyActions.Keys)
+            {
+                consumed |= ChordUtils.GetModifierFlag(key);
+            }
+            return consumed;
         }
 
         private void PostKeybindAction(bool redraw, bool didTwist)
@@ -2084,7 +2116,7 @@ namespace _3dedit
         {
             if (KeybindsSetup == null || KeybindsSetup.IsDisposed)
             {
-                KeybindsSetup = new KeybindSetup(this.Keybinds);
+                KeybindsSetup = new KeybindSetup(this.Keybinds, menuStrip1);
             }
             KeybindsSetup.Show();
             KeybindsSetup.Focus();
