@@ -358,6 +358,8 @@ namespace _3dedit
             Control[] SetupControls();
             /// <summary>Short human-readable description for the keybinds reference display.</summary>
             string GetDescription();
+            /// <summary>Single-line tooltip shown on hover (defaults to GetDescription if empty).</summary>
+            string GetTooltip();
         }
 
 
@@ -480,7 +482,11 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return string.Format(ActionDisplay.Twist, fromAxis.name, toAxis.name);
+                return string.Format(ActionDisplay.TwistDisplay, fromAxis.name, toAxis.name);
+            }
+            public string GetTooltip()
+            {
+                return string.Format(ActionDisplay.TwistTooltip, fromAxis.name, toAxis.name);
             }
         }
 
@@ -576,7 +582,11 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return string.Format(ActionDisplay.Grip, axis.name, layerMask);
+                return string.Format(ActionDisplay.GripDisplay, axis.name, layerMask);
+            }
+            public string GetTooltip()
+            {
+                return string.Format(ActionDisplay.GripTooltip, axis.name, layerMask);
             }
         }
 
@@ -601,7 +611,11 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return ActionDisplay.Recenter;
+                return ActionDisplay.RecenterDisplay;
+            }
+            public string GetTooltip()
+            {
+                return ActionDisplay.RecenterTooltip;
             }
         }
 
@@ -663,7 +677,11 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return string.Format(ActionDisplay.GripTwist, grip.axis.name, twist.toAxis.name);
+                return string.Format(ActionDisplay.GripTwistDisplay, grip.axis.name, grip.layerMask, twist.fromAxis.name, twist.toAxis.name);
+            }
+            public string GetTooltip()
+            {
+                return string.Format(ActionDisplay.GripTwistTooltip, grip.axis.name, grip.layerMask, twist.fromAxis.name, twist.toAxis.name);
             }
         }
 
@@ -780,7 +798,11 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return string.Format(ActionDisplay.Twist2c, negative ? "-" : "+", axis.name);
+                return string.Format(ActionDisplay.Twist2cDisplay, negative ? "-" : "+", axis.name);
+            }
+            public string GetTooltip()
+            {
+                return string.Format(ActionDisplay.Twist2cTooltip, negative ? "-" : "+", axis.name);
             }
         }
 
@@ -840,7 +862,11 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return string.Format(ActionDisplay.Layer, layerMask);
+                return string.Format(ActionDisplay.LayerDisplay, layerMask);
+            }
+            public string GetTooltip()
+            {
+                return string.Format(ActionDisplay.LayerTooltip, layerMask);
             }
         }
 
@@ -972,7 +998,11 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return string.Format(ActionDisplay.Twist3c, negative ? "-" : "+", axis.name);
+                return string.Format(ActionDisplay.Twist3cDisplay, negative ? "-" : "+", axis.name);
+            }
+            public string GetTooltip()
+            {
+                return string.Format(ActionDisplay.Twist3cTooltip, negative ? "-" : "+", axis.name);
             }
         }
 
@@ -1032,7 +1062,12 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return string.Format(ActionDisplay.ChangeLayout, layout);
+                string shortName = layout.Length > 3 ? layout.Substring(0, 3) : layout;
+                return "[" + shortName + "]";
+            }
+            public string GetTooltip()
+            {
+                return string.Format(ActionDisplay.ChangeLayoutTooltip, layout);
             }
         }
 
@@ -1092,7 +1127,11 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return string.Format(ActionDisplay.Macro, id);
+                return string.Format(ActionDisplay.MacroDisplay, id);
+            }
+            public string GetTooltip()
+            {
+                return string.Format(ActionDisplay.MacroTooltip, id);
             }
         }
 
@@ -1124,27 +1163,60 @@ namespace _3dedit
 
             public string GetDescription()
             {
-                return ActionDisplay.MacroRev;
+                return ActionDisplay.MacroRevDisplay;
+            }
+            public string GetTooltip()
+            {
+                return ActionDisplay.MacroRevTooltip;
             }
         }
     }
 
     /// <summary>
     /// All keybind display text — edit here to change what appears on the
-    /// keyboard reference. Each entry stores a format pattern; the action's
-    /// runtime data (axis names, layer masks, etc.) is filled in at display time.
+    /// keyboard reference. Two variants per action:
+    ///   <c>XxxDisplay</c> – drawn inside each key (use \n to split into 2 lines;
+    ///                         single-line text is centred vertically).
+    ///   <c>XxxTooltip</c> – single-line text shown on mouse hover.
     /// </summary>
     public static class ActionDisplay
     {
-        public static readonly string Twist       = "Twist\n{0}→{1}";
-        public static readonly string Grip        = "Grip\n{0} {1}";
-        public static readonly string Recenter    = "Recenter";
-        public static readonly string GripTwist   = "GripTwist\n{0}→{1}";
-        public static readonly string Twist2c     = "Twist2c\n{0} {1}";
-        public static readonly string Layer       = "Layer\n{0}";
-        public static readonly string Twist3c     = "Twist3c\n{0} {1}";
-        public static readonly string ChangeLayout = "Layout\n{0}";
-        public static readonly string Macro       = "Macro\n#{0}";
-        public static readonly string MacroRev    = "MacroRev";
+        /// <summary>args: {0}=fromAxis.name, {1}=toAxis.name</summary>
+        public static string TwistDisplay  = "{0}→{1}";
+        public static string TwistTooltip  = "Twist from {0} to {1}";
+
+        /// <summary>args: {0}=axis.name, {1}=layerMask</summary>
+        public static string GripDisplay   = "{0}{{{1}}}";
+        public static string GripTooltip   = "Grip facet {0} layer {1}";
+
+        public static string RecenterDisplay = "CTR";
+        public static string RecenterTooltip = "Recenter";
+
+        /// <summary>args: {0}=grip.axis.name, {1}=layerMask, {2}=fromAxis.name, {3}=toAxis.name</summary>
+        public static string GripTwistDisplay = "{0}{{{1}}}\n{2}→{3}";
+        public static string GripTwistTooltip = "Grip facet {0} layer {1} and twist from {2} to {3}";
+
+        /// <summary>args: {0}=layerMask</summary>
+        public static string LayerDisplay   = "{{{0}}}";
+        public static string LayerTooltip   = "Layer(bitmask) {0}";
+
+        /// <summary>args: {0}="-" or "+", {1}=axis.name</summary>
+        public static string Twist2cDisplay = "{0}{1}";
+        public static string Twist2cTooltip = "Twist2c axis {0}{1}";
+
+        /// <summary>args: {0}="-" or "+", {1}=axis.name</summary>
+        public static string Twist3cDisplay = "{0}{1}";
+        public static string Twist3cTooltip = "Twist3c select {0}{1}";
+
+        /// <summary>args: {0}=layout name</summary>
+        public static string ChangeLayoutDisplay = "[{0}]";
+        public static string ChangeLayoutTooltip = "change layout to {0}";
+
+        /// <summary>args: {0}=macro id</summary>
+        public static string MacroDisplay   = "M #{0}";
+        public static string MacroTooltip   = "apply Macro id #{0}";
+
+        public static string MacroRevDisplay = "Mrev";
+        public static string MacroRevTooltip = "apply Macro Reverse";
     }
 }

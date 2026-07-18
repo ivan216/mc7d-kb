@@ -415,9 +415,9 @@ namespace _3dedit
                     if (e.X >= rx && e.X <= rx + rw && e.Y >= ry && e.Y <= ry + rh)
                     {
                         _hoverIndex = i;
-                        string desc = ResolveDescription(k);
-                        if (!string.IsNullOrEmpty(desc))
-                            _tooltip.SetToolTip(this, $"{k.Label} ({k.Code}): {desc}");
+                        string tip = ResolveTooltip(k);
+                        if (!string.IsNullOrEmpty(tip))
+                            _tooltip.SetToolTip(this, $"{k.Label} ({k.Code}): {tip}");
                         else
                             _tooltip.SetToolTip(this, $"{k.Label} ({k.Code})");
                         break;
@@ -504,26 +504,39 @@ namespace _3dedit
                     if (sp > 0) { line1 = desc.Substring(0, sp); line2 = desc.Substring(sp + 1); }
                     else        { line1 = desc; line2 = null; }
 
-                    float t1 = scale * 0.28f;
-                    using (var f1 = new Font("Segoe UI", t1, FontStyle.Bold, GraphicsUnit.Pixel))
-                    using (var b1 = new SolidBrush(Color.FromArgb(30, 100, 180)))
-                    {
-                        var sz = g.MeasureString(line1, f1);
-                        g.DrawString(line1, f1, b1,
-                            rx + (rw - sz.Width) / 2f,
-                            ry + rh * 0.30f);
-                    }
-
                     if (line2 != null)
                     {
-                        float t2 = scale * 0.24f;
+                        // Two-line (GripTwist): line1 upper, line2 lower
+                        float t1 = scale * 0.30f;
+                        using (var f1 = new Font("Segoe UI", t1, FontStyle.Bold, GraphicsUnit.Pixel))
+                        using (var b1 = new SolidBrush(Color.FromArgb(30, 100, 180)))
+                        {
+                            var sz = g.MeasureString(line1, f1);
+                            g.DrawString(line1, f1, b1,
+                                rx + (rw - sz.Width) / 2f,
+                                ry + rh * 0.28f);
+                        }
+                        float t2 = scale * 0.28f;
                         using (var f2 = new Font("Segoe UI", t2, FontStyle.Bold, GraphicsUnit.Pixel))
                         using (var b2 = new SolidBrush(Color.FromArgb(60, 120, 190)))
                         {
                             var sz = g.MeasureString(line2, f2);
                             g.DrawString(line2, f2, b2,
                                 rx + (rw - sz.Width) / 2f,
-                                ry + rh * 0.60f);
+                                ry + rh * 0.58f);
+                        }
+                    }
+                    else
+                    {
+                        // Single-line: big text centered in the key
+                        float ts = scale * 0.34f;
+                        using (var f = new Font("Segoe UI", ts, FontStyle.Bold, GraphicsUnit.Pixel))
+                        using (var b = new SolidBrush(Color.FromArgb(30, 100, 180)))
+                        {
+                            var sz = g.MeasureString(line1, f);
+                            g.DrawString(line1, f, b,
+                                rx + (rw - sz.Width) / 2f,
+                                ry + (rh - sz.Height) / 2f + scale * 0.02f);
                         }
                     }
                 }
@@ -552,42 +565,76 @@ namespace _3dedit
         }
 
         /// <summary>
-        /// Editable map of menu shortcut Keys → display text shown on the keyboard.
-        /// Modify this collection to customise how each shortcut is labelled.
+        /// Editable map of menu shortcut Keys → 2-line key display text
+        /// (use \n to split; single-line is centred vertically).
         /// </summary>
-        static readonly Dictionary<Keys, string> MenuShortcutNames = new Dictionary<Keys, string>
+        static readonly Dictionary<Keys, string> MenuShortcutDisplay = new Dictionary<Keys, string>
         {
-            { Keys.Control | Keys.O, "Open"      },
-            { Keys.Control | Keys.S, "Save"      },
-            { Keys.Alt   | Keys.F4, "Exit"       },
-            { Keys.Control | Keys.R, "Reset"     },
-            { Keys.Control | Keys.Z, "Undo"      },
-            { Keys.Control | Keys.Y, "Redo"      },
-            { Keys.Control | Keys.C, "Stop"      },
-            { Keys.Control | Keys.M, "M_Rec" },
-            { Keys.F1, "Ex\nStart"    },
-            { Keys.F2, "Ex\nStop"    },
-            { Keys.F3, "Unwind"   },
-            { Keys.F4, "Commu"   },
+            { Keys.Control | Keys.O, "Open"  },
+            { Keys.Control | Keys.S, "Save"  },
+            { Keys.Alt   | Keys.F4, "Exit"   },
+            { Keys.Control | Keys.R, "Reset" },
+            { Keys.Control | Keys.Z, "Undo"  },
+            { Keys.Control | Keys.Y, "Redo"  },
+            { Keys.Control | Keys.C, "Stop"  },
+            { Keys.Control | Keys.M, "Mrec"  },
+            { Keys.F1, "ST"   },
+            { Keys.F2, "STP"  },
+            { Keys.F3, "conj" },
+            { Keys.F4, "cmu"  },
         };
 
-        /// <summary>Look up a menu shortcut matching the given key + modifiers.</summary>
+        /// <summary>
+        /// Editable map of menu shortcut Keys → tooltip text (single line).
+        /// </summary>
+        static readonly Dictionary<Keys, string> MenuShortcutTooltips = new Dictionary<Keys, string>
+        {
+            { Keys.Control | Keys.O, "Open"       },
+            { Keys.Control | Keys.S, "Save"       },
+            { Keys.Alt   | Keys.F4, "Exit"        },
+            { Keys.Control | Keys.R, "Reset"      },
+            { Keys.Control | Keys.Z, "Undo"       },
+            { Keys.Control | Keys.Y, "Redo"       },
+            { Keys.Control | Keys.C, "Stop"       },
+            { Keys.Control | Keys.M, "Macro record"},
+            { Keys.F1, "Start extra turns"  },
+            { Keys.F2, "Stop extra turns"   },
+            { Keys.F3, "conjugate"  },
+            { Keys.F4, "commutator" },
+        };
+
+        /// <summary>Look up a menu shortcut display text.</summary>
         string FindMenuShortcutDescription(Keys keyCode, bool ctrl, bool shift, bool alt)
         {
             if (keyCode == Keys.None) return null;
-
-            // Build the Keys value with modifier flags for comparison
             Keys target = keyCode;
             if (ctrl)  target |= Keys.Control;
             if (shift) target |= Keys.Shift;
             if (alt)   target |= Keys.Alt;
 
-            // Check the user-editable dictionary first
             string name;
-            if (MenuShortcutNames.TryGetValue(target, out name))
+            if (MenuShortcutDisplay.TryGetValue(target, out name))
                 return name;
+            return FallbackMenuShortcut(target);
+        }
 
-            // Fallback: walk the menu hierarchy
+        /// <summary>Look up a menu shortcut tooltip text.</summary>
+        string FindMenuShortcutTooltip(Keys keyCode, bool ctrl, bool shift, bool alt)
+        {
+            if (keyCode == Keys.None) return null;
+            Keys target = keyCode;
+            if (ctrl)  target |= Keys.Control;
+            if (shift) target |= Keys.Shift;
+            if (alt)   target |= Keys.Alt;
+
+            string name;
+            if (MenuShortcutTooltips.TryGetValue(target, out name))
+                return name;
+            return FallbackMenuShortcut(target);
+        }
+
+        string FallbackMenuShortcut(Keys target)
+        {
             foreach (ToolStripMenuItem top in _menu.Items)
             {
                 string result = SearchMenuItem(top, target);
@@ -609,6 +656,15 @@ namespace _3dedit
             return null;
         }
 
+        /// <summary>Map left/right modifier key codes to their generic form.</summary>
+        static string NormaliseModKey(Keys code)
+        {
+            if (code == Keys.LShiftKey || code == Keys.RShiftKey) return "ShiftKey";
+            if (code == Keys.LControlKey || code == Keys.RControlKey) return "ControlKey";
+            if (code == Keys.LMenu || code == Keys.RMenu) return "Menu";
+            return code.ToString();
+        }
+
         string ResolveDescription(KeyDef k)
         {
             if (_keybinds == null || _keybinds.activeKeybinds == null)
@@ -623,7 +679,9 @@ namespace _3dedit
             bool alt   = (GetAsyncKeyState((int)Keys.Menu) & 0x8000) != 0
                       || (GetAsyncKeyState((int)Keys.LMenu) & 0x8000) != 0;
 
-            string keyName = k.Code.ToString();
+            // Normalise left/right modifiers to their generic key code so
+            // e.g. "LShiftKey" → "ShiftKey" matches keybinds bound to Shift.
+            string keyName = NormaliseModKey(k.Code);
             var action = _keybinds.GetActionWithFallback(keyName, ctrl, shift, alt, Keys.None);
             if (action != null)
                 return action.GetDescription();
@@ -631,6 +689,29 @@ namespace _3dedit
             // Check WinForms menu shortcuts (Ctrl+O, Ctrl+S, F1-F4, etc.)
             if (_menu != null)
                 return FindMenuShortcutDescription(k.Code, ctrl, shift, alt);
+
+            return "";
+        }
+
+        string ResolveTooltip(KeyDef k)
+        {
+            if (_keybinds == null || _keybinds.activeKeybinds == null)
+                return "";
+
+            bool ctrl  = (GetAsyncKeyState((int)Keys.ControlKey) & 0x8000) != 0
+                      || (GetAsyncKeyState((int)Keys.LControlKey) & 0x8000) != 0;
+            bool shift = (GetAsyncKeyState((int)Keys.ShiftKey) & 0x8000) != 0
+                      || (GetAsyncKeyState((int)Keys.LShiftKey) & 0x8000) != 0;
+            bool alt   = (GetAsyncKeyState((int)Keys.Menu) & 0x8000) != 0
+                      || (GetAsyncKeyState((int)Keys.LMenu) & 0x8000) != 0;
+
+            string keyName = NormaliseModKey(k.Code);
+            var action = _keybinds.GetActionWithFallback(keyName, ctrl, shift, alt, Keys.None);
+            if (action != null)
+                return action.GetTooltip();
+
+            if (_menu != null)
+                return FindMenuShortcutTooltip(k.Code, ctrl, shift, alt);
 
             return "";
         }
