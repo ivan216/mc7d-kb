@@ -74,11 +74,20 @@ namespace _3dedit
             this.UpdateKeybindMenu(null, EventArgs.Empty);
             Keybindings.loaded = Keybinds;
 
+            // Add "Keybinds Reference" menu item after "Edit Keybinds"
+            _refMenuItem = new ToolStripMenuItem("Keybinds Reference");
+            _refMenuItem.Click += (s, me) => ToggleKeybindsReference();
+            viewToolStripMenuItem.DropDownItems.Add(_refMenuItem);
+
             // Wire up macro hotkey execution
             Keybindings.ExecuteMacroById = ExecuteMacroByIdCmd;
 
             // Block wheel on TrackBar/NumericUpDown; redirect to parent panel for scrolling
             Application.AddMessageFilter(new WheelGuard(this));
+            // Catch ALL key up/down messages before any control filters them
+            Application.AddMessageFilter(new KeybindsRefreshFilter(this));
+            // Ensure the DirectX control has focus at startup so keybinds work immediately
+            this.Shown += (s, me) => dxControl2.Focus();
             // Click sidebar background → move focus away from sidebar controls
             panel1.MouseDown += (s, me) => dxControl2.Focus();
 
@@ -171,6 +180,8 @@ namespace _3dedit
 
         Keybindings Keybinds = new Keybindings();
         Form KeybindsSetup;
+        KeybindsReference KeybindsRef;
+        ToolStripMenuItem _refMenuItem;
 
         /// <summary>Tracks actions activated by currently held keys.
         /// Used for consumed-modifier calculation and KeyUp dispatch.</summary>
@@ -265,7 +276,11 @@ namespace _3dedit
             var action = Keybinds.GetActionWithFallback(
                 keyCode.ToString(), combo.Ctrl, combo.Shift, combo.Alt, consumedMods);
 
-            if (action == null) return;
+            if (action == null)
+            {
+                RefreshKeybindsReferenceDisplay();
+                return;
+            }
 
             _activeKeyActions[keyCode] = action;
 
@@ -280,6 +295,8 @@ namespace _3dedit
                 ClickQual = true;
             }
             PostKeybindAction(redraw, didTwist);
+
+            RefreshKeybindsReferenceDisplay();
         }
 
         private void KeyUpEvt(object sender, KeyEventArgs e)
@@ -287,13 +304,18 @@ namespace _3dedit
             Keys keyCode = e.KeyCode;
 
             if (!_activeKeyActions.TryGetValue(keyCode, out var action))
+            {
+                RefreshKeybindsReferenceDisplay();
                 return;
+            }
 
             _activeKeyActions.Remove(keyCode);
 
             bool redraw = false, didTwist = false;
             action.OnKeyUp(ref Cube, ref redraw, ref didTwist);
             PostKeybindAction(redraw, didTwist);
+
+            RefreshKeybindsReferenceDisplay();
         }
 
         /// <summary>
@@ -311,6 +333,16 @@ namespace _3dedit
                 consumed |= ChordUtils.GetModifierFlag(key);
             }
             return consumed;
+        }
+
+        /// <summary>Convenience: sync ConsumedModifiers to the keyboard ref and redraw.</summary>
+        private void RefreshKeybindsReferenceDisplay()
+        {
+            if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+            {
+                KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
+                KeybindsRef.RefreshDisplay();
+            }
         }
 
         /// <summary>
@@ -2035,6 +2067,15 @@ namespace _3dedit
             UpdateToggleButtonPosition();
         }
 
+        /// <summary>Focus the DirectX control whenever this form is activated,
+        /// so keybindings work immediately after modal dialogs close or
+        /// after the keyboard reference window is clicked.</summary>
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            dxControl2.Focus();
+        }
+
         private void UpdateToggleButtonPosition() {
             int buttonY = (this.ClientSize.Height - btnTogglePanel.Height) / 2;
             if (m_panelCollapsed) {
@@ -2155,6 +2196,25 @@ namespace _3dedit
             KeybindsSetup.WindowState = FormWindowState.Normal;
         }
 
+        private void ToggleKeybindsReference()
+        {
+            if (KeybindsRef == null || KeybindsRef.IsDisposed)
+            {
+                KeybindsRef = new KeybindsReference(Keybinds, menuStrip1);
+                KeybindsRef.PhysicalKeyDown = (key) => { var e = new KeyEventArgs(key); KeyDownEvt(null, e); };
+                KeybindsRef.PhysicalKeyUp = (key) => { var e = new KeyEventArgs(key); KeyUpEvt(null, e); };
+                KeybindsRef.Show(this);
+                KeybindsRef.FormClosed += (s, fce) => { _refMenuItem.Checked = false; };
+                _refMenuItem.Checked = true;
+            }
+            else
+            {
+                KeybindsRef.Close();
+                KeybindsRef = null;
+                _refMenuItem.Checked = false;
+            }
+        }
+
         // Intercept mouse wheel on TrackBar/NumericUpDown when not focused
         // Redirect to parent panel for scrolling instead of changing the slider value
         class WheelGuard : IMessageFilter {
@@ -2175,6 +2235,25 @@ namespace _3dedit
                     int sy = -sc.AutoScrollPosition.Y;
                     sc.AutoScrollPosition = new System.Drawing.Point(0, sy - delta);
                     return true;
+                }
+                return false;
+            }
+        }
+
+        // Intercept all WM_KEYDOWN / WM_KEYUP at the message-queue level so the
+        // keyboard reference refreshes even when focus is on a child control
+        // (Tab/arrows get consumed for focus navigation and never reach KeyUpEvt).
+        class KeybindsRefreshFilter : IMessageFilter
+        {
+            Form1 _form;
+            public KeybindsRefreshFilter(Form1 form) { _form = form; }
+            public bool PreFilterMessage(ref Message m)
+            {
+                if (m.Msg == 0x100 || m.Msg == 0x101) // WM_KEYDOWN or WM_KEYUP
+                {
+                    var r = _form.KeybindsRef;
+                    if (r != null && !r.IsDisposed)
+                        r.ConsumedModifiers = _form.GetConsumedModifiers();
                 }
                 return false;
             }
