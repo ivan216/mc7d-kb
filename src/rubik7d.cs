@@ -43,9 +43,10 @@ namespace _3dedit
             this.dxControl2.Name = "dxControl2";
             this.dxControl2.Size = new System.Drawing.Size(793, 544);
             this.dxControl2.TabIndex = 0;
-			this.dxControl2.MouseUp += new MouseEventHandler(MouseUpEvt);
-			this.dxControl2.MouseDown += new MouseEventHandler(MouseDownEvt);
-			this.dxControl2.MouseMove += new MouseEventHandler(MouseEvt);
+            this.dxControl2.MouseUp += new MouseEventHandler(MouseUpEvt);
+            this.dxControl2.MouseDown += new MouseEventHandler(MouseDownEvt);
+            this.dxControl2.MouseMove += new MouseEventHandler(MouseEvt);
+            this.dxControl2.PreviewKeyDown += new PreviewKeyDownEventHandler(dxControl2_PreviewKeyDown);
             this.dxControl2.KeyDown += new KeyEventHandler(KeyDownEvt);
             this.dxControl2.KeyUp += new KeyEventHandler(KeyUpEvt);
             this.dxControl2.Leave += new EventHandler(dxControl2_Leave);
@@ -99,28 +100,6 @@ namespace _3dedit
                 item.DropDownOpened += (s, me) => ReleaseAllKeyboardState();
             }
 
-            // Undo frame skip control — placed below speed slider
-            nudUndoFrameSkip = new NumericUpDown();
-            nudUndoFrameSkip.Location = new System.Drawing.Point(97, 268);
-            nudUndoFrameSkip.Size = new System.Drawing.Size(76, 20);
-            nudUndoFrameSkip.Minimum = 1;
-            nudUndoFrameSkip.Maximum = 100000;
-            nudUndoFrameSkip.Value = 1;
-            nudUndoFrameSkip.Name = "nudUndoFrameSkip";
-            panel1.Controls.Add(nudUndoFrameSkip);
-
-            lblUndoFrameSkip = new Label();
-            lblUndoFrameSkip.Location = new System.Drawing.Point(9, 270);
-            lblUndoFrameSkip.Size = new System.Drawing.Size(75, 13);
-            lblUndoFrameSkip.Text = "Frame Skip";
-            panel1.Controls.Add(lblUndoFrameSkip);
-
-            // Shift existing controls below the TrackBar down to make room
-            foreach (Control c in panel1.Controls) {
-                if (c.Top >= 277 && c != nudUndoFrameSkip && c != lblUndoFrameSkip) {
-                    c.Top += 23;
-                }
-            }
         }
 
         int GetDim() {
@@ -162,9 +141,6 @@ namespace _3dedit
         Cube7D Cube;
         CubeObj CubeView;
         int TRate=500;
-        NumericUpDown nudUndoFrameSkip;
-        Label lblUndoFrameSkip;
-
         const int CLICK_MODE_2=0;
         const int CLICK_MODE_2_OPP=1;
         const int CLICK_MODE_3=2;
@@ -268,13 +244,7 @@ namespace _3dedit
         {
             Keys keyCode = e.KeyCode;
 
-            // Build a self-excluding KeyCombo from the OS modifier state
-            KeyCombo combo = KeyCombo.FromKeyPress(keyCode);
-
-            // Resolve with consumed-modifier awareness
-            Keys consumedMods = GetConsumedModifiers();
-            var action = Keybinds.GetActionWithFallback(
-                keyCode.ToString(), combo.Ctrl, combo.Shift, combo.Alt, consumedMods);
+            var action = ResolveKeybindAction(keyCode);
 
             if (action == null)
             {
@@ -391,6 +361,60 @@ namespace _3dedit
 
         private void dxControl2_Leave(object sender, EventArgs e) {
             ReleaseAllKeyboardState();
+        }
+
+        private void dxControl2_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            if (e.KeyCode == Keys.Tab)
+                e.IsInputKey = true;
+        }
+
+        private Keybindings.IAction ResolveKeybindAction(Keys keyCode)
+        {
+            KeyCombo combo = KeyCombo.FromKeyPress(keyCode);
+            Keys consumedMods = GetConsumedModifiers();
+            return Keybinds.GetActionWithFallback(
+                keyCode.ToString(), combo.Ctrl, combo.Shift, combo.Alt, consumedMods);
+        }
+
+        private bool NonViewportUiHasFocus()
+        {
+            return panel1.ContainsFocus || menuStrip1.ContainsFocus || statusStrip1.ContainsFocus;
+        }
+
+        private bool IsDescendantOf(Control child, Control ancestor)
+        {
+            while (child != null)
+            {
+                if (child == ancestor) return true;
+                child = child.Parent;
+            }
+            return false;
+        }
+
+        private bool ControlKeepsOwnKeyboardBehavior(Control control)
+        {
+            while (control != null && control != panel1)
+            {
+                if (control is TextBoxBase || control is ComboBox || control is UpDownBase || control is TrackBar)
+                    return true;
+                control = control.Parent;
+            }
+            return false;
+        }
+
+        private bool ShouldRoutePanelKeyDown(Control control, Keys keyCode)
+        {
+            return IsDescendantOf(control, panel1)
+                && !ControlKeepsOwnKeyboardBehavior(control)
+                && ResolveKeybindAction(keyCode) != null;
+        }
+
+        private bool ShouldRoutePanelKeyUp(Control control, Keys keyCode)
+        {
+            return IsDescendantOf(control, panel1)
+                && !ControlKeepsOwnKeyboardBehavior(control)
+                && _activeKeyActions.ContainsKey(keyCode);
         }
 
         private void CheckKeybindSet(object sender, EventArgs e)
@@ -1709,6 +1733,7 @@ namespace _3dedit
             }
 
             int y=3, gap=8;
+            int orbitTabIndex = 0;
             int panelW=m_pnlOrbitFilters.ClientSize.Width;
             System.Drawing.Font font7=new System.Drawing.Font("Microsoft Sans Serif",8f);
             m_setgeom = true;
@@ -1723,6 +1748,7 @@ namespace _3dedit
                 lbl.Font=font7;
                 lbl.AutoSize=true;
                 lbl.TextAlign=ContentAlignment.MiddleLeft;
+                lbl.TabStop = false;
                 m_pnlOrbitFilters.Controls.Add(lbl);
 
                 groups[c].Sort(CompareOrbitKeysForUi);
@@ -1738,6 +1764,7 @@ namespace _3dedit
                     chip.Tag=orbitKey;
                     chip.CheckStateChanged+=ChipOrbit_CheckStateChanged;
                     chip.AutoSize=true; // natural height adapts to DPI
+                    chip.TabIndex=orbitTabIndex++;
                     chip.Location=new System.Drawing.Point(x,y);
                     m_pnlOrbitFilters.Controls.Add(chip);
                     m_orbChipMap[orbitKey]=chip;
@@ -2067,13 +2094,13 @@ namespace _3dedit
             UpdateToggleButtonPosition();
         }
 
-        /// <summary>Focus the DirectX control whenever this form is activated,
-        /// so keybindings work immediately after modal dialogs close or
-        /// after the keyboard reference window is clicked.</summary>
+        /// <summary>Return focus to the DirectX control on activation unless the
+        /// user is already interacting with sidebar/menu controls.</summary>
         protected override void OnActivated(EventArgs e)
         {
             base.OnActivated(e);
-            dxControl2.Focus();
+            if (!NonViewportUiHasFocus())
+                dxControl2.Focus();
         }
 
         private void UpdateToggleButtonPosition() {
@@ -2203,6 +2230,7 @@ namespace _3dedit
                 KeybindsRef = new KeybindsReference(Keybinds, menuStrip1);
                 KeybindsRef.PhysicalKeyDown = (key) => { var e = new KeyEventArgs(key); KeyDownEvt(null, e); };
                 KeybindsRef.PhysicalKeyUp = (key) => { var e = new KeyEventArgs(key); KeyUpEvt(null, e); };
+                KeybindsRef.ViewportFocusRequested = () => dxControl2.Focus();
                 KeybindsRef.Show(this);
                 KeybindsRef.FormClosed += (s, fce) => { _refMenuItem.Checked = false; };
                 _refMenuItem.Checked = true;
@@ -2240,20 +2268,48 @@ namespace _3dedit
             }
         }
 
-        // Intercept all WM_KEYDOWN / WM_KEYUP at the message-queue level so the
-        // keyboard reference refreshes even when focus is on a child control
-        // (Tab/arrows get consumed for focus navigation and never reach KeyUpEvt).
+        // Intercept key messages so the keyboard reference repaints reliably,
+        // and so sidebar controls can still drive main keybind actions.
         class KeybindsRefreshFilter : IMessageFilter
         {
             Form1 _form;
             public KeybindsRefreshFilter(Form1 form) { _form = form; }
             public bool PreFilterMessage(ref Message m)
             {
-                if (m.Msg == 0x100 || m.Msg == 0x101) // WM_KEYDOWN or WM_KEYUP
+                const int WM_KEYDOWN = 0x100;
+                const int WM_KEYUP = 0x101;
+                const int WM_SYSKEYDOWN = 0x104;
+                const int WM_SYSKEYUP = 0x105;
+
+                if (m.Msg == WM_KEYDOWN || m.Msg == WM_KEYUP || m.Msg == WM_SYSKEYDOWN || m.Msg == WM_SYSKEYUP)
                 {
                     var r = _form.KeybindsRef;
                     if (r != null && !r.IsDisposed)
+                    {
                         r.ConsumedModifiers = _form.GetConsumedModifiers();
+                        r.RefreshDisplay();
+                    }
+
+                    Control control = Control.FromChildHandle(m.HWnd);
+                    if (control == null || control.FindForm() != _form)
+                        return false;
+
+                    Keys keyCode = (Keys)(int)m.WParam;
+                    bool handled =
+                        (m.Msg == WM_KEYDOWN || m.Msg == WM_SYSKEYDOWN)
+                            ? _form.ShouldRoutePanelKeyDown(control, keyCode)
+                            : _form.ShouldRoutePanelKeyUp(control, keyCode);
+
+                    if (!handled)
+                        return false;
+
+                    var e = new KeyEventArgs(keyCode);
+                    if (m.Msg == WM_KEYDOWN || m.Msg == WM_SYSKEYDOWN)
+                        _form.KeyDownEvt(control, e);
+                    else
+                        _form.KeyUpEvt(control, e);
+
+                    return true;
                 }
                 return false;
             }

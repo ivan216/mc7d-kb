@@ -235,6 +235,8 @@ namespace _3dedit
         public Action<Keys> PhysicalKeyDown;
         /// <summary>Forwards physical key releases when this window has focus.</summary>
         public Action<Keys> PhysicalKeyUp;
+        /// <summary>Requests that the main viewport regain keyboard focus when this window is clicked.</summary>
+        public Action ViewportFocusRequested;
 
         protected override bool ShowWithoutActivation { get { return true; } }
 
@@ -389,6 +391,9 @@ namespace _3dedit
 
         void OnMouseDown(object sender, MouseEventArgs e)
         {
+            if (ViewportFocusRequested != null)
+                ViewportFocusRequested();
+
             if (e.Button == MouseButtons.Left && e.Y <= BAR_HEIGHT)
                 _dragStart = e.Location;
         }
