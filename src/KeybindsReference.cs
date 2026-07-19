@@ -223,10 +223,26 @@ namespace _3dedit
         ToolTip _tooltip;
         int _hoverIndex = -1;
 
+        /// <summary>Modifier flags consumed by active key actions (set by Form1 before refresh).</summary>
+        public Keys ConsumedModifiers = Keys.None;
+
         /// <summary>Forwards physical key presses when this window has focus.</summary>
         public Action<Keys> PhysicalKeyDown;
         /// <summary>Forwards physical key releases when this window has focus.</summary>
         public Action<Keys> PhysicalKeyUp;
+
+        protected override bool ShowWithoutActivation { get { return true; } }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                const int WS_EX_NOACTIVATE = 0x08000000;
+                var cp = base.CreateParams;
+                cp.ExStyle |= WS_EX_NOACTIVATE;
+                return cp;
+            }
+        }
 
         public KeybindsReference(Keybindings keybinds, MenuStrip menu)
         {
@@ -679,16 +695,20 @@ namespace _3dedit
             bool alt   = (GetAsyncKeyState((int)Keys.Menu) & 0x8000) != 0
                       || (GetAsyncKeyState((int)Keys.LMenu) & 0x8000) != 0;
 
-            // Normalise left/right modifiers to their generic key code so
-            // e.g. "LShiftKey" → "ShiftKey" matches keybinds bound to Shift.
+            // WinForms menu shortcuts (ProcessCmdKey) take priority over
+            // keybindings (KeyDownEvt).  Check them first so the display
+            // matches what actually executes when the key is pressed.
+            string menuDesc = null;
+            if (_menu != null)
+                menuDesc = FindMenuShortcutDescription(k.Code, ctrl, shift, alt);
+            if (menuDesc != null)
+                return menuDesc;
+
+            // Keybinding lookup with consumed-modifier awareness
             string keyName = NormaliseModKey(k.Code);
-            var action = _keybinds.GetActionWithFallback(keyName, ctrl, shift, alt, Keys.None);
+            var action = _keybinds.GetActionWithFallback(keyName, ctrl, shift, alt, this.ConsumedModifiers);
             if (action != null)
                 return action.GetDescription();
-
-            // Check WinForms menu shortcuts (Ctrl+O, Ctrl+S, F1-F4, etc.)
-            if (_menu != null)
-                return FindMenuShortcutDescription(k.Code, ctrl, shift, alt);
 
             return "";
         }
@@ -705,13 +725,17 @@ namespace _3dedit
             bool alt   = (GetAsyncKeyState((int)Keys.Menu) & 0x8000) != 0
                       || (GetAsyncKeyState((int)Keys.LMenu) & 0x8000) != 0;
 
+            // WinForms menu shortcuts take priority (same as ResolveDescription)
+            string menuTip = null;
+            if (_menu != null)
+                menuTip = FindMenuShortcutTooltip(k.Code, ctrl, shift, alt);
+            if (menuTip != null)
+                return menuTip;
+
             string keyName = NormaliseModKey(k.Code);
-            var action = _keybinds.GetActionWithFallback(keyName, ctrl, shift, alt, Keys.None);
+            var action = _keybinds.GetActionWithFallback(keyName, ctrl, shift, alt, this.ConsumedModifiers);
             if (action != null)
                 return action.GetTooltip();
-
-            if (_menu != null)
-                return FindMenuShortcutTooltip(k.Code, ctrl, shift, alt);
 
             return "";
         }

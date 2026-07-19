@@ -1187,14 +1187,14 @@ namespace _3dedit
 
         /// <summary>args: {0}=axis.name, {1}=layerMask</summary>
         public static string GripDisplay   = "{0}{{{1}}}";
-        public static string GripTooltip   = "Grip facet {0} layer {1}";
+        public static string GripTooltip   = "Grip axis {0} layer {1}";
 
         public static string RecenterDisplay = "CTR";
         public static string RecenterTooltip = "Recenter";
 
         /// <summary>args: {0}=grip.axis.name, {1}=layerMask, {2}=fromAxis.name, {3}=toAxis.name</summary>
         public static string GripTwistDisplay = "{0}{{{1}}}\n{2}→{3}";
-        public static string GripTwistTooltip = "Grip facet {0} layer {1} and twist from {2} to {3}";
+        public static string GripTwistTooltip = "Grip axis {0} layer {1} and twist from {2} to {3}";
 
         /// <summary>args: {0}=layerMask</summary>
         public static string LayerDisplay   = "{{{0}}}";
@@ -1206,7 +1206,7 @@ namespace _3dedit
 
         /// <summary>args: {0}="-" or "+", {1}=axis.name</summary>
         public static string Twist3cDisplay = "{0}{1}";
-        public static string Twist3cTooltip = "Twist3c select {0}{1}";
+        public static string Twist3cTooltip = "Twist3c axis {0}{1}";
 
         /// <summary>args: {0}=layout name</summary>
         public static string ChangeLayoutDisplay = "[{0}]";

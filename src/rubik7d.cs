@@ -86,6 +86,8 @@ namespace _3dedit
             Application.AddMessageFilter(new WheelGuard(this));
             // Catch ALL key up/down messages before any control filters them
             Application.AddMessageFilter(new KeybindsRefreshFilter(this));
+            // Ensure the DirectX control has focus at startup so keybinds work immediately
+            this.Shown += (s, me) => dxControl2.Focus();
             // Click sidebar background → move focus away from sidebar controls
             panel1.MouseDown += (s, me) => dxControl2.Focus();
 
@@ -277,7 +279,10 @@ namespace _3dedit
             if (action == null)
             {
                 if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+                {
+                    KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
                     KeybindsRef.RefreshDisplay();
+                }
                 return;
             }
 
@@ -296,7 +301,10 @@ namespace _3dedit
             PostKeybindAction(redraw, didTwist);
 
             if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+            {
+                KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
                 KeybindsRef.RefreshDisplay();
+            }
         }
 
         private void KeyUpEvt(object sender, KeyEventArgs e)
@@ -306,7 +314,10 @@ namespace _3dedit
             if (!_activeKeyActions.TryGetValue(keyCode, out var action))
             {
                 if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+                {
+                    KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
                     KeybindsRef.RefreshDisplay();
+                }
                 return;
             }
 
@@ -317,7 +328,10 @@ namespace _3dedit
             PostKeybindAction(redraw, didTwist);
 
             if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+            {
+                KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
                 KeybindsRef.RefreshDisplay();
+            }
         }
 
         /// <summary>
@@ -2059,6 +2073,15 @@ namespace _3dedit
             UpdateToggleButtonPosition();
         }
 
+        /// <summary>Focus the DirectX control whenever this form is activated,
+        /// so keybindings work immediately after modal dialogs close or
+        /// after the keyboard reference window is clicked.</summary>
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            dxControl2.Focus();
+        }
+
         private void UpdateToggleButtonPosition() {
             int buttonY = (this.ClientSize.Height - btnTogglePanel.Height) / 2;
             if (m_panelCollapsed) {
@@ -2236,7 +2259,10 @@ namespace _3dedit
                 {
                     var r = _form.KeybindsRef;
                     if (r != null && !r.IsDisposed)
+                    {
+                        r.ConsumedModifiers = _form.GetConsumedModifiers();
                         r.RefreshDisplay();
+                    }
                 }
                 return false;
             }
