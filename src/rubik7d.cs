@@ -278,11 +278,7 @@ namespace _3dedit
 
             if (action == null)
             {
-                if (KeybindsRef != null && !KeybindsRef.IsDisposed)
-                {
-                    KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
-                    KeybindsRef.RefreshDisplay();
-                }
+                RefreshKeybindsReferenceDisplay();
                 return;
             }
 
@@ -300,11 +296,7 @@ namespace _3dedit
             }
             PostKeybindAction(redraw, didTwist);
 
-            if (KeybindsRef != null && !KeybindsRef.IsDisposed)
-            {
-                KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
-                KeybindsRef.RefreshDisplay();
-            }
+            RefreshKeybindsReferenceDisplay();
         }
 
         private void KeyUpEvt(object sender, KeyEventArgs e)
@@ -313,11 +305,7 @@ namespace _3dedit
 
             if (!_activeKeyActions.TryGetValue(keyCode, out var action))
             {
-                if (KeybindsRef != null && !KeybindsRef.IsDisposed)
-                {
-                    KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
-                    KeybindsRef.RefreshDisplay();
-                }
+                RefreshKeybindsReferenceDisplay();
                 return;
             }
 
@@ -327,11 +315,7 @@ namespace _3dedit
             action.OnKeyUp(ref Cube, ref redraw, ref didTwist);
             PostKeybindAction(redraw, didTwist);
 
-            if (KeybindsRef != null && !KeybindsRef.IsDisposed)
-            {
-                KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
-                KeybindsRef.RefreshDisplay();
-            }
+            RefreshKeybindsReferenceDisplay();
         }
 
         /// <summary>
@@ -349,6 +333,16 @@ namespace _3dedit
                 consumed |= ChordUtils.GetModifierFlag(key);
             }
             return consumed;
+        }
+
+        /// <summary>Convenience: sync ConsumedModifiers to the keyboard ref and redraw.</summary>
+        private void RefreshKeybindsReferenceDisplay()
+        {
+            if (KeybindsRef != null && !KeybindsRef.IsDisposed)
+            {
+                KeybindsRef.ConsumedModifiers = GetConsumedModifiers();
+                KeybindsRef.RefreshDisplay();
+            }
         }
 
         /// <summary>
@@ -2259,10 +2253,7 @@ namespace _3dedit
                 {
                     var r = _form.KeybindsRef;
                     if (r != null && !r.IsDisposed)
-                    {
                         r.ConsumedModifiers = _form.GetConsumedModifiers();
-                        r.RefreshDisplay();
-                    }
                 }
                 return false;
             }

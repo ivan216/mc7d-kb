@@ -1063,7 +1063,7 @@ namespace _3dedit
             public string GetDescription()
             {
                 string shortName = layout.Length > 3 ? layout.Substring(0, 3) : layout;
-                return "[" + shortName + "]";
+                return string.Format(ActionDisplay.ChangeLayoutDisplay, shortName);
             }
             public string GetTooltip()
             {

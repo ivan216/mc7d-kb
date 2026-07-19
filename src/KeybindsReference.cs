@@ -35,7 +35,7 @@ namespace _3dedit
 
         static KeyDef[] BuildLayout()
         {
-            var list = new System.Collections.Generic.List<KeyDef>();
+            var list = new List<KeyDef>();
             float x, y;
             float fw = 15f / 16f; // ~0.9375 each — Esc F1-12 Ins PrtSc Del fill x=0..15
             float fh = 0.85f;     // shorter height for the function row
@@ -200,6 +200,11 @@ namespace _3dedit
         bool _collapsed = false;
         Size _lastExpandedSize;
         Point _dragStart = Point.Empty;
+
+        // Keyboard drawing helpers
+        float KbScale() { return (this.ClientSize.Width - 10) / GRID_W; }
+        float KbOx()    { return 5f; }
+        float KbOy()    { return BAR_HEIGHT + 3f; }
 
         [DllImport("user32.dll")]
         static extern short GetAsyncKeyState(int vKey);
@@ -391,10 +396,7 @@ namespace _3dedit
         void OnMouseUp(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left && _dragStart != Point.Empty)
-            {
-                _dragStart = Point.Empty;
                 ToggleCollapse();
-            }
             _dragStart = Point.Empty;
         }
 
@@ -416,9 +418,9 @@ namespace _3dedit
             _hoverIndex = -1;
             if (!_collapsed)
             {
-                float scale = (this.ClientSize.Width - 10) / GRID_W;
-                float ox = 5f;
-                float oy = BAR_HEIGHT + 3f;
+                float scale = KbScale();
+                float ox = KbOx();
+                float oy = KbOy();
 
                 for (int i = 0; i < KeyLayout.Length; i++)
                 {
@@ -464,9 +466,9 @@ namespace _3dedit
             if (_collapsed) return;
 
             // Draw keyboard below the bar
-            float scale = (this.ClientSize.Width - 10) / GRID_W;
-            float ox = 5f;
-            float oy = BAR_HEIGHT + 3f;
+            float scale = KbScale();
+            float ox = KbOx();
+            float oy = KbOy();
 
             for (int i = 0; i < KeyLayout.Length; i++)
             {
@@ -619,8 +621,8 @@ namespace _3dedit
             { Keys.F4, "commutator" },
         };
 
-        /// <summary>Look up a menu shortcut display text.</summary>
-        string FindMenuShortcutDescription(Keys keyCode, bool ctrl, bool shift, bool alt)
+        /// <summary>Look up a menu shortcut in the given dictionary, falling back to the MenuStrip item text.</summary>
+        string FindMenuShortcut(Dictionary<Keys, string> dict, Keys keyCode, bool ctrl, bool shift, bool alt)
         {
             if (keyCode == Keys.None) return null;
             Keys target = keyCode;
@@ -629,24 +631,19 @@ namespace _3dedit
             if (alt)   target |= Keys.Alt;
 
             string name;
-            if (MenuShortcutDisplay.TryGetValue(target, out name))
+            if (dict.TryGetValue(target, out name))
                 return name;
             return FallbackMenuShortcut(target);
         }
 
-        /// <summary>Look up a menu shortcut tooltip text.</summary>
+        string FindMenuShortcutDescription(Keys keyCode, bool ctrl, bool shift, bool alt)
+        {
+            return FindMenuShortcut(MenuShortcutDisplay, keyCode, ctrl, shift, alt);
+        }
+
         string FindMenuShortcutTooltip(Keys keyCode, bool ctrl, bool shift, bool alt)
         {
-            if (keyCode == Keys.None) return null;
-            Keys target = keyCode;
-            if (ctrl)  target |= Keys.Control;
-            if (shift) target |= Keys.Shift;
-            if (alt)   target |= Keys.Alt;
-
-            string name;
-            if (MenuShortcutTooltips.TryGetValue(target, out name))
-                return name;
-            return FallbackMenuShortcut(target);
+            return FindMenuShortcut(MenuShortcutTooltips, keyCode, ctrl, shift, alt);
         }
 
         string FallbackMenuShortcut(Keys target)
@@ -681,7 +678,14 @@ namespace _3dedit
             return code.ToString();
         }
 
-        string ResolveDescription(KeyDef k)
+        /// <summary>
+        /// Common resolve flow: detect pressed modifiers → check menu shortcut
+        /// → check keybinding → return text.  The two type-specific parameters
+        /// let ResolveDescription / ResolveTooltip share ~30 lines of logic.
+        /// </summary>
+        string ResolveForKey(KeyDef k,
+            Func<Keys, bool, bool, bool, string> menuLookup,
+            Func<Keybindings.IAction, string> textGetter)
         {
             if (_keybinds == null || _keybinds.activeKeybinds == null)
                 return "";
@@ -698,46 +702,29 @@ namespace _3dedit
             // WinForms menu shortcuts (ProcessCmdKey) take priority over
             // keybindings (KeyDownEvt).  Check them first so the display
             // matches what actually executes when the key is pressed.
-            string menuDesc = null;
             if (_menu != null)
-                menuDesc = FindMenuShortcutDescription(k.Code, ctrl, shift, alt);
-            if (menuDesc != null)
-                return menuDesc;
+            {
+                string menuText = menuLookup(k.Code, ctrl, shift, alt);
+                if (menuText != null) return menuText;
+            }
 
             // Keybinding lookup with consumed-modifier awareness
             string keyName = NormaliseModKey(k.Code);
             var action = _keybinds.GetActionWithFallback(keyName, ctrl, shift, alt, this.ConsumedModifiers);
             if (action != null)
-                return action.GetDescription();
+                return textGetter(action);
 
             return "";
         }
 
+        string ResolveDescription(KeyDef k)
+        {
+            return ResolveForKey(k, FindMenuShortcutDescription, a => a.GetDescription());
+        }
+
         string ResolveTooltip(KeyDef k)
         {
-            if (_keybinds == null || _keybinds.activeKeybinds == null)
-                return "";
-
-            bool ctrl  = (GetAsyncKeyState((int)Keys.ControlKey) & 0x8000) != 0
-                      || (GetAsyncKeyState((int)Keys.LControlKey) & 0x8000) != 0;
-            bool shift = (GetAsyncKeyState((int)Keys.ShiftKey) & 0x8000) != 0
-                      || (GetAsyncKeyState((int)Keys.LShiftKey) & 0x8000) != 0;
-            bool alt   = (GetAsyncKeyState((int)Keys.Menu) & 0x8000) != 0
-                      || (GetAsyncKeyState((int)Keys.LMenu) & 0x8000) != 0;
-
-            // WinForms menu shortcuts take priority (same as ResolveDescription)
-            string menuTip = null;
-            if (_menu != null)
-                menuTip = FindMenuShortcutTooltip(k.Code, ctrl, shift, alt);
-            if (menuTip != null)
-                return menuTip;
-
-            string keyName = NormaliseModKey(k.Code);
-            var action = _keybinds.GetActionWithFallback(keyName, ctrl, shift, alt, this.ConsumedModifiers);
-            if (action != null)
-                return action.GetTooltip();
-
-            return "";
+            return ResolveForKey(k, FindMenuShortcutTooltip, a => a.GetTooltip());
         }
 
     }
