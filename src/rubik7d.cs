@@ -82,6 +82,7 @@ namespace _3dedit
 
             // Wire up macro hotkey execution
             Keybindings.ExecuteMacroById = ExecuteMacroByIdCmd;
+            InitStructuredMacroMenu();
 
             // Block wheel on TrackBar/NumericUpDown; redirect to parent panel for scrolling
             Application.AddMessageFilter(new WheelGuard(this));
@@ -195,6 +196,7 @@ namespace _3dedit
         bool MacroReverse=false;
         CMacro CurMacro;
         CMacroFile Macros;
+        List<CStructuredMacro> StructuredMacros = new List<CStructuredMacro>();
         StructuredMacroRecorder StructuredRecorder = new StructuredMacroRecorder();
 
         int[,] RevStack=new int[100,2];
@@ -597,6 +599,59 @@ namespace _3dedit
             if(Cube==null || StructuredRecorder==null) return;
             StructuredRecorder.RecordCubeTwistInput(gripAxis,fromAxis,toAxis,mask,Cube.N);
         }
+
+        void InitStructuredMacroMenu() {
+            ToolStripMenuItem structured = new ToolStripMenuItem("Structured Macros");
+            ToolStripMenuItem start = new ToolStripMenuItem("Start Recording");
+            ToolStripMenuItem stop = new ToolStripMenuItem("Stop Recording");
+            ToolStripMenuItem cancel = new ToolStripMenuItem("Cancel Recording");
+            start.Click += new EventHandler(startStructuredMacroRecording_Click);
+            stop.Click += new EventHandler(stopStructuredMacroRecording_Click);
+            cancel.Click += new EventHandler(cancelStructuredMacroRecording_Click);
+            structured.DropDownItems.Add(start);
+            structured.DropDownItems.Add(stop);
+            structured.DropDownItems.Add(cancel);
+            menuStrip1.Items.Add(structured);
+        }
+
+        private void startStructuredMacroRecording_Click(object sender,EventArgs e) {
+            if(StructuredRecorder.IsRecording) {
+                MessageBox.Show("Structured macro recording is already active.");
+                return;
+            }
+            if(RecordingMacroStatus!=REC_MACRO_NONE) {
+                MessageBox.Show("Finish the ordinary macro operation before recording a structured macro.");
+                return;
+            }
+
+            TextDialog edt = new TextDialog("Enter Structured Macro Name");
+            if(edt.ShowDialog()!=DialogResult.OK) return;
+
+            CStructuredMacro macro = new CStructuredMacro(edt.Value);
+            macro.NStickers = 0;
+            macro.Stickers = new int[0];
+            macro.Orient = (int[])Cube.Orient.Clone();
+            StructuredRecorder.Begin(macro);
+            ms_MacroStatus.Text="  Structured rec: 0";
+        }
+
+        private void stopStructuredMacroRecording_Click(object sender,EventArgs e) {
+            CStructuredMacro macro;
+            string error;
+            if(!StructuredRecorder.TryFinish(out macro,out error)) {
+                MessageBox.Show(error);
+                return;
+            }
+            StructuredMacros.Add(macro);
+            MessageBox.Show(macro.ToDebugString(),"Structured Macro Recorded");
+            RedrawClickStatus();
+        }
+
+        private void cancelStructuredMacroRecording_Click(object sender,EventArgs e) {
+            if(!StructuredRecorder.IsRecording) return;
+            StructuredRecorder.Cancel();
+            RedrawClickStatus();
+        }
 	
 		/// <summary>
 		/// The main entry point for the application.
@@ -801,6 +856,10 @@ namespace _3dedit
                     ms_MacroStatus.Text="  Select Stickers: "+LMacroStickers; break;
                 case REC_MACRO_CODE:
                     ms_MacroStatus.Text="  Enter macro: "+Cube.GetNTwists(MacroStart,Cube.LPtr); break;
+            }
+            if(StructuredRecorder.IsRecording) {
+                string expr = StructuredRecorder.CurrentMacro.RootNode.ToExpression();
+                ms_MacroStatus.Text = "  Structured rec: " + (expr.Length == 0 ? "0" : expr);
             }
             UpdateTime(null);
         }

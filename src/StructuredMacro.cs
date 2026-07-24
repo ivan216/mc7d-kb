@@ -373,6 +373,19 @@ namespace _3dedit {
             return res;
         }
 
+        internal string ToDebugString() {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("macro " + Name);
+            sb.AppendLine("ast " + RootNode.ToExpression());
+            List<StructuredTwist> twists = new List<StructuredTwist>(m_twists.Values);
+            twists.Sort(delegate(StructuredTwist a, StructuredTwist b) { return a.Id.CompareTo(b.Id); });
+            for(int i=0;i<twists.Count;i++) {
+                StructuredTwist twist = twists[i];
+                sb.AppendLine("T" + twist.Id + " " + twist.ToTwistString() + " defaultMask=" + twist.DefaultMask);
+            }
+            return sb.ToString();
+        }
+
         void ExpandNode(StructuredMacroNode node, IDictionary<int, int> overrideMasks, List<CompiledStructuredTwist> output) {
             if(node is StructuredSequenceNode) {
                 StructuredSequenceNode seq = (StructuredSequenceNode)node;
