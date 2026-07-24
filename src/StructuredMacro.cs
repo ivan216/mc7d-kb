@@ -36,6 +36,11 @@ namespace _3dedit {
             return (signedAxis > 0 ? "+" : "-") + Names[Math.Abs(signedAxis)];
         }
 
+        internal static string FormatName(int axis) {
+            ValidateSignedAxis(axis);
+            return Names[Math.Abs(axis)];
+        }
+
         internal static int Map(int signedAxis, int[] map) {
             ValidateSignedAxis(signedAxis);
             if(map == null) return signedAxis;
@@ -47,11 +52,31 @@ namespace _3dedit {
             return signedAxis > 0 ? map[a] : -map[a];
         }
 
+        internal static bool IsInvertedAxis(int axis) {
+            axis = Math.Abs(axis);
+            return axis == 2 || axis == 5; // X and V are displayed with the inverted user convention.
+        }
+
         internal static bool DistinctAbs(int a, int b, int c) {
             a = Math.Abs(a);
             b = Math.Abs(b);
             c = Math.Abs(c);
             return a != b && a != c && b != c;
+        }
+
+        internal static void NormalizeDirectionAxes(ref int fromAxis, ref int toAxis) {
+            ValidateSignedAxis(fromAxis);
+            ValidateSignedAxis(toAxis);
+            while(fromAxis < 0) {
+                int c = -fromAxis;
+                fromAxis = toAxis;
+                toAxis = c;
+            }
+            if(toAxis < 0) {
+                int c = -toAxis;
+                toAxis = fromAxis;
+                fromAxis = c;
+            }
         }
     }
 
@@ -65,6 +90,7 @@ namespace _3dedit {
         internal StructuredTwist(int id, int signedGripAxis, int fromAxis, int toAxis, int defaultMask) {
             Id = id;
             SignedGripAxis = signedGripAxis;
+            StructuredAxis.NormalizeDirectionAxes(ref fromAxis, ref toAxis);
             FromAxis = fromAxis;
             ToAxis = toAxis;
             DefaultMask = Math.Abs(defaultMask);
@@ -73,6 +99,7 @@ namespace _3dedit {
 
         internal void Validate() {
             StructuredAxis.ValidateSignedAxis(SignedGripAxis);
+            if(FromAxis <= 0 || ToAxis <= 0) throw new ArgumentException("fromAxis and toAxis must be positive.");
             StructuredAxis.ValidateSignedAxis(FromAxis);
             StructuredAxis.ValidateSignedAxis(ToAxis);
             if(DefaultMask <= 0) throw new ArgumentException("defaultMask must be positive.");
@@ -106,8 +133,8 @@ namespace _3dedit {
 
         internal string ToTwistString() {
             return "{" + StructuredAxis.Format(SignedGripAxis) + "}{"
-                + StructuredAxis.Format(FromAxis) + "}{"
-                + StructuredAxis.Format(ToAxis) + "}";
+                + StructuredAxis.FormatName(FromAxis) + "}{"
+                + StructuredAxis.FormatName(ToAxis) + "}";
         }
     }
 
@@ -121,6 +148,7 @@ namespace _3dedit {
         internal CompiledStructuredTwist(int sourceTwistId, int signedGripAxis, int fromAxis, int toAxis, int logicalMask) {
             SourceTwistId = sourceTwistId;
             SignedGripAxis = signedGripAxis;
+            StructuredAxis.NormalizeDirectionAxes(ref fromAxis, ref toAxis);
             FromAxis = fromAxis;
             ToAxis = toAxis;
             LogicalMask = logicalMask;
@@ -141,35 +169,34 @@ namespace _3dedit {
             return res;
         }
 
-        internal static int InferSignedGripAxis(int gripAbsAxis, int effectiveMask, int size) {
+        internal static int InferSignedGripAxisFromCodeMask(int gripAbsAxis, int codeMask, int size) {
             if(gripAbsAxis <= 0) throw new ArgumentException("gripAbsAxis must be positive.");
             int top = 1 << (size - 1);
-            if((effectiveMask & top) == 0) return gripAbsAxis;
-            if((effectiveMask & 1) == 0) return -gripAbsAxis;
+            if((codeMask & 1) == 0) return gripAbsAxis;
+            if((codeMask & top) == 0) return -gripAbsAxis;
             return gripAbsAxis;
         }
 
-        internal static int ToDefaultMask(int signedGripAxis, int effectiveMask, int size) {
-            int mask = effectiveMask & ((1 << size) - 1);
-            return signedGripAxis < 0 ? ReverseMask(mask, size) : mask;
-        }
-
-        internal static StructuredTwist FromCubeTwistInput(int id, int gripAxis, int fromAxis, int toAxis, int cubeMask, int size) {
+        internal static StructuredTwist FromCubeTwistCode(int id, int gripAxis, int fromAxis, int toAxis, int codeMask, int size) {
             StructuredAxis.ValidateSignedAxis(gripAxis);
             StructuredAxis.ValidateSignedAxis(fromAxis);
             StructuredAxis.ValidateSignedAxis(toAxis);
 
-            int effectiveMask = gripAxis < 0 ? cubeMask : ReverseMask(cubeMask, size);
-            effectiveMask &= (1 << size) - 1;
-            int signedGripAxis = InferSignedGripAxis(Math.Abs(gripAxis), effectiveMask, size);
-            int defaultMask = ToDefaultMask(signedGripAxis, effectiveMask, size);
-            return new StructuredTwist(id, signedGripAxis, fromAxis, toAxis, defaultMask);
-        }
+            // codeMask is the normalized mask stored in Cube.Seq after Cube.NormTwist.
+            int mask = codeMask & ((1 << size) - 1);
+            int internalSignedGripAxis = InferSignedGripAxisFromCodeMask(Math.Abs(gripAxis), mask, size);
+            int defaultMask = internalSignedGripAxis < 0 ? mask : ReverseMask(mask, size);
 
-        internal static int ResolveEffectiveMask(int signedGripAxis, int logicalMask, int size) {
-            int mask = Math.Abs(logicalMask) & ((1 << size) - 1);
-            bool flip = (signedGripAxis < 0) ^ (logicalMask < 0);
-            return flip ? ReverseMask(mask, size) : mask;
+            int signedGripAxis = internalSignedGripAxis;
+            if(StructuredAxis.IsInvertedAxis(signedGripAxis)) signedGripAxis = -signedGripAxis;
+
+            if(StructuredAxis.IsInvertedAxis(fromAxis) ^ StructuredAxis.IsInvertedAxis(toAxis)) {
+                int c = fromAxis;
+                fromAxis = toAxis;
+                toAxis = c;
+            }
+
+            return new StructuredTwist(id, signedGripAxis, fromAxis, toAxis, defaultMask);
         }
 
         internal static void ResolveForCubeTwist(CompiledStructuredTwist twist, int size, int[] axisMap,
@@ -178,8 +205,16 @@ namespace _3dedit {
             fromAxis = StructuredAxis.Map(twist.FromAxis, axisMap);
             toAxis = StructuredAxis.Map(twist.ToAxis, axisMap);
 
-            int effectiveMask = ResolveEffectiveMask(gripAxis, twist.LogicalMask, size);
-            cubeMask = gripAxis < 0 ? effectiveMask : ReverseMask(effectiveMask, size);
+            if(StructuredAxis.IsInvertedAxis(gripAxis)) gripAxis = -gripAxis;
+            if(StructuredAxis.IsInvertedAxis(fromAxis) ^ StructuredAxis.IsInvertedAxis(toAxis)) {
+                int c = fromAxis;
+                fromAxis = toAxis;
+                toAxis = c;
+            }
+
+            // cubeMask is the raw mask passed to Cube.Twist; Cube.NormTwist will normalize it.
+            cubeMask = Math.Abs(twist.LogicalMask) & ((1 << size) - 1);
+            if(twist.LogicalMask < 0) cubeMask = ReverseMask(cubeMask, size);
         }
     }
 
@@ -496,9 +531,14 @@ namespace _3dedit {
             return new Suppression(this);
         }
 
-        internal void RecordCubeTwistInput(int gripAxis, int fromAxis, int toAxis, int cubeMask, int size) {
+        internal void RecordCubeTwistCode(int gripAxis, int fromAxis, int toAxis, int codeMask, int size) {
             if(!IsRecording || SuppressRecording) return;
-            StructuredTwist twist = StructuredTwistRuntime.FromCubeTwistInput(0, gripAxis, fromAxis, toAxis, cubeMask, size);
+            StructuredTwist twist = StructuredTwistRuntime.FromCubeTwistCode(0, gripAxis, fromAxis, toAxis, codeMask, size);
+            RecordTwist(twist);
+        }
+
+        internal void RecordTwist(StructuredTwist twist) {
+            if(!IsRecording || SuppressRecording || twist == null) return;
             m_macro.AppendPrimitive(CurrentSequence(), twist);
         }
 
@@ -697,7 +737,8 @@ namespace _3dedit {
 
             int adjustMask = PositiveMask(selection.AdjustDefaultMask, sourceTwist.DefaultMask);
             int targetMask = PositiveMask(selection.TargetDefaultMask, sourceTwist.DefaultMask);
-            int adjustId = result.AddTwist(selection.AdjustCell, sourceTwist.SignedGripAxis, selection.TargetCell, adjustMask);
+            int adjustId = result.AddTwist(selection.AdjustCell,
+                sourceTwist.SignedGripAxis, selection.TargetCell, adjustMask);
 
             int targetCell;
             int targetDir1;
@@ -733,9 +774,10 @@ namespace _3dedit {
 
         static void BuildTargetTwist(StructuredTwist sourceTwist, int targetCell,
             out int cell, out int dir1, out int dir2) {
-            int srcCell = sourceTwist.SignedGripAxis;
-            int srcDir1 = sourceTwist.FromAxis;
-            int srcDir2 = sourceTwist.ToAxis;
+            int srcCell;
+            int srcDir1;
+            int srcDir2;
+            GetSourceRktTriple(sourceTwist, out srcCell, out srcDir1, out srcDir2);
 
             if(Math.Abs(targetCell) == Math.Abs(srcDir1) || Math.Abs(targetCell) == Math.Abs(srcDir2)) {
                 int matched = Math.Abs(targetCell) == Math.Abs(srcDir1) ? srcDir1 : srcDir2;
@@ -752,6 +794,12 @@ namespace _3dedit {
                 dir1 = srcDir1;
                 dir2 = srcDir2;
             }
+        }
+
+        static void GetSourceRktTriple(StructuredTwist sourceTwist, out int cell, out int dir1, out int dir2) {
+            cell = sourceTwist.SignedGripAxis;
+            dir1 = sourceTwist.FromAxis;
+            dir2 = sourceTwist.ToAxis;
         }
 
         static void RotateCycleTo(int first, int c0, int c1, int c2, out int r0, out int r1, out int r2) {

@@ -597,7 +597,7 @@ namespace _3dedit
 
         void Cube_TwistExecuted(int gripAxis,int fromAxis,int toAxis,int mask) {
             if(Cube==null || StructuredRecorder==null) return;
-            StructuredRecorder.RecordCubeTwistInput(gripAxis,fromAxis,toAxis,mask,Cube.N);
+            StructuredRecorder.RecordCubeTwistCode(gripAxis,fromAxis,toAxis,mask,Cube.N);
         }
 
         void InitStructuredMacroMenu() {

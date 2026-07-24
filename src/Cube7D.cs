@@ -368,9 +368,9 @@ namespace _3dedit {
         }
 
         public bool Twist(int f0,int f1,int f2,int m0) {
-            int rawF0=f0,rawF1=f1,rawF2=f2,rawM0=m0;
             NormTwist(ref f0,ref f1,ref f2,ref m0);           
             if(f0==f1 || f0==f2 ||f1==f2) return false;
+            int codeF0=f0,codeF1=f1,codeF2=f2,codeMask=m0;
             f0--; f1--; f2--;
             MakeTwist(f0,f1,f2,m0);
 
@@ -389,7 +389,7 @@ namespace _3dedit {
 #endif
             NTwists++;
             LSeq=LPtr;
-            if(TwistExecuted!=null) TwistExecuted(rawF0,rawF1,rawF2,rawM0);
+            if(TwistExecuted!=null) TwistExecuted(codeF0,codeF1,codeF2,codeMask);
             return true;
         }
 
