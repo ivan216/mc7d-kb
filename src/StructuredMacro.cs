@@ -115,6 +115,13 @@ namespace _3dedit {
             return new StructuredTwist(id, SignedGripAxis, ToAxis, FromAxis, DefaultMask);
         }
 
+        internal void InvertInPlace() {
+            int c = FromAxis;
+            FromAxis = ToAxis;
+            ToAxis = c;
+            Validate();
+        }
+
         internal bool SameMove(StructuredTwist other) {
             return other != null
                 && SignedGripAxis == other.SignedGripAxis
@@ -188,7 +195,12 @@ namespace _3dedit {
             int defaultMask = internalSignedGripAxis < 0 ? mask : ReverseMask(mask, size);
 
             int signedGripAxis = internalSignedGripAxis;
-            if(StructuredAxis.IsInvertedAxis(signedGripAxis)) signedGripAxis = -signedGripAxis;
+            if(StructuredAxis.IsInvertedAxis(signedGripAxis)) {
+                int top = 1 << (size - 1);
+                bool lowSelected = (mask & 1) != 0;
+                bool highSelected = (mask & top) != 0;
+                signedGripAxis = lowSelected == highSelected ? Math.Abs(signedGripAxis) : -signedGripAxis;
+            }
 
             if(StructuredAxis.IsInvertedAxis(fromAxis) ^ StructuredAxis.IsInvertedAxis(toAxis)) {
                 int c = fromAxis;
@@ -273,7 +285,7 @@ namespace _3dedit {
         }
 
         internal override string ToExpression() {
-            return Twist.ToExpression() + "2";
+            return "(" + Twist.ToExpression() + ")2";
         }
     }
 
@@ -328,8 +340,18 @@ namespace _3dedit {
             get { return m_twists.Values; }
         }
 
+        internal List<StructuredTwist> GetTwistsSorted() {
+            List<StructuredTwist> twists = new List<StructuredTwist>(m_twists.Values);
+            twists.Sort(delegate(StructuredTwist a, StructuredTwist b) { return a.Id.CompareTo(b.Id); });
+            return twists;
+        }
+
         internal CStructuredMacro(string name) {
-            Name = name == null ? "" : name.Replace(' ', '_');
+            Name = StructuredMacroNames.Normalize(name);
+        }
+
+        public override string ToString() {
+            return Name;
         }
 
         internal StructuredTwist GetTwist(int id) {
@@ -390,13 +412,14 @@ namespace _3dedit {
             int lastIndex = sequence.Children.Count - 1;
             if(newPower == 0) {
                 sequence.Children.RemoveAt(lastIndex);
+                m_twists.Remove(oldTwist.Id);
             } else if(newPower == 1) {
                 sequence.Children[lastIndex] = new StructuredTwistNode(oldTwist.Id);
             } else if(newPower == 2) {
                 sequence.Children[lastIndex] = new StructuredPowerNode(new StructuredTwistNode(oldTwist.Id), 2);
             } else {
-                int invertedId = AddTwist(oldTwist.InvertWithId(0));
-                sequence.Children[lastIndex] = new StructuredTwistNode(invertedId);
+                oldTwist.InvertInPlace();
+                sequence.Children[lastIndex] = new StructuredTwistNode(oldTwist.Id);
             }
             return true;
         }
@@ -412,8 +435,7 @@ namespace _3dedit {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("macro " + Name);
             sb.AppendLine("ast " + RootNode.ToExpression());
-            List<StructuredTwist> twists = new List<StructuredTwist>(m_twists.Values);
-            twists.Sort(delegate(StructuredTwist a, StructuredTwist b) { return a.Id.CompareTo(b.Id); });
+            List<StructuredTwist> twists = GetTwistsSorted();
             for(int i=0;i<twists.Count;i++) {
                 StructuredTwist twist = twists[i];
                 sb.AppendLine("T" + twist.Id + " " + twist.ToTwistString() + " defaultMask=" + twist.DefaultMask);
@@ -473,6 +495,33 @@ namespace _3dedit {
         }
     }
 
+    internal static class StructuredMacroNames {
+        internal static string Normalize(string name) {
+            if(name == null) return "";
+            name = name.Trim();
+            StringBuilder sb = new StringBuilder(name.Length);
+            for(int i=0;i<name.Length;i++) {
+                char c = name[i];
+                sb.Append(char.IsWhiteSpace(c) ? '_' : c);
+            }
+            return sb.ToString();
+        }
+
+        internal static bool Same(string a, string b) {
+            return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static int FindIndex(IList<CStructuredMacro> macros, string name, CStructuredMacro except) {
+            if(macros == null) return -1;
+            string normalized = Normalize(name);
+            for(int i=0;i<macros.Count;i++) {
+                if(object.ReferenceEquals(macros[i], except)) continue;
+                if(Same(macros[i].Name, normalized)) return i;
+            }
+            return -1;
+        }
+    }
+
     internal sealed class StructuredMacroRecorder {
         sealed class Frame {
             internal StructuredSequenceNode A = new StructuredSequenceNode();
@@ -494,6 +543,16 @@ namespace _3dedit {
 
         internal CStructuredMacro CurrentMacro {
             get { return m_macro; }
+        }
+
+        internal string CurrentExpression() {
+            if(!IsRecording) return "";
+
+            string pending = null;
+            for(int i=m_frames.Count-1;i>=0;i--)
+                pending = FormatOpenFrame(m_frames[i], pending);
+
+            return AppendExpression(m_macro.RootNode.ToExpression(), pending);
         }
 
         internal void Begin(CStructuredMacro macro) {
@@ -604,6 +663,20 @@ namespace _3dedit {
 
         Frame CurrentFrame() {
             return m_frames[m_frames.Count - 1];
+        }
+
+        static string FormatOpenFrame(Frame frame, string child) {
+            string a = frame.A.ToExpression();
+            string b = frame.B.ToExpression();
+            if(frame.InB) b = AppendExpression(b, child);
+            else a = AppendExpression(a, child);
+            return frame.InB ? "[" + a + "|" + b : "[" + a;
+        }
+
+        static string AppendExpression(string left, string right) {
+            if(left == null || left.Length == 0) return right == null ? "" : right;
+            if(right == null || right.Length == 0) return left;
+            return left + " " + right;
         }
 
         sealed class Suppression : IDisposable {

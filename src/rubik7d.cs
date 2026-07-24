@@ -198,6 +198,7 @@ namespace _3dedit
         CMacroFile Macros;
         List<CStructuredMacro> StructuredMacros = new List<CStructuredMacro>();
         StructuredMacroRecorder StructuredRecorder = new StructuredMacroRecorder();
+        StructuredMacroWindow StructuredMacroWindow;
 
         int[,] RevStack=new int[100,2];
         int LRevStack=0;
@@ -602,16 +603,24 @@ namespace _3dedit
 
         void InitStructuredMacroMenu() {
             ToolStripMenuItem structured = new ToolStripMenuItem("Structured Macros");
+            ToolStripMenuItem manage = new ToolStripMenuItem("Manage");
             ToolStripMenuItem start = new ToolStripMenuItem("Start Recording");
             ToolStripMenuItem stop = new ToolStripMenuItem("Stop Recording");
             ToolStripMenuItem cancel = new ToolStripMenuItem("Cancel Recording");
+            manage.Click += new EventHandler(manageStructuredMacros_Click);
             start.Click += new EventHandler(startStructuredMacroRecording_Click);
             stop.Click += new EventHandler(stopStructuredMacroRecording_Click);
             cancel.Click += new EventHandler(cancelStructuredMacroRecording_Click);
+            structured.DropDownItems.Add(manage);
+            structured.DropDownItems.Add(new ToolStripSeparator());
             structured.DropDownItems.Add(start);
             structured.DropDownItems.Add(stop);
             structured.DropDownItems.Add(cancel);
             menuStrip1.Items.Add(structured);
+        }
+
+        private void manageStructuredMacros_Click(object sender,EventArgs e) {
+            ShowStructuredMacroWindow(null);
         }
 
         private void startStructuredMacroRecording_Click(object sender,EventArgs e) {
@@ -624,10 +633,7 @@ namespace _3dedit
                 return;
             }
 
-            TextDialog edt = new TextDialog("Enter Structured Macro Name");
-            if(edt.ShowDialog()!=DialogResult.OK) return;
-
-            CStructuredMacro macro = new CStructuredMacro(edt.Value);
+            CStructuredMacro macro = new CStructuredMacro("");
             macro.NStickers = 0;
             macro.Stickers = new int[0];
             macro.Orient = (int[])Cube.Orient.Clone();
@@ -642,8 +648,12 @@ namespace _3dedit
                 MessageBox.Show(error);
                 return;
             }
-            StructuredMacros.Add(macro);
-            MessageBox.Show(macro.ToDebugString(),"Structured Macro Recorded");
+            if(!PromptStructuredMacroName(macro, "Enter Structured Macro Name")) {
+                RedrawClickStatus();
+                return;
+            }
+            SaveStructuredMacro(macro);
+            ShowStructuredMacroWindow(macro);
             RedrawClickStatus();
         }
 
@@ -651,6 +661,69 @@ namespace _3dedit
             if(!StructuredRecorder.IsRecording) return;
             StructuredRecorder.Cancel();
             RedrawClickStatus();
+        }
+
+        bool PromptStructuredMacroName(CStructuredMacro macro, string title) {
+            while(true) {
+                TextDialog edt = new TextDialog(title);
+                edt.Value = macro.Name;
+                if(edt.ShowDialog(this)!=DialogResult.OK) return false;
+
+                string name = StructuredMacroNames.Normalize(edt.Value);
+                if(name.Length == 0) {
+                    MessageBox.Show("Structured macro name cannot be empty.");
+                    continue;
+                }
+
+                macro.Name = name;
+                return true;
+            }
+        }
+
+        void SaveStructuredMacro(CStructuredMacro macro) {
+            int index = StructuredMacroNames.FindIndex(StructuredMacros, macro.Name, macro);
+            if(index >= 0) StructuredMacros[index] = macro;
+            else if(!StructuredMacros.Contains(macro)) StructuredMacros.Add(macro);
+        }
+
+        void ShowStructuredMacroWindow(CStructuredMacro selected) {
+            if(StructuredMacroWindow == null || StructuredMacroWindow.IsDisposed) {
+                StructuredMacroWindow = new StructuredMacroWindow(StructuredMacros,
+                    new Func<int>(GetSize), new ApplyStructuredMacroHandler(ApplyStructuredMacro));
+                StructuredMacroWindow.FormClosed += delegate { StructuredMacroWindow = null; };
+                StructuredMacroWindow.Show();
+            } else {
+                StructuredMacroWindow.RefreshMacros(selected);
+                StructuredMacroWindow.Show();
+                StructuredMacroWindow.Focus();
+            }
+            if(selected != null) StructuredMacroWindow.RefreshMacros(selected);
+        }
+
+        void ApplyStructuredMacro(CStructuredMacro macro, IDictionary<int, int> overrideMasks, bool reverse) {
+            if(macro == null || Cube == null) return;
+            if(RecordingMacroStatus==REC_MACRO_STICKERS || RecordingMacroStatus==REC_MACRO_APPLY) return;
+            if(StructuredRecorder.IsRecording) {
+                MessageBox.Show("Finish structured macro recording before applying another structured macro.");
+                return;
+            }
+
+            int[] cmap = null;
+            if(macro.NStickers > 0) {
+                if(m_cbQuickMacro.Checked && macro.Vectors != null) {
+                    cmap = GetFastMacroRef(macro.Vectors, macro.Orient);
+                } else {
+                    MessageBox.Show("Structured macro sticker reference selection is not implemented yet.");
+                    return;
+                }
+            }
+
+            using(StructuredRecorder.Suppress()) {
+                StructuredMacroExecutor.Apply(Cube, macro, cmap, overrideMasks, reverse);
+            }
+            ProcessHighLights();
+            TestBuild();
+            Redraw();
         }
 	
 		/// <summary>
@@ -858,7 +931,7 @@ namespace _3dedit
                     ms_MacroStatus.Text="  Enter macro: "+Cube.GetNTwists(MacroStart,Cube.LPtr); break;
             }
             if(StructuredRecorder.IsRecording) {
-                string expr = StructuredRecorder.CurrentMacro.RootNode.ToExpression();
+                string expr = StructuredRecorder.CurrentExpression();
                 ms_MacroStatus.Text = "  Structured rec: " + (expr.Length == 0 ? "0" : expr);
             }
             UpdateTime(null);
@@ -921,6 +994,7 @@ namespace _3dedit
             NClicks=0; ClickQual=true;
             LRevStack=0;
             RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
+            StructuredRecorder.Cancel();
 
             m_TRun=false;
             ShowCube();
@@ -1083,6 +1157,7 @@ namespace _3dedit
 
         private void mi_Reset_Click(object sender,EventArgs e) {
             NewScene(false);
+            RedrawClickStatus();
         }
 
         bool BlockStructuredRecordingUndoRedo() {
@@ -1134,6 +1209,7 @@ namespace _3dedit
         }
         void Scramble(int N) {
             if(Cube!=null) Cube.partialTwist3c.Reset();
+            StructuredRecorder.Cancel();
             dxControl2.ClearMeshes();
             CubeView=null;
             GC.Collect();
@@ -1227,6 +1303,7 @@ namespace _3dedit
                 if(Cube!=null) Cube.partialTwist3c.Reset();
                 // Exit macro sticker selection when loading a different puzzle
                 RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
+                StructuredRecorder.Cancel();
                 m_pendingOrbitChipStates.Clear();
                 m_FileName=sf.FileName;
                 Text=m_FileName+" - MC7D";
@@ -2207,6 +2284,7 @@ namespace _3dedit
             RevStack[LRevStack,1]=-1;
             LRevStack++;
             ShowRevStack();
+            RedrawClickStatus();
         }
 
         private void stopExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
@@ -2219,6 +2297,7 @@ namespace _3dedit
                 else RevStack[LRevStack-1,1]=Cube.LPtr;
             }
             ShowRevStack();
+            RedrawClickStatus();
         }
 
         private void undoExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
@@ -2240,6 +2319,7 @@ namespace _3dedit
                 }
                 LRevStack--;
             }
+            RedrawClickStatus();
             Redraw();
         }
 
@@ -2262,6 +2342,7 @@ namespace _3dedit
                 }
                 LRevStack--;
             }
+            RedrawClickStatus();
             Redraw();
         }
 
