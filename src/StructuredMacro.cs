@@ -569,6 +569,30 @@ namespace _3dedit {
         }
     }
 
+    internal static class StructuredMacroExecutor {
+        internal static void Apply(Cube7D cube, CStructuredMacro macro, int[] axisMap,
+            IDictionary<int, int> overrideMasks, bool reverse) {
+            if(cube == null) throw new ArgumentNullException("cube");
+            if(macro == null) throw new ArgumentNullException("macro");
+
+            List<CompiledStructuredTwist> steps = macro.Compile(overrideMasks, reverse);
+            cube.StartMacro();
+            try {
+                for(int i=0;i<steps.Count;i++) {
+                    int gripAxis;
+                    int fromAxis;
+                    int toAxis;
+                    int cubeMask;
+                    StructuredTwistRuntime.ResolveForCubeTwist(steps[i], cube.N, axisMap,
+                        out gripAxis, out fromAxis, out toAxis, out cubeMask);
+                    cube.Twist(gripAxis, fromAxis, toAxis, cubeMask);
+                }
+            } finally {
+                cube.StopMacro();
+            }
+        }
+    }
+
     internal sealed class StructuredRktSelection {
         internal int TwistId;
         internal int TargetCell;
