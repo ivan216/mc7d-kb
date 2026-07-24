@@ -39,6 +39,7 @@ namespace _3dedit {
         public Keybindings.Twist partialTwist;
         public PartialTwist3c partialTwist3c;
         public HashSet<Keybindings.Layer> LayerOverrides;
+        public event Action<int,int,int,int> TwistExecuted;
 
         public int[] Seq;
         public int LSeq,LPtr,LShuffle;
@@ -367,6 +368,7 @@ namespace _3dedit {
         }
 
         public bool Twist(int f0,int f1,int f2,int m0) {
+            int rawF0=f0,rawF1=f1,rawF2=f2,rawM0=m0;
             NormTwist(ref f0,ref f1,ref f2,ref m0);           
             if(f0==f1 || f0==f2 ||f1==f2) return false;
             f0--; f1--; f2--;
@@ -387,6 +389,7 @@ namespace _3dedit {
 #endif
             NTwists++;
             LSeq=LPtr;
+            if(TwistExecuted!=null) TwistExecuted(rawF0,rawF1,rawF2,rawM0);
             return true;
         }
 

@@ -195,6 +195,7 @@ namespace _3dedit
         bool MacroReverse=false;
         CMacro CurMacro;
         CMacroFile Macros;
+        StructuredMacroRecorder StructuredRecorder = new StructuredMacroRecorder();
 
         int[,] RevStack=new int[100,2];
         int LRevStack=0;
@@ -587,6 +588,15 @@ namespace _3dedit
 		public void ProcessClick(MouseEventArgs e){
             dxControl2.ProcessPick(e,ETarget.TargetObject,new OnAction(mkPickObject));
         }
+
+        void BindCube(Cube7D cube) {
+            if(cube!=null) cube.TwistExecuted += Cube_TwistExecuted;
+        }
+
+        void Cube_TwistExecuted(int gripAxis,int fromAxis,int toAxis,int mask) {
+            if(Cube==null || StructuredRecorder==null) return;
+            StructuredRecorder.RecordCubeTwistInput(gripAxis,fromAxis,toAxis,mask,Cube.N);
+        }
 	
 		/// <summary>
 		/// The main entry point for the application.
@@ -840,6 +850,7 @@ namespace _3dedit
             m_pendingOrbitChipStates.Clear();
             Cube=new Cube7D();
             Cube.Init(GetSize(),GetDim());
+            BindCube(Cube);
             qSolved=true;
 
             if(rebuildOrbitChips) RebuildOrbitChips(false);
@@ -1015,7 +1026,14 @@ namespace _3dedit
             NewScene(false);
         }
 
+        bool BlockStructuredRecordingUndoRedo() {
+            if(!StructuredRecorder.IsRecording) return false;
+            MessageBox.Show("Structured macro recording is active. Ordinary undo/redo is disabled.");
+            return true;
+        }
+
         private void mi_Undo_Click(object sender,EventArgs e) {
+            if(BlockStructuredRecordingUndoRedo()) return;
             bool r=Cube.Undo();
             if(r) {
                 if(AltHighlight) Redraw();
@@ -1024,6 +1042,7 @@ namespace _3dedit
         }
 
         private void mi_Redo_Click(object sender,EventArgs e) {
+            if(BlockStructuredRecordingUndoRedo()) return;
             bool r=Cube.Redo();
             if(r) {
                 if(AltHighlight) Redraw();
@@ -1069,6 +1088,7 @@ namespace _3dedit
 
         bool m_runUndo=false;
         private void mi_FullUndo_Click(object sender,EventArgs e) {
+            if(BlockStructuredRecordingUndoRedo()) return;
             m_runUndo=true;
             int frameSkip=Math.Max(1,(int)nudUndoFrameSkip.Value);
             int frameCount=0;
@@ -1101,6 +1121,7 @@ namespace _3dedit
         }
 
         private void mi_FullRedo_Click(object sender,EventArgs e) {
+            if(BlockStructuredRecordingUndoRedo()) return;
             m_runUndo=true;
             int frameSkip=Math.Max(1,(int)nudUndoFrameSkip.Value);
             int frameCount=0;
@@ -1426,6 +1447,7 @@ namespace _3dedit
                 m_pendingOrbitChipStates.Clear();
                 Cube=new Cube7D();
                 Cube.Load(m_FileName);
+                BindCube(Cube);
                 RebuildOrbitChips(false);
                 ShowCube();
                 SetDim(Cube.D); SetSize(Cube.N);
@@ -2116,6 +2138,7 @@ namespace _3dedit
         }
 
         private void startExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
+            StructuredRecorder.BeginFrame();
             if(LRevStack>=RevStack.GetLength(0)) {
                 int[,] stk=new int[2*LRevStack,2];
                 Buffer.BlockCopy(RevStack,0,stk,0,8*LRevStack);
@@ -2128,6 +2151,10 @@ namespace _3dedit
         }
 
         private void stopExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
+            string error;
+            if(!StructuredRecorder.SplitFrame(out error) && StructuredRecorder.IsRecording) {
+                MessageBox.Show(error);
+            }
             if(LRevStack>0) {
                 if(RevStack[LRevStack-1,1]>=0 || Cube.LPtr<=RevStack[LRevStack-1,0]) LRevStack--;
                 else RevStack[LRevStack-1,1]=Cube.LPtr;
@@ -2136,12 +2163,18 @@ namespace _3dedit
         }
 
         private void undoExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
+            string error;
+            if(!StructuredRecorder.EndConjugate(out error) && StructuredRecorder.IsRecording) {
+                MessageBox.Show(error);
+            }
             if(LRevStack>0) {
                 int r=RevStack[LRevStack-1,1];
                 if(r>=0) {
                     int p=Cube.LPtr;
                     if(p>=r) {
-                        Cube.ApplySeqReverse(RevStack[LRevStack-1,0],r);
+                        using(StructuredRecorder.Suppress()) {
+                            Cube.ApplySeqReverse(RevStack[LRevStack-1,0],r);
+                        }
                         if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
                             Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
                     }
@@ -2152,13 +2185,19 @@ namespace _3dedit
         }
 
         private void commutatorToolStripMenuItem_Click(object sender,EventArgs e) {
+            string error;
+            if(!StructuredRecorder.EndCommutator(out error) && StructuredRecorder.IsRecording) {
+                MessageBox.Show(error);
+            }
             if(LRevStack>0) {
                 int r=RevStack[LRevStack-1,1];
                 if(r>=0) {
                     int p=Cube.LPtr;
                     if(p>=r) {
-                        Cube.ApplySeqReverse(RevStack[LRevStack-1,0],r);
-                        Cube.ApplySeqReverse(r,p);
+                        using(StructuredRecorder.Suppress()) {
+                            Cube.ApplySeqReverse(RevStack[LRevStack-1,0],r);
+                            Cube.ApplySeqReverse(r,p);
+                        }
                         ProcessHighLights();
                     }
                 }

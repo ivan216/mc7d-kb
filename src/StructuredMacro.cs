@@ -425,6 +425,150 @@ namespace _3dedit {
         }
     }
 
+    internal sealed class StructuredMacroRecorder {
+        sealed class Frame {
+            internal StructuredSequenceNode A = new StructuredSequenceNode();
+            internal StructuredSequenceNode B = new StructuredSequenceNode();
+            internal bool InB;
+        }
+
+        readonly List<Frame> m_frames = new List<Frame>();
+        CStructuredMacro m_macro;
+        int m_suppressDepth;
+
+        internal bool IsRecording {
+            get { return m_macro != null; }
+        }
+
+        internal bool SuppressRecording {
+            get { return m_suppressDepth > 0; }
+        }
+
+        internal CStructuredMacro CurrentMacro {
+            get { return m_macro; }
+        }
+
+        internal void Begin(CStructuredMacro macro) {
+            if(macro == null) throw new ArgumentNullException("macro");
+            m_macro = macro;
+            m_frames.Clear();
+            m_suppressDepth = 0;
+        }
+
+        internal void Cancel() {
+            m_macro = null;
+            m_frames.Clear();
+            m_suppressDepth = 0;
+        }
+
+        internal bool TryFinish(out CStructuredMacro macro, out string error) {
+            macro = null;
+            error = null;
+            if(!IsRecording) {
+                error = "Structured macro recording is not active.";
+                return false;
+            }
+            if(m_frames.Count != 0) {
+                error = "Structured macro has unclosed F1/F2 frame.";
+                return false;
+            }
+
+            macro = m_macro;
+            Cancel();
+            return true;
+        }
+
+        internal IDisposable Suppress() {
+            m_suppressDepth++;
+            return new Suppression(this);
+        }
+
+        internal void RecordCubeTwistInput(int gripAxis, int fromAxis, int toAxis, int cubeMask, int size) {
+            if(!IsRecording || SuppressRecording) return;
+            StructuredTwist twist = StructuredTwistRuntime.FromCubeTwistInput(0, gripAxis, fromAxis, toAxis, cubeMask, size);
+            m_macro.AppendPrimitive(CurrentSequence(), twist);
+        }
+
+        internal void BeginFrame() {
+            if(!IsRecording) return;
+            m_frames.Add(new Frame());
+        }
+
+        internal bool SplitFrame(out string error) {
+            error = null;
+            if(!IsRecording) return true;
+            if(m_frames.Count == 0) {
+                error = "F2 requires an active F1 frame.";
+                return false;
+            }
+
+            Frame frame = CurrentFrame();
+            if(frame.InB || frame.A.Children.Count == 0) {
+                m_frames.RemoveAt(m_frames.Count - 1);
+                error = "F2 requires a non-empty A sequence and no existing B sequence.";
+                return false;
+            }
+
+            frame.InB = true;
+            return true;
+        }
+
+        internal bool EndConjugate(out string error) {
+            return EndFrame(true, out error);
+        }
+
+        internal bool EndCommutator(out string error) {
+            return EndFrame(false, out error);
+        }
+
+        bool EndFrame(bool conjugate, out string error) {
+            error = null;
+            if(!IsRecording) return true;
+            if(m_frames.Count == 0) {
+                error = conjugate ? "F3 requires a complete F1/F2 frame." : "F4 requires a complete F1/F2 frame.";
+                return false;
+            }
+
+            Frame frame = CurrentFrame();
+            m_frames.RemoveAt(m_frames.Count - 1);
+            if(!frame.InB || frame.A.Children.Count == 0 || frame.B.Children.Count == 0) {
+                error = conjugate ? "F3 requires non-empty A and B sequences." : "F4 requires non-empty A and B sequences.";
+                return false;
+            }
+
+            StructuredMacroNode node = conjugate
+                ? (StructuredMacroNode)new StructuredConjugateNode(frame.A, frame.B)
+                : (StructuredMacroNode)new StructuredCommutatorNode(frame.A, frame.B);
+            CurrentSequence().Children.Add(node);
+            return true;
+        }
+
+        StructuredSequenceNode CurrentSequence() {
+            if(m_frames.Count == 0) return m_macro.RootNode;
+            Frame frame = CurrentFrame();
+            return frame.InB ? frame.B : frame.A;
+        }
+
+        Frame CurrentFrame() {
+            return m_frames[m_frames.Count - 1];
+        }
+
+        sealed class Suppression : IDisposable {
+            StructuredMacroRecorder m_owner;
+
+            internal Suppression(StructuredMacroRecorder owner) {
+                m_owner = owner;
+            }
+
+            public void Dispose() {
+                if(m_owner != null) {
+                    m_owner.m_suppressDepth--;
+                    m_owner = null;
+                }
+            }
+        }
+    }
+
     internal sealed class StructuredRktSelection {
         internal int TwistId;
         internal int TargetCell;
