@@ -741,13 +741,11 @@ namespace _3dedit
             if(macro == null || Cube == null) return;
             if(RecordingMacroStatus==REC_MACRO_STICKERS || RecordingMacroStatus==REC_MACRO_APPLY) return;
             int[] cmap = null;
-            if(macro.NStickers > 0) {
-                if(m_cbQuickMacro.Checked && macro.Vectors != null) {
-                    cmap = GetFastMacroRef(macro.Vectors, macro.Orient);
-                } else {
-                    BeginStructuredMacroApplySelection(macro, overrideMasks, reverse);
-                    return;
-                }
+            if(m_cbQuickMacro.Checked && macro.Vectors != null && macro.Orient != null) {
+                cmap = GetFastMacroRef(macro.Vectors, macro.Orient);
+            } else if(macro.NStickers > 0) {
+                BeginStructuredMacroApplySelection(macro, overrideMasks, reverse);
+                return;
             }
 
             ExecuteStructuredMacroMapped(macro, overrideMasks, reverse, cmap);
