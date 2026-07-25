@@ -181,6 +181,7 @@
     <Compile Include="src\ChordUtils.cs" />
     <Compile Include="src\CMacroFile.cs" />
     <Compile Include="src\StructuredMacro.cs" />
+    <Compile Include="src\StructuredMacroFile.cs" />
     <Compile Include="src\StructuredMacroWindow.cs" />
     <Compile Include="src\Cube7D.cs" />
     <Compile Include="src\ImportMC4D.cs" />

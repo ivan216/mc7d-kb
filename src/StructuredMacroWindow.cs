@@ -11,6 +11,7 @@ namespace _3dedit {
         readonly IList<CStructuredMacro> m_macros;
         readonly Func<int> m_getSize;
         readonly ApplyStructuredMacroHandler m_apply;
+        readonly Action m_changed;
 
         ListBox m_macroList;
         TextBox m_astPreview;
@@ -21,7 +22,7 @@ namespace _3dedit {
         Button m_deleteButton;
 
         internal StructuredMacroWindow(IList<CStructuredMacro> macros, Func<int> getSize,
-            ApplyStructuredMacroHandler apply) {
+            ApplyStructuredMacroHandler apply, Action changed) {
             if(macros == null) throw new ArgumentNullException("macros");
             if(getSize == null) throw new ArgumentNullException("getSize");
             if(apply == null) throw new ArgumentNullException("apply");
@@ -29,6 +30,7 @@ namespace _3dedit {
             m_macros = macros;
             m_getSize = getSize;
             m_apply = apply;
+            m_changed = changed;
             InitializeUi();
             RefreshMacros(null);
         }
@@ -268,6 +270,7 @@ namespace _3dedit {
             int existing = StructuredMacroNames.FindIndex(m_macros, name, macro);
             if(existing >= 0) m_macros.RemoveAt(existing);
             macro.Name = name;
+            if(m_changed != null) m_changed();
             RefreshMacros(macro);
         }
 
@@ -278,6 +281,7 @@ namespace _3dedit {
                 "Structured Macro", MessageBoxButtons.YesNo) != DialogResult.Yes)
                 return;
             m_macros.Remove(macro);
+            if(m_changed != null) m_changed();
             RefreshMacros(null);
         }
     }

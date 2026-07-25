@@ -197,6 +197,10 @@ namespace _3dedit
         CMacro CurMacro;
         CMacroFile Macros;
         List<CStructuredMacro> StructuredMacros = new List<CStructuredMacro>();
+        string StructuredMacroFileName;
+        bool StructuredMacrosDirty;
+        int StructuredMacrosDim = -1;
+        int StructuredMacrosSize = -1;
         StructuredMacroRecorder StructuredRecorder = new StructuredMacroRecorder();
         StructuredMacroWindow StructuredMacroWindow;
 
@@ -604,14 +608,24 @@ namespace _3dedit
         void InitStructuredMacroMenu() {
             ToolStripMenuItem structured = new ToolStripMenuItem("Structured Macros");
             ToolStripMenuItem manage = new ToolStripMenuItem("Manage");
+            ToolStripMenuItem load = new ToolStripMenuItem("Load");
+            ToolStripMenuItem save = new ToolStripMenuItem("Save");
+            ToolStripMenuItem saveAs = new ToolStripMenuItem("Save As");
             ToolStripMenuItem start = new ToolStripMenuItem("Start Recording");
             ToolStripMenuItem stop = new ToolStripMenuItem("Stop Recording");
             ToolStripMenuItem cancel = new ToolStripMenuItem("Cancel Recording");
             manage.Click += new EventHandler(manageStructuredMacros_Click);
+            load.Click += new EventHandler(loadStructuredMacros_Click);
+            save.Click += new EventHandler(saveStructuredMacros_Click);
+            saveAs.Click += new EventHandler(saveStructuredMacrosAs_Click);
             start.Click += new EventHandler(startStructuredMacroRecording_Click);
             stop.Click += new EventHandler(stopStructuredMacroRecording_Click);
             cancel.Click += new EventHandler(cancelStructuredMacroRecording_Click);
             structured.DropDownItems.Add(manage);
+            structured.DropDownItems.Add(new ToolStripSeparator());
+            structured.DropDownItems.Add(load);
+            structured.DropDownItems.Add(save);
+            structured.DropDownItems.Add(saveAs);
             structured.DropDownItems.Add(new ToolStripSeparator());
             structured.DropDownItems.Add(start);
             structured.DropDownItems.Add(stop);
@@ -694,12 +708,14 @@ namespace _3dedit
             int index = StructuredMacroNames.FindIndex(StructuredMacros, macro.Name, macro);
             if(index >= 0) StructuredMacros[index] = macro;
             else if(!StructuredMacros.Contains(macro)) StructuredMacros.Add(macro);
+            MarkStructuredMacrosDirty();
         }
 
         void ShowStructuredMacroWindow(CStructuredMacro selected) {
             if(StructuredMacroWindow == null || StructuredMacroWindow.IsDisposed) {
                 StructuredMacroWindow = new StructuredMacroWindow(StructuredMacros,
-                    new Func<int>(GetSize), new ApplyStructuredMacroHandler(ApplyStructuredMacro));
+                    new Func<int>(GetSize), new ApplyStructuredMacroHandler(ApplyStructuredMacro),
+                    new Action(MarkStructuredMacrosDirty));
                 StructuredMacroWindow.FormClosed += delegate { StructuredMacroWindow = null; };
                 StructuredMacroWindow.Show();
             } else {
@@ -734,6 +750,92 @@ namespace _3dedit
             ProcessHighLights();
             TestBuild();
             Redraw();
+        }
+
+        void MarkStructuredMacrosDirty() {
+            StructuredMacrosDirty = true;
+            StructuredMacrosDim = GetDim();
+            StructuredMacrosSize = GetSize();
+        }
+
+        void ResetStructuredMacrosForCurrentSize() {
+            StructuredMacros.Clear();
+            StructuredMacroFileName = null;
+            StructuredMacrosDirty = false;
+            StructuredMacrosDim = GetDim();
+            StructuredMacrosSize = GetSize();
+            if(StructuredMacroWindow != null && !StructuredMacroWindow.IsDisposed)
+                StructuredMacroWindow.RefreshMacros(null);
+        }
+
+        void EnsureStructuredMacrosMatchCurrentSize() {
+            if(StructuredMacrosDim == GetDim() && StructuredMacrosSize == GetSize()) return;
+            ResetStructuredMacrosForCurrentSize();
+        }
+
+        private void loadStructuredMacros_Click(object sender,EventArgs e) {
+            if(StructuredRecorder.IsRecording) {
+                MessageBox.Show("Finish or cancel structured macro recording before loading a structured macro file.");
+                return;
+            }
+
+            OpenFileDialog sf = new OpenFileDialog();
+            sf.DefaultExt = ".smdat";
+            sf.Filter = "MC7D Structured Macro file (*.smdat)|*.smdat";
+            sf.RestoreDirectory = true;
+            if(sf.ShowDialog() != DialogResult.OK) return;
+
+            try {
+                CStructuredMacroFile file = new CStructuredMacroFile(sf.FileName);
+                if(!file.CheckSize(GetDim(), GetSize())) {
+                    MessageBox.Show("Wrong cube size");
+                    return;
+                }
+                StructuredMacros = file.Macros;
+                StructuredMacroFileName = file.FileName;
+                StructuredMacrosDirty = false;
+                StructuredMacrosDim = GetDim();
+                StructuredMacrosSize = GetSize();
+                if(StructuredMacroWindow != null && !StructuredMacroWindow.IsDisposed) {
+                    StructuredMacroWindow.Close();
+                    StructuredMacroWindow = null;
+                }
+                ShowStructuredMacroWindow(null);
+            } catch(Exception ex) {
+                MessageBox.Show("Failed to load structured macros: " + ex.Message);
+            }
+        }
+
+        private void saveStructuredMacros_Click(object sender,EventArgs e) {
+            if(StructuredMacroFileName == null) {
+                saveStructuredMacrosAs_Click(sender, e);
+                return;
+            }
+            if(!StructuredMacrosDirty) return;
+            SaveStructuredMacrosTo(StructuredMacroFileName);
+        }
+
+        private void saveStructuredMacrosAs_Click(object sender,EventArgs e) {
+            SaveFileDialog sf = new SaveFileDialog();
+            sf.DefaultExt = ".smdat";
+            sf.Filter = "MC7D Structured Macro file (*.smdat)|*.smdat";
+            sf.RestoreDirectory = true;
+            if(sf.ShowDialog() == DialogResult.OK)
+                SaveStructuredMacrosTo(sf.FileName);
+        }
+
+        void SaveStructuredMacrosTo(string fileName) {
+            try {
+                CStructuredMacroFile file = new CStructuredMacroFile(GetDim(), GetSize());
+                file.Macros.AddRange(StructuredMacros);
+                file.SaveAs(fileName);
+                StructuredMacroFileName = fileName;
+                StructuredMacrosDirty = false;
+                StructuredMacrosDim = GetDim();
+                StructuredMacrosSize = GetSize();
+            } catch(Exception ex) {
+                MessageBox.Show("Failed to save structured macros: " + ex.Message);
+            }
         }
 	
 		/// <summary>
@@ -1001,6 +1103,7 @@ namespace _3dedit
                 Macros=new CMacroFile(GetDim(),GetSize());
                 InitMacroList();
             }
+            EnsureStructuredMacrosMatchCurrentSize();
             NClicks=0; ClickQual=true;
             LRevStack=0;
             RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
@@ -1332,6 +1435,7 @@ namespace _3dedit
                     Macros=new CMacroFile(GetDim(),GetSize());
                     InitMacroList();
                 }
+                EnsureStructuredMacrosMatchCurrentSize();
             }
         }
 

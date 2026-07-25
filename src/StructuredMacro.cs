@@ -403,6 +403,15 @@ namespace _3dedit {
             return id;
         }
 
+        internal void AddTwistWithId(StructuredTwist twist) {
+            if(twist == null) throw new ArgumentNullException("twist");
+            twist.Validate();
+            if(m_twists.ContainsKey(twist.Id))
+                throw new ArgumentException("Duplicate structured twist id: " + twist.Id);
+            m_twists.Add(twist.Id, twist.CopyWithId(twist.Id));
+            if(m_nextTwistId <= twist.Id) m_nextTwistId = twist.Id + 1;
+        }
+
         internal void AppendPrimitive(StructuredSequenceNode sequence, StructuredTwist twist) {
             if(sequence == null) throw new ArgumentNullException("sequence");
             twist.Validate();
