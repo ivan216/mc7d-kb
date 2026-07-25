@@ -203,6 +203,10 @@ namespace _3dedit
         int StructuredMacrosSize = -1;
         StructuredMacroRecorder StructuredRecorder = new StructuredMacroRecorder();
         StructuredMacroWindow StructuredMacroWindow;
+        CStructuredMacro StructuredRecordCandidate;
+        CStructuredMacro CurStructuredMacro;
+        Dictionary<int,int> CurStructuredOverrideMasks;
+        bool StructuredMacroReverse;
 
         int[,] RevStack=new int[100,2];
         int LRevStack=0;
@@ -638,7 +642,7 @@ namespace _3dedit
         }
 
         private void startStructuredMacroRecording_Click(object sender,EventArgs e) {
-            if(StructuredRecorder.IsRecording) {
+            if(StructuredRecorder.IsRecording || StructuredRecordCandidate != null) {
                 MessageBox.Show("Structured macro recording is already active.");
                 return;
             }
@@ -650,14 +654,19 @@ namespace _3dedit
             CStructuredMacro macro = new CStructuredMacro("");
             macro.NStickers = 0;
             macro.Stickers = new int[0];
+            macro.Vectors = GetMatrix();
             macro.Orient = (int[])Cube.Orient.Clone();
-            LRevStack = 0;
-            ShowRevStack();
-            StructuredRecorder.Begin(macro);
-            ms_MacroStatus.Text="  Structured rec: 0";
+            StructuredRecordCandidate = macro;
+            RecordingMacroStatus = REC_MACRO_STICKERS;
+            LMacroStickers = 0;
+            RedrawClickStatus();
         }
 
         private void stopStructuredMacroRecording_Click(object sender,EventArgs e) {
+            if(StructuredRecordCandidate != null) {
+                MessageBox.Show("Finish selecting structured macro reference stickers before stopping recording.");
+                return;
+            }
             CStructuredMacro macro;
             string error;
             if(!StructuredRecorder.TryFinish(out macro,out error)) {
@@ -674,7 +683,9 @@ namespace _3dedit
         }
 
         private void cancelStructuredMacroRecording_Click(object sender,EventArgs e) {
-            if(!StructuredRecorder.IsRecording) return;
+            if(!StructuredRecorder.IsRecording && StructuredRecordCandidate == null) return;
+            StructuredRecordCandidate = null;
+            if(RecordingMacroStatus == REC_MACRO_STICKERS) RecordingMacroStatus = OldRecMacroStatus = REC_MACRO_NONE;
             StructuredRecorder.Cancel();
             RedrawClickStatus();
         }
@@ -734,22 +745,45 @@ namespace _3dedit
                 if(m_cbQuickMacro.Checked && macro.Vectors != null) {
                     cmap = GetFastMacroRef(macro.Vectors, macro.Orient);
                 } else {
-                    MessageBox.Show("Structured macro sticker reference selection is not implemented yet.");
+                    BeginStructuredMacroApplySelection(macro, overrideMasks, reverse);
                     return;
                 }
             }
 
+            ExecuteStructuredMacroMapped(macro, overrideMasks, reverse, cmap);
+        }
+
+        void ExecuteStructuredMacroMapped(CStructuredMacro macro, IDictionary<int, int> overrideMasks,
+            bool reverse, int[] axisMap) {
             if(StructuredRecorder.IsRecording) {
-                StructuredRecorder.RecordStructuredMacroInvocation(macro, overrideMasks, reverse, Cube.N);
+                StructuredRecorder.RecordStructuredMacroInvocation(macro, overrideMasks, reverse, Cube.N, axisMap);
                 RedrawClickStatus();
             }
 
             using(StructuredRecorder.Suppress()) {
-                StructuredMacroExecutor.Apply(Cube, macro, cmap, overrideMasks, reverse);
+                StructuredMacroExecutor.Apply(Cube, macro, axisMap, overrideMasks, reverse);
             }
             ProcessHighLights();
             TestBuild();
             Redraw();
+        }
+
+        void BeginStructuredMacroApplySelection(CStructuredMacro macro, IDictionary<int, int> overrideMasks, bool reverse) {
+            CurStructuredMacro = macro;
+            CurStructuredOverrideMasks = CloneOverrideMasks(overrideMasks);
+            StructuredMacroReverse = reverse;
+            OldRecMacroStatus = RecordingMacroStatus;
+            RecordingMacroStatus = REC_MACRO_APPLY;
+            LMacroStickers = 0;
+            RedrawClickStatus();
+        }
+
+        static Dictionary<int,int> CloneOverrideMasks(IDictionary<int,int> overrideMasks) {
+            Dictionary<int,int> result = new Dictionary<int,int>();
+            if(overrideMasks != null) {
+                foreach(KeyValuePair<int,int> kv in overrideMasks) result[kv.Key] = kv.Value;
+            }
+            return result;
         }
 
         void MarkStructuredMacrosDirty() {
@@ -766,6 +800,12 @@ namespace _3dedit
             StructuredMacrosSize = GetSize();
             if(StructuredMacroWindow != null && !StructuredMacroWindow.IsDisposed)
                 StructuredMacroWindow.RefreshMacros(null);
+        }
+
+        void ClearPendingStructuredMacroState() {
+            StructuredRecordCandidate = null;
+            CurStructuredMacro = null;
+            CurStructuredOverrideMasks = null;
         }
 
         void EnsureStructuredMacrosMatchCurrentSize() {
@@ -934,22 +974,44 @@ namespace _3dedit
                                         MStickers=new int[LMStickers];
                                         Buffer.BlockCopy(MacroStickers,0,MStickers,0,LMStickers*4);
 
-                                        RecordingMacroStatus=REC_MACRO_CODE;
-                                        MacroStart=Cube.LPtr;
+                                        if(StructuredRecordCandidate != null) {
+                                            StructuredRecordCandidate.NStickers = LMStickers;
+                                            StructuredRecordCandidate.Stickers = new int[LMStickers];
+                                            Buffer.BlockCopy(MStickers,0,StructuredRecordCandidate.Stickers,0,LMStickers*4);
+                                            LRevStack = 0;
+                                            ShowRevStack();
+                                            StructuredRecorder.Begin(StructuredRecordCandidate);
+                                            StructuredRecordCandidate = null;
+                                            RecordingMacroStatus = OldRecMacroStatus = REC_MACRO_NONE;
+                                        } else {
+                                            RecordingMacroStatus=REC_MACRO_CODE;
+                                            MacroStart=Cube.LPtr;
+                                        }
                                     }
                                 } else {
-                                    if(LMacroStickers==CurMacro.NStickers) {
-                                        int[] cmap=Cube.CmpStickerSet(CurMacro.Stickers,MacroStickers,LMacroStickers);
+                                    int requiredStickers = CurStructuredMacro != null ? CurStructuredMacro.NStickers : CurMacro.NStickers;
+                                    if(LMacroStickers==requiredStickers) {
+                                        int[] sourceStickers = CurStructuredMacro != null ? CurStructuredMacro.Stickers : CurMacro.Stickers;
+                                        int[] cmap=Cube.CmpStickerSet(sourceStickers,MacroStickers,LMacroStickers);
                                         if(cmap==null) {
                                             ClickQual=false;
                                             CurMacro=null;
+                                            CurStructuredMacro=null;
                                         } else {
-                                            Cube.ApplyMacro(cmap,CurMacro.Code,CurMacro.LMacro,MacroReverse);
-                                            ProcessHighLights();
-                                            TestBuild();
-                                            Redraw();
+                                            if(CurStructuredMacro != null) {
+                                                ExecuteStructuredMacroMapped(CurStructuredMacro, CurStructuredOverrideMasks,
+                                                    StructuredMacroReverse, cmap);
+                                            } else {
+                                                Cube.ApplyMacro(cmap,CurMacro.Code,CurMacro.LMacro,MacroReverse);
+                                                ProcessHighLights();
+                                                TestBuild();
+                                                Redraw();
+                                            }
                                         }
+                                        CurStructuredMacro=null;
+                                        CurStructuredOverrideMasks=null;
                                         RecordingMacroStatus=OldRecMacroStatus;
+                                        RedrawClickStatus();
                                     }
                                 }
                             } else {
@@ -1038,11 +1100,17 @@ namespace _3dedit
                     ms_MacroStatus.Text="  Ready"; break;
                 case REC_MACRO_STICKERS:
                 case REC_MACRO_APPLY:
-                    ms_MacroStatus.Text="  Select Stickers: "+LMacroStickers; break;
+                    if(StructuredRecordCandidate != null)
+                        ms_MacroStatus.Text="  Select structured rec stickers: "+LMacroStickers;
+                    else if(CurStructuredMacro != null)
+                        ms_MacroStatus.Text="  Select structured macro stickers: "+LMacroStickers;
+                    else
+                        ms_MacroStatus.Text="  Select Stickers: "+LMacroStickers;
+                    break;
                 case REC_MACRO_CODE:
                     ms_MacroStatus.Text="  Enter macro: "+Cube.GetNTwists(MacroStart,Cube.LPtr); break;
             }
-            if(StructuredRecorder.IsRecording) {
+            if(StructuredRecorder.IsRecording && CurStructuredMacro == null) {
                 string expr = StructuredRecorder.CurrentExpression();
                 ms_MacroStatus.Text = "  Structured rec: " + (expr.Length == 0 ? "0" : expr);
             }
@@ -1107,6 +1175,7 @@ namespace _3dedit
             NClicks=0; ClickQual=true;
             LRevStack=0;
             RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
+            ClearPendingStructuredMacroState();
             StructuredRecorder.Cancel();
 
             m_TRun=false;
@@ -1416,6 +1485,7 @@ namespace _3dedit
                 if(Cube!=null) Cube.partialTwist3c.Reset();
                 // Exit macro sticker selection when loading a different puzzle
                 RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
+                ClearPendingStructuredMacroState();
                 StructuredRecorder.Cancel();
                 m_pendingOrbitChipStates.Clear();
                 m_FileName=sf.FileName;
