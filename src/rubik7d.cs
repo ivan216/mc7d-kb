@@ -20,7 +20,9 @@ namespace _3dedit
         public string VERSION = "v0.8.4";
         static string GetBuildDate() {
             var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            return new DateTime(2000, 1, 1).AddDays(v.Build).ToString("yyyy.MM.dd");
+            DateTime build = new DateTime(2000, 1, 1).AddDays(v.Build);
+            if(v.Revision >= 0) build = build.AddSeconds(v.Revision * 2);
+            return build.ToString("yyyy.MM.dd HH:00");
         }
 		public Form1() {
 			//
@@ -743,7 +745,8 @@ namespace _3dedit
         void ShowStructuredMacroWindow(CStructuredMacro selected) {
             if(StructuredMacroWindow == null || StructuredMacroWindow.IsDisposed) {
                 StructuredMacroWindow = new StructuredMacroWindow(StructuredMacros,
-                    new Func<int>(GetSize), new ApplyStructuredMacroHandler(ApplyStructuredMacro),
+                    new Func<int>(GetSize), new Func<int>(GetDim),
+                    new ApplyStructuredMacroHandler(ApplyStructuredMacro),
                     new Action(MarkStructuredMacrosDirty));
                 StructuredMacroWindow.FormClosed += delegate { StructuredMacroWindow = null; };
                 StructuredMacroWindow.Show(this);
@@ -774,13 +777,18 @@ namespace _3dedit
 
         void ExecuteStructuredMacroMapped(CStructuredMacro macro, IDictionary<int, int> overrideMasks,
             bool reverse, int[] axisMap) {
+            bool applied;
+            using(StructuredRecorder.Suppress()) {
+                applied = StructuredMacroExecutor.Apply(Cube, macro, axisMap, overrideMasks, reverse);
+            }
+            if(!applied) {
+                MessageBox.Show("Structured macro contains an invalid twist for the current puzzle.");
+                return;
+            }
+
             if(StructuredRecorder.IsRecording) {
                 StructuredRecorder.RecordStructuredMacroInvocation(macro, overrideMasks, reverse, Cube.N, axisMap);
                 RedrawClickStatus();
-            }
-
-            using(StructuredRecorder.Suppress()) {
-                StructuredMacroExecutor.Apply(Cube, macro, axisMap, overrideMasks, reverse);
             }
             ProcessHighLights();
             TestBuild();
@@ -2193,6 +2201,10 @@ namespace _3dedit
         string m_macroName;
 
         private void mi_StartRecordig_Click(object sender,EventArgs e) {
+            if(StructuredRecorder.IsRecording || StructuredRecordCandidate != null) {
+                MessageBox.Show("Finish or cancel structured macro recording before recording an ordinary macro.");
+                return;
+            }
             if(RecordingMacroStatus!=REC_MACRO_CODE) {
 //                MessageBox.Show("Click Reference Stickers");
                 RecordingMacroStatus=REC_MACRO_STICKERS;

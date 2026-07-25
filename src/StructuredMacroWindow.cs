@@ -10,6 +10,7 @@ namespace _3dedit {
     internal sealed class StructuredMacroWindow : Form {
         readonly IList<CStructuredMacro> m_macros;
         readonly Func<int> m_getSize;
+        readonly Func<int> m_getDim;
         readonly ApplyStructuredMacroHandler m_apply;
         readonly Action m_changed;
 
@@ -27,13 +28,15 @@ namespace _3dedit {
         bool m_refreshingDetails;
 
         internal StructuredMacroWindow(IList<CStructuredMacro> macros, Func<int> getSize,
-            ApplyStructuredMacroHandler apply, Action changed) {
+            Func<int> getDim, ApplyStructuredMacroHandler apply, Action changed) {
             if(macros == null) throw new ArgumentNullException("macros");
             if(getSize == null) throw new ArgumentNullException("getSize");
+            if(getDim == null) throw new ArgumentNullException("getDim");
             if(apply == null) throw new ArgumentNullException("apply");
 
             m_macros = macros;
             m_getSize = getSize;
+            m_getDim = getDim;
             m_apply = apply;
             m_changed = changed;
             InitializeUi();
@@ -261,8 +264,7 @@ namespace _3dedit {
             column.Width = TwistGridColumnWidth;
             column.MinimumWidth = 18;
             column.Resizable = DataGridViewTriState.True;
-            column.Minimum = -((1 << m_getSize()) - 1);
-            column.Maximum = (1 << m_getSize()) - 1;
+            SetMaskColumnRange(column);
             m_twistGrid.Columns.Add(column);
             ResizeTwistGridToContent();
         }
@@ -287,15 +289,38 @@ namespace _3dedit {
             column.Width = TwistGridColumnWidth;
             column.MinimumWidth = 18;
             column.Resizable = DataGridViewTriState.True;
-            column.Items.Add("W");
-            column.Items.Add("X");
-            column.Items.Add("Z");
-            column.Items.Add("Y");
-            column.Items.Add("V");
-            column.Items.Add("U");
-            column.Items.Add("T");
+            PopulateAxisColumn(column);
             m_twistGrid.Columns.Add(column);
             ResizeTwistGridToContent();
+        }
+
+        void RefreshGridInputLimits() {
+            DataGridViewNumericUpDownColumn maskColumn =
+                m_twistGrid.Columns["OverrideMask"] as DataGridViewNumericUpDownColumn;
+            if(maskColumn != null) SetMaskColumnRange(maskColumn);
+
+            PopulateAxisColumn(m_twistGrid.Columns["TargetAxis"] as DataGridViewComboBoxColumn);
+            PopulateAxisColumn(m_twistGrid.Columns["AdjustAxis"] as DataGridViewComboBoxColumn);
+        }
+
+        void SetMaskColumnRange(DataGridViewNumericUpDownColumn column) {
+            int maxMask = MaxMask();
+            column.Minimum = -maxMask;
+            column.Maximum = maxMask;
+        }
+
+        void PopulateAxisColumn(DataGridViewComboBoxColumn column) {
+            if(column == null) return;
+            column.Items.Clear();
+            int dim = m_getDim();
+            if(dim < 1) dim = 1;
+            if(dim > 7) dim = 7;
+            for(int axis=1;axis<=dim;axis++)
+                column.Items.Add(StructuredAxis.FormatName(axis));
+        }
+
+        int MaxMask() {
+            return (1 << m_getSize()) - 1;
         }
 
         void ResizeTwistGridToContent() {
@@ -392,6 +417,7 @@ namespace _3dedit {
 
                 m_astPreview.Text = hasMacro ? macro.RootNode.ToExpression() : "";
                 m_twistGrid.Rows.Clear();
+                RefreshGridInputLimits();
                 if(!hasMacro) {
                     m_rktPreview.Text = "";
                     return;
@@ -462,7 +488,7 @@ namespace _3dedit {
             }
             if(overrideMask == 0) return true;
 
-            int maxMask = (1 << m_getSize()) - 1;
+            int maxMask = MaxMask();
             if(Math.Abs(overrideMask) > maxMask) {
                 error = ">" + maxMask;
                 return false;

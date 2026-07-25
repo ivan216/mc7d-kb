@@ -970,26 +970,63 @@ namespace _3dedit {
     }
 
     internal static class StructuredMacroExecutor {
-        internal static void Apply(Cube7D cube, CStructuredMacro macro, int[] axisMap,
+        sealed class ResolvedTwist {
+            internal int GripAxis;
+            internal int FromAxis;
+            internal int ToAxis;
+            internal int Mask;
+
+            internal ResolvedTwist(int gripAxis, int fromAxis, int toAxis, int mask) {
+                GripAxis = gripAxis;
+                FromAxis = fromAxis;
+                ToAxis = toAxis;
+                Mask = mask;
+            }
+        }
+
+        internal static bool Apply(Cube7D cube, CStructuredMacro macro, int[] axisMap,
             IDictionary<int, int> overrideMasks, bool reverse) {
             if(cube == null) throw new ArgumentNullException("cube");
             if(macro == null) throw new ArgumentNullException("macro");
 
             List<CompiledStructuredTwist> steps = macro.Compile(overrideMasks, reverse);
+            List<ResolvedTwist> resolved = new List<ResolvedTwist>();
+            for(int i=0;i<steps.Count;i++) {
+                int gripAxis;
+                int fromAxis;
+                int toAxis;
+                int cubeMask;
+                StructuredTwistRuntime.ResolveForCubeTwist(steps[i], cube.N, axisMap,
+                    out gripAxis, out fromAxis, out toAxis, out cubeMask);
+
+                int checkGrip = gripAxis;
+                int checkFrom = fromAxis;
+                int checkTo = toAxis;
+                int checkMask = cubeMask;
+                StructuredTwistRuntime.NormalizeCubeTwistCode(ref checkGrip, ref checkFrom,
+                    ref checkTo, ref checkMask, cube.N);
+                if(checkMask <= 0
+                    || Math.Abs(checkGrip) > cube.D
+                    || Math.Abs(checkFrom) > cube.D
+                    || Math.Abs(checkTo) > cube.D
+                    || checkGrip == checkFrom
+                    || checkGrip == checkTo
+                    || checkFrom == checkTo)
+                    return false;
+
+                resolved.Add(new ResolvedTwist(gripAxis, fromAxis, toAxis, cubeMask));
+            }
+
             cube.StartMacro();
             try {
-                for(int i=0;i<steps.Count;i++) {
-                    int gripAxis;
-                    int fromAxis;
-                    int toAxis;
-                    int cubeMask;
-                    StructuredTwistRuntime.ResolveForCubeTwist(steps[i], cube.N, axisMap,
-                        out gripAxis, out fromAxis, out toAxis, out cubeMask);
-                    cube.Twist(gripAxis, fromAxis, toAxis, cubeMask);
-                }
+                for(int i=0;i<resolved.Count;i++)
+                    if(!cube.Twist(resolved[i].GripAxis, resolved[i].FromAxis,
+                        resolved[i].ToAxis, resolved[i].Mask))
+                        return false;
             } finally {
                 cube.StopMacro();
             }
+            return true;
         }
     }
 
