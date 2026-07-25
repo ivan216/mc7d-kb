@@ -664,7 +664,8 @@ namespace _3dedit
 
         private void stopStructuredMacroRecording_Click(object sender,EventArgs e) {
             if(StructuredRecordCandidate != null) {
-                MessageBox.Show("Finish selecting structured macro reference stickers before stopping recording.");
+                CancelStructuredMacroReferenceSelection();
+                RedrawClickStatus();
                 return;
             }
             CStructuredMacro macro;
@@ -684,10 +685,17 @@ namespace _3dedit
 
         private void cancelStructuredMacroRecording_Click(object sender,EventArgs e) {
             if(!StructuredRecorder.IsRecording && StructuredRecordCandidate == null) return;
-            StructuredRecordCandidate = null;
-            if(RecordingMacroStatus == REC_MACRO_STICKERS) RecordingMacroStatus = OldRecMacroStatus = REC_MACRO_NONE;
+            CancelStructuredMacroReferenceSelection();
             StructuredRecorder.Cancel();
             RedrawClickStatus();
+        }
+
+        private void CancelStructuredMacroReferenceSelection() {
+            if(StructuredRecordCandidate == null) return;
+            StructuredRecordCandidate = null;
+            LMacroStickers = 0;
+            if(RecordingMacroStatus == REC_MACRO_STICKERS)
+                RecordingMacroStatus = OldRecMacroStatus = REC_MACRO_NONE;
         }
 
         bool PromptStructuredMacroName(CStructuredMacro macro, string title) {
@@ -898,7 +906,12 @@ namespace _3dedit
                 // Clear Twist3c state when clicking empty area
                 Cube.partialTwist3c.Reset();
                 switch(RecordingMacroStatus) {
-                    case REC_MACRO_STICKERS: RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE; break;
+                    case REC_MACRO_STICKERS:
+                        if(StructuredRecordCandidate != null)
+                            CancelStructuredMacroReferenceSelection();
+                        else
+                            RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
+                        break;
                     case REC_MACRO_APPLY: RecordingMacroStatus=OldRecMacroStatus; break;
                 }
                 RedrawClickStatus();
