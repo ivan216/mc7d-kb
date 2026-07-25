@@ -68,18 +68,18 @@ namespace _3dedit {
         void InitializeUi() {
             Text = "Structured Macros";
             Size = new Size(1153, 656);
-            MinimumSize = new Size(860, 460);
+            MinimumSize = Size.Empty;
             StartPosition = FormStartPosition.WindowsDefaultLocation;
 
             SplitContainer split = new SplitContainer();
             split.Dock = DockStyle.Fill;
             split.FixedPanel = FixedPanel.Panel1;
+            split.Panel1MinSize = 0;
+            split.Panel2MinSize = 0;
             Controls.Add(split);
             split.HandleCreated += delegate {
                 if(split.Width > 360) {
                     split.SplitterDistance = 130;
-                    split.Panel1MinSize = 110;
-                    split.Panel2MinSize = 200;
                 }
             };
 
@@ -91,11 +91,21 @@ namespace _3dedit {
             TableLayoutPanel right = new TableLayoutPanel();
             right.Dock = DockStyle.Fill;
             right.ColumnCount = 1;
-            right.RowCount = 3;
-            right.RowStyles.Add(new RowStyle(SizeType.Absolute, 92));
+            right.RowCount = 2;
             right.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             right.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             split.Panel2.Controls.Add(right);
+
+            SplitContainer detailSplit = new SplitContainer();
+            detailSplit.Dock = DockStyle.Fill;
+            detailSplit.Orientation = Orientation.Horizontal;
+            detailSplit.Panel1MinSize = 0;
+            detailSplit.Panel2MinSize = 0;
+            detailSplit.SplitterWidth = 6;
+            detailSplit.HandleCreated += delegate {
+                if(detailSplit.Height > 260) detailSplit.SplitterDistance = 92;
+            };
+            right.Controls.Add(detailSplit, 0, 0);
 
             m_astPreview = new TextBox();
             m_astPreview.Dock = DockStyle.Fill;
@@ -103,7 +113,7 @@ namespace _3dedit {
             m_astPreview.ReadOnly = true;
             m_astPreview.ScrollBars = ScrollBars.Vertical;
             m_astPreview.Font = new Font("Consolas", 10.0f);
-            right.Controls.Add(m_astPreview, 0, 0);
+            detailSplit.Panel1.Controls.Add(m_astPreview);
 
             m_twistGrid = new DataGridView();
             m_twistGrid.Dock = DockStyle.Fill;
@@ -112,19 +122,22 @@ namespace _3dedit {
             m_twistGrid.RowHeadersVisible = false;
             m_twistGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             m_twistGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            m_twistGrid.EditMode = DataGridViewEditMode.EditProgrammatically;
+            m_twistGrid.CellClick += new DataGridViewCellEventHandler(twistGrid_CellClick);
+            m_twistGrid.EditingControlShowing += new DataGridViewEditingControlShowingEventHandler(twistGrid_EditingControlShowing);
             m_twistGrid.CellEndEdit += delegate { RefreshEffectiveMasks(); };
             AddTextColumn("Id", "Id", true);
             AddTextColumn("Twist", "Twist", true);
             AddTextColumn("DefaultMask", "Default Mask", true);
             AddTextColumn("OverrideMask", "Override Mask", false);
             AddTextColumn("EffectiveMask", "Effective Mask", true);
-            right.Controls.Add(m_twistGrid, 0, 1);
+            detailSplit.Panel2.Controls.Add(m_twistGrid);
 
             FlowLayoutPanel buttons = new FlowLayoutPanel();
             buttons.Dock = DockStyle.Fill;
             buttons.FlowDirection = FlowDirection.RightToLeft;
             buttons.Padding = new Padding(0, 6, 0, 0);
-            right.Controls.Add(buttons, 0, 2);
+            right.Controls.Add(buttons, 0, 1);
 
             m_applyButton = AddButton(buttons, "Apply", delegate { ApplySelected(false); });
             m_reverseButton = AddButton(buttons, "Reverse", delegate { ApplySelected(true); });
@@ -148,6 +161,24 @@ namespace _3dedit {
             button.Click += click;
             panel.Controls.Add(button);
             return button;
+        }
+
+        void twistGrid_CellClick(object sender, DataGridViewCellEventArgs e) {
+            if(e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            DataGridViewColumn column = m_twistGrid.Columns[e.ColumnIndex];
+            if(column == null || column.Name != "OverrideMask") return;
+
+            m_twistGrid.CurrentCell = m_twistGrid.Rows[e.RowIndex].Cells[e.ColumnIndex];
+            m_twistGrid.BeginEdit(false);
+        }
+
+        void twistGrid_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e) {
+            TextBox editor = e.Control as TextBox;
+            if(editor == null || m_twistGrid.CurrentCell == null) return;
+            if(m_twistGrid.Columns[m_twistGrid.CurrentCell.ColumnIndex].Name != "OverrideMask") return;
+
+            editor.SelectionStart = editor.TextLength;
+            editor.SelectionLength = 0;
         }
 
         void RefreshDetails() {

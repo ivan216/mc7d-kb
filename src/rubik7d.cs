@@ -615,15 +615,13 @@ namespace _3dedit
             ToolStripMenuItem load = new ToolStripMenuItem("Load");
             ToolStripMenuItem save = new ToolStripMenuItem("Save");
             ToolStripMenuItem saveAs = new ToolStripMenuItem("Save As");
-            ToolStripMenuItem start = new ToolStripMenuItem("Start Recording");
-            ToolStripMenuItem stop = new ToolStripMenuItem("Stop Recording");
+            ToolStripMenuItem record = new ToolStripMenuItem("Start/Stop Recording");
             ToolStripMenuItem cancel = new ToolStripMenuItem("Cancel Recording");
             manage.Click += new EventHandler(manageStructuredMacros_Click);
             load.Click += new EventHandler(loadStructuredMacros_Click);
             save.Click += new EventHandler(saveStructuredMacros_Click);
             saveAs.Click += new EventHandler(saveStructuredMacrosAs_Click);
-            start.Click += new EventHandler(startStructuredMacroRecording_Click);
-            stop.Click += new EventHandler(stopStructuredMacroRecording_Click);
+            record.Click += new EventHandler(recordStructuredMacroRecording_Click);
             cancel.Click += new EventHandler(cancelStructuredMacroRecording_Click);
             structured.DropDownItems.Add(manage);
             structured.DropDownItems.Add(new ToolStripSeparator());
@@ -631,14 +629,26 @@ namespace _3dedit
             structured.DropDownItems.Add(save);
             structured.DropDownItems.Add(saveAs);
             structured.DropDownItems.Add(new ToolStripSeparator());
-            structured.DropDownItems.Add(start);
-            structured.DropDownItems.Add(stop);
+            structured.DropDownItems.Add(record);
             structured.DropDownItems.Add(cancel);
-            menuStrip1.Items.Add(structured);
+            int helpIndex = menuStrip1.Items.IndexOf(helpToolStripMenuItem);
+            if(helpIndex >= 0) menuStrip1.Items.Insert(helpIndex, structured);
+            else menuStrip1.Items.Add(structured);
         }
 
         private void manageStructuredMacros_Click(object sender,EventArgs e) {
             ShowStructuredMacroWindow(null);
+        }
+
+        private void recordStructuredMacroRecording_Click(object sender,EventArgs e) {
+            if(StructuredRecordCandidate != null) {
+                CancelStructuredMacroReferenceSelection();
+                RedrawClickStatus();
+            } else if(StructuredRecorder.IsRecording) {
+                stopStructuredMacroRecording_Click(sender,e);
+            } else {
+                startStructuredMacroRecording_Click(sender,e);
+            }
         }
 
         private void startStructuredMacroRecording_Click(object sender,EventArgs e) {
@@ -736,12 +746,15 @@ namespace _3dedit
                     new Func<int>(GetSize), new ApplyStructuredMacroHandler(ApplyStructuredMacro),
                     new Action(MarkStructuredMacrosDirty));
                 StructuredMacroWindow.FormClosed += delegate { StructuredMacroWindow = null; };
-                StructuredMacroWindow.Show();
+                StructuredMacroWindow.Show(this);
             } else {
                 StructuredMacroWindow.RefreshMacros(selected);
-                StructuredMacroWindow.Show();
-                StructuredMacroWindow.Focus();
+                if(!StructuredMacroWindow.Visible) StructuredMacroWindow.Show(this);
             }
+            if(StructuredMacroWindow.WindowState == FormWindowState.Minimized)
+                StructuredMacroWindow.WindowState = FormWindowState.Normal;
+            StructuredMacroWindow.BringToFront();
+            StructuredMacroWindow.Focus();
             if(selected != null) StructuredMacroWindow.RefreshMacros(selected);
         }
 
@@ -2260,6 +2273,7 @@ namespace _3dedit
                 Cube.ApplyMacro(cmap,CurMacro.Code,CurMacro.LMacro,qrev);
                 ProcessHighLights();
                 TestBuild();
+                RedrawClickStatus();
                 Redraw();
                 return;
             }
