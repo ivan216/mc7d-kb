@@ -637,6 +637,8 @@ namespace _3dedit
             macro.NStickers = 0;
             macro.Stickers = new int[0];
             macro.Orient = (int[])Cube.Orient.Clone();
+            LRevStack = 0;
+            ShowRevStack();
             StructuredRecorder.Begin(macro);
             ms_MacroStatus.Text="  Structured rec: 0";
         }
@@ -673,6 +675,14 @@ namespace _3dedit
                 if(name.Length == 0) {
                     MessageBox.Show("Structured macro name cannot be empty.");
                     continue;
+                }
+                int existing = StructuredMacroNames.FindIndex(StructuredMacros, name, macro);
+                if(existing >= 0) {
+                    DialogResult overwrite = MessageBox.Show(
+                        "Structured macro '" + name + "' already exists. Overwrite it?",
+                        "Structured Macro",
+                        MessageBoxButtons.YesNo);
+                    if(overwrite != DialogResult.Yes) continue;
                 }
 
                 macro.Name = name;
@@ -2302,7 +2312,8 @@ namespace _3dedit
 
         private void undoExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
             string error;
-            if(!StructuredRecorder.EndConjugate(out error) && StructuredRecorder.IsRecording) {
+            StructuredRecorder.EndConjugate(out error);
+            if(error != null && StructuredRecorder.IsRecording) {
                 MessageBox.Show(error);
             }
             if(LRevStack>0) {
@@ -2325,7 +2336,8 @@ namespace _3dedit
 
         private void commutatorToolStripMenuItem_Click(object sender,EventArgs e) {
             string error;
-            if(!StructuredRecorder.EndCommutator(out error) && StructuredRecorder.IsRecording) {
+            StructuredRecorder.EndCommutator(out error);
+            if(error != null && StructuredRecorder.IsRecording) {
                 MessageBox.Show(error);
             }
             if(LRevStack>0) {

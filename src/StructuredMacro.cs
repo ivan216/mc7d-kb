@@ -383,22 +383,83 @@ namespace _3dedit {
             sequence.Children.Add(new StructuredTwistNode(id));
         }
 
-        bool TryMergePrimitive(StructuredSequenceNode sequence, StructuredTwist incoming) {
-            if(sequence.Children.Count == 0) return false;
+        internal void AppendExistingNode(StructuredSequenceNode sequence, StructuredMacroNode node) {
+            if(sequence == null) throw new ArgumentNullException("sequence");
+            if(node == null) return;
 
+            if(node is StructuredSequenceNode) {
+                StructuredSequenceNode seq = (StructuredSequenceNode)node;
+                for(int i=0;i<seq.Children.Count;i++)
+                    AppendExistingNode(sequence, seq.Children[i]);
+                return;
+            }
+
+            if(node is StructuredTwistNode) {
+                StructuredTwistNode twistNode = (StructuredTwistNode)node;
+                if(TryMergePrimitive(sequence, GetTwist(twistNode.TwistId))) return;
+                sequence.Children.Add(node);
+                return;
+            }
+
+            if(node is StructuredPowerNode) {
+                StructuredPowerNode power = (StructuredPowerNode)node;
+                StructuredTwist twist = GetTwist(power.Twist.TwistId);
+                if(CanMergePrimitive(sequence, twist)) {
+                    AppendPrimitive(sequence, twist);
+                    AppendPrimitive(sequence, twist);
+                } else {
+                    sequence.Children.Add(node);
+                }
+                return;
+            }
+
+            sequence.Children.Add(node);
+        }
+
+        internal void AppendExistingSequence(StructuredSequenceNode target, StructuredSequenceNode source) {
+            if(source == null) return;
+            for(int i=0;i<source.Children.Count;i++)
+                AppendExistingNode(target, source.Children[i]);
+        }
+
+        internal void PruneUnusedTwists(IEnumerable<StructuredMacroNode> extraNodes) {
+            HashSet<int> used = new HashSet<int>();
+            CollectTwistRefs(RootNode, used);
+            if(extraNodes != null) {
+                foreach(StructuredMacroNode node in extraNodes)
+                    CollectTwistRefs(node, used);
+            }
+
+            List<int> unused = new List<int>();
+            foreach(int id in m_twists.Keys)
+                if(!used.Contains(id)) unused.Add(id);
+            for(int i=0;i<unused.Count;i++) m_twists.Remove(unused[i]);
+        }
+
+        static void CollectTwistRefs(StructuredMacroNode node, HashSet<int> used) {
+            if(node == null) return;
+            if(node is StructuredSequenceNode) {
+                StructuredSequenceNode seq = (StructuredSequenceNode)node;
+                for(int i=0;i<seq.Children.Count;i++) CollectTwistRefs(seq.Children[i], used);
+            } else if(node is StructuredTwistNode) {
+                used.Add(((StructuredTwistNode)node).TwistId);
+            } else if(node is StructuredPowerNode) {
+                used.Add(((StructuredPowerNode)node).Twist.TwistId);
+            } else if(node is StructuredConjugateNode) {
+                StructuredConjugateNode conj = (StructuredConjugateNode)node;
+                CollectTwistRefs(conj.A, used);
+                CollectTwistRefs(conj.B, used);
+            } else if(node is StructuredCommutatorNode) {
+                StructuredCommutatorNode comm = (StructuredCommutatorNode)node;
+                CollectTwistRefs(comm.A, used);
+                CollectTwistRefs(comm.B, used);
+            }
+        }
+
+        bool TryMergePrimitive(StructuredSequenceNode sequence, StructuredTwist incoming) {
             StructuredTwistNode lastTwistNode;
             int oldPower;
-            StructuredMacroNode last = sequence.Children[sequence.Children.Count - 1];
-            if(last is StructuredTwistNode) {
-                lastTwistNode = (StructuredTwistNode)last;
-                oldPower = 1;
-            } else if(last is StructuredPowerNode) {
-                StructuredPowerNode power = (StructuredPowerNode)last;
-                lastTwistNode = power.Twist;
-                oldPower = power.Power;
-            } else {
-                return false;
-            }
+            if(!TryGetMergeTail(sequence, out lastTwistNode, out oldPower)) return false;
 
             StructuredTwist oldTwist = GetTwist(lastTwistNode.TwistId);
             int delta;
@@ -420,6 +481,34 @@ namespace _3dedit {
             } else {
                 oldTwist.InvertInPlace();
                 sequence.Children[lastIndex] = new StructuredTwistNode(oldTwist.Id);
+            }
+            return true;
+        }
+
+        bool CanMergePrimitive(StructuredSequenceNode sequence, StructuredTwist incoming) {
+            StructuredTwistNode lastTwistNode;
+            int oldPower;
+            if(!TryGetMergeTail(sequence, out lastTwistNode, out oldPower)) return false;
+
+            StructuredTwist oldTwist = GetTwist(lastTwistNode.TwistId);
+            return oldTwist.SameMove(incoming) || oldTwist.InverseMove(incoming);
+        }
+
+        bool TryGetMergeTail(StructuredSequenceNode sequence, out StructuredTwistNode lastTwistNode, out int oldPower) {
+            lastTwistNode = null;
+            oldPower = 0;
+            if(sequence.Children.Count == 0) return false;
+
+            StructuredMacroNode last = sequence.Children[sequence.Children.Count - 1];
+            if(last is StructuredTwistNode) {
+                lastTwistNode = (StructuredTwistNode)last;
+                oldPower = 1;
+            } else if(last is StructuredPowerNode) {
+                StructuredPowerNode power = (StructuredPowerNode)last;
+                lastTwistNode = power.Twist;
+                oldPower = power.Power;
+            } else {
+                return false;
             }
             return true;
         }
@@ -579,6 +668,10 @@ namespace _3dedit {
                 error = "Structured macro has unclosed F1/F2 frame.";
                 return false;
             }
+            if(m_macro.RootNode.Children.Count == 0) {
+                error = "Structured macro is empty.";
+                return false;
+            }
 
             macro = m_macro;
             Cancel();
@@ -617,6 +710,7 @@ namespace _3dedit {
             Frame frame = CurrentFrame();
             if(frame.InB || frame.A.Children.Count == 0) {
                 m_frames.RemoveAt(m_frames.Count - 1);
+                AppendFrameContents(frame);
                 error = "F2 requires a non-empty A sequence and no existing B sequence.";
                 return false;
             }
@@ -643,9 +737,15 @@ namespace _3dedit {
 
             Frame frame = CurrentFrame();
             m_frames.RemoveAt(m_frames.Count - 1);
-            if(!frame.InB || frame.A.Children.Count == 0 || frame.B.Children.Count == 0) {
+            if(!frame.InB || frame.A.Children.Count == 0) {
+                AppendFrameContents(frame);
                 error = conjugate ? "F3 requires non-empty A and B sequences." : "F4 requires non-empty A and B sequences.";
                 return false;
+            }
+            if(frame.B.Children.Count == 0) {
+                m_macro.PruneUnusedTwists(GetOpenFrameNodes());
+                error = conjugate ? "F3 B sequence is empty." : "F4 B sequence is empty.";
+                return true;
             }
 
             StructuredMacroNode node = conjugate
@@ -663,6 +763,22 @@ namespace _3dedit {
 
         Frame CurrentFrame() {
             return m_frames[m_frames.Count - 1];
+        }
+
+        void AppendFrameContents(Frame frame) {
+            StructuredSequenceNode target = CurrentSequence();
+            m_macro.AppendExistingSequence(target, frame.A);
+            if(frame.InB) m_macro.AppendExistingSequence(target, frame.B);
+            m_macro.PruneUnusedTwists(GetOpenFrameNodes());
+        }
+
+        List<StructuredMacroNode> GetOpenFrameNodes() {
+            List<StructuredMacroNode> nodes = new List<StructuredMacroNode>();
+            for(int i=0;i<m_frames.Count;i++) {
+                nodes.Add(m_frames[i].A);
+                nodes.Add(m_frames[i].B);
+            }
+            return nodes;
         }
 
         static string FormatOpenFrame(Frame frame, string child) {
