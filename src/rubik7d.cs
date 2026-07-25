@@ -713,11 +713,6 @@ namespace _3dedit
         void ApplyStructuredMacro(CStructuredMacro macro, IDictionary<int, int> overrideMasks, bool reverse) {
             if(macro == null || Cube == null) return;
             if(RecordingMacroStatus==REC_MACRO_STICKERS || RecordingMacroStatus==REC_MACRO_APPLY) return;
-            if(StructuredRecorder.IsRecording) {
-                MessageBox.Show("Finish structured macro recording before applying another structured macro.");
-                return;
-            }
-
             int[] cmap = null;
             if(macro.NStickers > 0) {
                 if(m_cbQuickMacro.Checked && macro.Vectors != null) {
@@ -726,6 +721,11 @@ namespace _3dedit
                     MessageBox.Show("Structured macro sticker reference selection is not implemented yet.");
                     return;
                 }
+            }
+
+            if(StructuredRecorder.IsRecording) {
+                StructuredRecorder.RecordStructuredMacroInvocation(macro, overrideMasks, reverse, Cube.N);
+                RedrawClickStatus();
             }
 
             using(StructuredRecorder.Suppress()) {

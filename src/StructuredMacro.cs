@@ -176,6 +176,23 @@ namespace _3dedit {
             return res;
         }
 
+        internal static void NormalizeCubeTwistCode(ref int gripAxis, ref int fromAxis, ref int toAxis,
+            ref int mask, int size) {
+            if(gripAxis < 0) gripAxis = -gripAxis;
+            else mask = ReverseMask(mask, size);
+            mask &= ((1 << size) - 1);
+            while(fromAxis < 0) {
+                int c = -fromAxis;
+                fromAxis = toAxis;
+                toAxis = c;
+            }
+            if(toAxis < 0) {
+                int c = -toAxis;
+                toAxis = fromAxis;
+                fromAxis = c;
+            }
+        }
+
         internal static int InferSignedGripAxisFromCodeMask(int gripAbsAxis, int codeMask, int size) {
             if(gripAbsAxis <= 0) throw new ArgumentException("gripAbsAxis must be positive.");
             int top = 1 << (size - 1);
@@ -227,6 +244,19 @@ namespace _3dedit {
             // cubeMask is the raw mask passed to Cube.Twist; Cube.NormTwist will normalize it.
             cubeMask = Math.Abs(twist.LogicalMask) & ((1 << size) - 1);
             if(twist.LogicalMask < 0) cubeMask = ReverseMask(cubeMask, size);
+        }
+
+        internal static StructuredTwist NormalizeForRecording(int id, int signedGripAxis,
+            int fromAxis, int toAxis, int logicalMask, int size) {
+            CompiledStructuredTwist compiled = new CompiledStructuredTwist(id,
+                signedGripAxis, fromAxis, toAxis, logicalMask);
+            int gripAxis;
+            int codeFromAxis;
+            int codeToAxis;
+            int codeMask;
+            ResolveForCubeTwist(compiled, size, null, out gripAxis, out codeFromAxis, out codeToAxis, out codeMask);
+            NormalizeCubeTwistCode(ref gripAxis, ref codeFromAxis, ref codeToAxis, ref codeMask, size);
+            return FromCubeTwistCode(id, gripAxis, codeFromAxis, codeToAxis, codeMask, size);
         }
     }
 
@@ -422,6 +452,16 @@ namespace _3dedit {
                 AppendExistingNode(target, source.Children[i]);
         }
 
+        internal void AppendMacroInvocation(StructuredSequenceNode target, CStructuredMacro source,
+            IDictionary<int, int> overrideMasks, bool reverse, int size) {
+            if(target == null) throw new ArgumentNullException("target");
+            if(source == null) throw new ArgumentNullException("source");
+
+            Dictionary<string, int> twistMap = new Dictionary<string, int>();
+            StructuredMacroNode node = CloneInvocationNode(source.RootNode, source, overrideMasks, reverse, size, twistMap);
+            AppendExistingNode(target, node);
+        }
+
         internal void PruneUnusedTwists(IEnumerable<StructuredMacroNode> extraNodes) {
             HashSet<int> used = new HashSet<int>();
             CollectTwistRefs(RootNode, used);
@@ -454,6 +494,80 @@ namespace _3dedit {
                 CollectTwistRefs(comm.A, used);
                 CollectTwistRefs(comm.B, used);
             }
+        }
+
+        StructuredMacroNode CloneInvocationNode(StructuredMacroNode node, CStructuredMacro source,
+            IDictionary<int, int> overrideMasks, bool inverse, int size, Dictionary<string, int> twistMap) {
+            if(node is StructuredSequenceNode) {
+                StructuredSequenceNode oldSeq = (StructuredSequenceNode)node;
+                StructuredSequenceNode newSeq = new StructuredSequenceNode();
+                if(inverse) {
+                    for(int i=oldSeq.Children.Count-1;i>=0;i--)
+                        newSeq.Children.Add(CloneInvocationNode(oldSeq.Children[i], source, overrideMasks, true, size, twistMap));
+                } else {
+                    for(int i=0;i<oldSeq.Children.Count;i++)
+                        newSeq.Children.Add(CloneInvocationNode(oldSeq.Children[i], source, overrideMasks, false, size, twistMap));
+                }
+                return newSeq;
+            }
+
+            if(node is StructuredTwistNode) {
+                int sourceId = ((StructuredTwistNode)node).TwistId;
+                return new StructuredTwistNode(MapInvocationTwist(source, sourceId, overrideMasks, inverse, size, twistMap));
+            }
+
+            if(node is StructuredPowerNode) {
+                StructuredPowerNode power = (StructuredPowerNode)node;
+                int sourceId = power.Twist.TwistId;
+                int mappedId = MapInvocationTwist(source, sourceId, overrideMasks, false, size, twistMap);
+                return new StructuredPowerNode(new StructuredTwistNode(mappedId), 2);
+            }
+
+            if(node is StructuredConjugateNode) {
+                StructuredConjugateNode conj = (StructuredConjugateNode)node;
+                if(inverse) {
+                    return new StructuredConjugateNode(
+                        CloneInvocationNode(conj.A, source, overrideMasks, false, size, twistMap),
+                        CloneInvocationNode(conj.B, source, overrideMasks, true, size, twistMap));
+                }
+                return new StructuredConjugateNode(
+                    CloneInvocationNode(conj.A, source, overrideMasks, false, size, twistMap),
+                    CloneInvocationNode(conj.B, source, overrideMasks, false, size, twistMap));
+            }
+
+            if(node is StructuredCommutatorNode) {
+                StructuredCommutatorNode comm = (StructuredCommutatorNode)node;
+                if(inverse) {
+                    return new StructuredCommutatorNode(
+                        CloneInvocationNode(comm.B, source, overrideMasks, false, size, twistMap),
+                        CloneInvocationNode(comm.A, source, overrideMasks, false, size, twistMap));
+                }
+                return new StructuredCommutatorNode(
+                    CloneInvocationNode(comm.A, source, overrideMasks, false, size, twistMap),
+                    CloneInvocationNode(comm.B, source, overrideMasks, false, size, twistMap));
+            }
+
+            throw new ArgumentException("Unknown structured macro node.");
+        }
+
+        int MapInvocationTwist(CStructuredMacro source, int sourceId, IDictionary<int, int> overrideMasks,
+            bool inverse, int size, Dictionary<string, int> twistMap) {
+            string key = sourceId.ToString() + ":" + (inverse ? "I" : "N");
+            int mappedId;
+            if(twistMap.TryGetValue(key, out mappedId)) return mappedId;
+
+            StructuredTwist oldTwist = source.GetTwist(sourceId);
+            bool hasOverride = overrideMasks != null && overrideMasks.ContainsKey(sourceId);
+            int logicalMask = hasOverride ? overrideMasks[sourceId] : oldTwist.DefaultMask;
+            int fromAxis = inverse ? oldTwist.ToAxis : oldTwist.FromAxis;
+            int toAxis = inverse ? oldTwist.FromAxis : oldTwist.ToAxis;
+            StructuredTwist newTwist = hasOverride
+                ? StructuredTwistRuntime.NormalizeForRecording(0, oldTwist.SignedGripAxis,
+                    fromAxis, toAxis, logicalMask, size)
+                : new StructuredTwist(0, oldTwist.SignedGripAxis, fromAxis, toAxis, oldTwist.DefaultMask);
+            mappedId = AddTwist(newTwist);
+            twistMap.Add(key, mappedId);
+            return mappedId;
         }
 
         bool TryMergePrimitive(StructuredSequenceNode sequence, StructuredTwist incoming) {
@@ -597,7 +711,7 @@ namespace _3dedit {
         }
 
         internal static bool Same(string a, string b) {
-            return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(a, b, StringComparison.Ordinal);
         }
 
         internal static int FindIndex(IList<CStructuredMacro> macros, string name, CStructuredMacro except) {
@@ -692,6 +806,13 @@ namespace _3dedit {
         internal void RecordTwist(StructuredTwist twist) {
             if(!IsRecording || SuppressRecording || twist == null) return;
             m_macro.AppendPrimitive(CurrentSequence(), twist);
+        }
+
+        internal void RecordStructuredMacroInvocation(CStructuredMacro macro,
+            IDictionary<int, int> overrideMasks, bool reverse, int size) {
+            if(!IsRecording || SuppressRecording || macro == null) return;
+            m_macro.AppendMacroInvocation(CurrentSequence(), macro, overrideMasks, reverse, size);
+            m_macro.PruneUnusedTwists(GetOpenFrameNodes());
         }
 
         internal void BeginFrame() {

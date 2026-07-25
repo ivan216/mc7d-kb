@@ -40,7 +40,7 @@ namespace _3dedit {
                 m_macroList.Items.Clear();
                 List<CStructuredMacro> sorted = new List<CStructuredMacro>(m_macros);
                 sorted.Sort(delegate(CStructuredMacro a, CStructuredMacro b) {
-                    return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+                    return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
                 });
                 for(int i=0;i<sorted.Count;i++) m_macroList.Items.Add(sorted[i]);
             } finally {
