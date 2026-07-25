@@ -372,10 +372,6 @@ namespace _3dedit {
         readonly Dictionary<int, StructuredTwist> m_twists = new Dictionary<int, StructuredTwist>();
         int m_nextTwistId = 1;
 
-        internal IEnumerable<StructuredTwist> TwistLeaves {
-            get { return m_twists.Values; }
-        }
-
         internal List<StructuredTwist> GetTwistsSorted() {
             List<StructuredTwist> twists = new List<StructuredTwist>(m_twists.Values);
             twists.Sort(delegate(StructuredTwist a, StructuredTwist b) { return a.Id.CompareTo(b.Id); });

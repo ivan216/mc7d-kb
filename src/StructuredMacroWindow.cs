@@ -55,7 +55,7 @@ namespace _3dedit {
                 Button item = new Button();
                 item.Text = sorted[i].Name;
                 item.Tag = sorted[i];
-                item.Width = Math.Max(1, splitSafeWidth(m_macroList.ClientSize.Width - 8));
+                item.Width = Math.Max(1, m_macroList.ClientSize.Width - 8);
                 item.Height = 24;
                 item.Margin = new Padding(2);
                 item.TextAlign = ContentAlignment.MiddleLeft;
@@ -81,10 +81,6 @@ namespace _3dedit {
 
         CStructuredMacro SelectedMacro {
             get { return m_selectedMacro; }
-        }
-
-        static int splitSafeWidth(int width) {
-            return width > 0 ? width : 1;
         }
 
         void macroListItem_Click(object sender, EventArgs e) {
