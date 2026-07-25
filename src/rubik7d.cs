@@ -2421,7 +2421,11 @@ namespace _3dedit
             tb.WordWrap = true;
             tb.Font = new System.Drawing.Font("Segoe UI", 10f);
             tb.Padding = new Padding(10);
-            tb.Text = Properties.Resources.UsageGuideText;
+            string usageText = Properties.Resources.UsageGuideText
+                .Replace("\r\n", "\n")
+                .Replace("\r", "\n")
+                .Replace("\n", Environment.NewLine);
+            tb.Text = usageText;
             tb.Select(0, 0);
 
             guideForm.Controls.Add(tb);
