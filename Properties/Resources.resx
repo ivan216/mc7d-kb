@@ -130,20 +130,55 @@ Build: {1}
   </data>
   <data name="UsageGuideText" xml:space="preserve">
     <value>Keybinds:
-- Twist / Twist2c: grip a facet first, then press the twist key.
-- Twist3c: three-step — 1) grip (optionally with Layer keys); 2-3) choose from / to axes.
-- Macro: press a macro hotkey (1-based index in the Macros list). Hold MacroReverse to play backwards.
-- Layer keys and spinboxes use a binary bitmask (one bit per layer).
+
+Twist / Twist2c
+Grip a facet, then press the twist key.
+
+Twist3c
+Grip a facet, then choose from/to axes.
+
+Macro
+Press a macro hotkey by list index.
+Hold MacroReverse to play backwards.
+
+Layer masks
+Binary bitmask, one bit per layer.
+
+Structured Macros:
+
+Record
+Structured Macros &gt; Start/Stop Recording.
+F1 starts a wrapper. F2 splits parts.
+F3 creates a conjugate. F4 creates a commutator.
+
+Manage
+Apply, reverse, rename, delete, override masks, generate RKT.
+Files match the current puzzle size/dimension.
+
+RKT Generator:
+
+Tick RKT twists in Manage.
+Choose Target/Adjust cells.
+Preview the AST, then Generate RKT.
 
 Highlighting:
-- Enable Highlighting to activate the filter panel.
-- Show Cubies: checkboxes by C-value (how many colored stickers a piece has).
-- Orbit Filters: tri-state checkboxes for each orbit. Pieces with the same C-value but different tier structures or handedness can never reach each other via twists — each is in its own orbit.
-  • Checked  = show only this orbit
-  • Unchecked = hide this orbit
-  • Gray (default) = no opinion, follow other filters
-- Color checkboxes: tri-state per face. Black = only show this color; Unchecked = hide it; Gray = neutral.
-  • With Enable Highlighting checked (✓): whole cubies matching all color constraints are highlighted.
-  • With Enable Highlighting gray (-): only matching stickers are highlighted.</value>
+
+Enable Highlighting to use filters.
+
+Show Cubies
+Filter by colored-sticker count.
+
+Orbit Filters
+Checked: show this orbit.
+Unchecked: hide this orbit.
+Gray: neutral.
+
+Color Filters
+Black: require this color.
+Unchecked: hide this color.
+Gray: neutral.
+
+Highlighting checked: highlight matching cubies.
+Highlighting gray: highlight matching stickers.</value>
   </data>
 </root>
