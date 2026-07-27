@@ -152,14 +152,14 @@ F1 starts a wrapper. F2 splits parts.
 F3 creates a conjugate. F4 creates a commutator.
 
 Manage
-Apply, reverse, rename, delete, override masks, generate RKT.
+Apply, reverse, rename, delete, override masks, build RKT macros.
 Files match the current puzzle size/dimension.
 
-RKT Generator:
+RKT Macro Builder:
 
 Tick RKT twists in Manage.
 Choose Target/Adjust cells.
-Preview the AST, then Generate RKT.
+Preview the AST, then Build RKT Macro.
 
 Highlighting:
 

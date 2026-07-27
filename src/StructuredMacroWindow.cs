@@ -24,7 +24,7 @@ namespace _3dedit {
         Button m_reverseButton;
         Button m_renameButton;
         Button m_deleteButton;
-        Button m_generateRktButton;
+        Button m_buildRktButton;
         bool m_refreshingDetails;
 
         internal StructuredMacroWindow(IList<CStructuredMacro> macros, Func<int> getSize,
@@ -217,7 +217,7 @@ namespace _3dedit {
 
             m_applyButton = AddButton(buttons, "Apply", delegate { ApplySelected(false); });
             m_reverseButton = AddButton(buttons, "Reverse", delegate { ApplySelected(true); });
-            m_generateRktButton = AddButton(buttons, "Generate RKT", delegate { GenerateRkt(); });
+            m_buildRktButton = AddButton(buttons, "Build RKT Macro", delegate { BuildRktMacro(); });
             m_renameButton = AddButton(buttons, "Rename", delegate { RenameSelected(); });
             m_deleteButton = AddButton(buttons, "Delete", delegate { DeleteSelected(); });
             AddButton(buttons, "Refresh", delegate { RefreshMacros(SelectedMacro); });
@@ -409,7 +409,7 @@ namespace _3dedit {
                 m_reverseButton.Enabled = hasMacro;
                 m_renameButton.Enabled = hasMacro;
                 m_deleteButton.Enabled = hasMacro;
-                m_generateRktButton.Enabled = hasMacro;
+                m_buildRktButton.Enabled = hasMacro;
 
                 m_astPreview.Text = hasMacro ? macro.RootNode.ToExpression() : "";
                 m_twistGrid.Rows.Clear();
@@ -555,7 +555,7 @@ namespace _3dedit {
                     return;
                 }
 
-                CStructuredMacro preview = StructuredRktGenerator.Generate(macro, selections, macro.Name + "_RKT");
+                CStructuredMacro preview = StructuredRktBuilder.Generate(macro, selections, macro.Name + "_RKT");
                 m_rktPreview.Text = preview.ToDebugString();
             } catch(Exception ex) {
                 m_rktPreview.Text = ex.Message;
@@ -572,7 +572,7 @@ namespace _3dedit {
             }
         }
 
-        void GenerateRkt() {
+        void BuildRktMacro() {
             CStructuredMacro macro = SelectedMacro;
             if(macro == null) return;
             try {
@@ -580,7 +580,7 @@ namespace _3dedit {
                 string name;
                 if(!PromptRktName(macro, out name)) return;
 
-                CStructuredMacro generated = StructuredRktGenerator.Generate(macro, selections, name);
+                CStructuredMacro generated = StructuredRktBuilder.Generate(macro, selections, name);
                 int existing = StructuredMacroNames.FindIndex(m_macros, name, null);
                 if(existing >= 0) m_macros.RemoveAt(existing);
                 m_macros.Add(generated);
@@ -595,7 +595,7 @@ namespace _3dedit {
             name = "";
             string current = source.Name + "_RKT";
             while(true) {
-                TextDialog edt = new TextDialog("Enter Generated RKT Macro Name");
+                TextDialog edt = new TextDialog("Enter RKT Macro Name");
                 edt.Value = current;
                 if(edt.ShowDialog(this) != DialogResult.OK) return false;
 

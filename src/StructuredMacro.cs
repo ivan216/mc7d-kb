@@ -1042,7 +1042,7 @@ namespace _3dedit {
         }
     }
 
-    internal static class StructuredRktGenerator {
+    internal static class StructuredRktBuilder {
         internal static CStructuredMacro Generate(CStructuredMacro source, IList<StructuredRktSelection> selections, string name) {
             if(source == null) throw new ArgumentNullException("source");
             Dictionary<int, StructuredRktSelection> map = new Dictionary<int, StructuredRktSelection>();
