@@ -177,6 +177,9 @@ namespace _3dedit
         bool _resizingSidePanel;
         int _sidePanelResizeStartMouseX;
         int _sidePanelResizeStartWidth;
+        int _sidePanelResizePreviewWidth;
+        int _sidePanelResizePreviewScreenX;
+        bool _sidePanelResizePreviewVisible;
         int _sidePanelExpandedWidth;
 
         /// <summary>Tracks actions activated by currently held keys.
@@ -2120,6 +2123,7 @@ namespace _3dedit
             panel1.MouseDown += panel1_ResizeMouseDown;
             panel1.MouseUp += panel1_ResizeMouseUp;
             panel1.MouseLeave += panel1_ResizeMouseLeave;
+            panel1.MouseCaptureChanged += panel1_ResizeMouseCaptureChanged;
             UpdateSidePanelScrollBounds();
         }
 
@@ -2150,6 +2154,8 @@ namespace _3dedit
             _resizingSidePanel = true;
             _sidePanelResizeStartMouseX = Cursor.Position.X;
             _sidePanelResizeStartWidth = panel1.Width;
+            _sidePanelResizePreviewWidth = panel1.Width;
+            ShowSidePanelResizePreview(_sidePanelResizePreviewWidth);
             panel1.Capture = true;
         }
 
@@ -2157,10 +2163,7 @@ namespace _3dedit
         {
             if (_resizingSidePanel)
             {
-                int delta = _sidePanelResizeStartMouseX - Cursor.Position.X;
-                panel1.Width = ClampSidePanelWidth(_sidePanelResizeStartWidth + delta);
-                _sidePanelExpandedWidth = panel1.Width;
-                UpdateResponsiveLayout();
+                UpdateSidePanelResizePreview(GetSidePanelResizeWidthFromMouse());
                 return;
             }
 
@@ -2178,13 +2181,81 @@ namespace _3dedit
                 panel1.Cursor = Cursors.Default;
         }
 
+        private void panel1_ResizeMouseCaptureChanged(object sender, EventArgs e)
+        {
+            if (_resizingSidePanel && !panel1.Capture)
+                StopSidePanelResize();
+        }
+
         private void StopSidePanelResize()
         {
             if (!_resizingSidePanel) return;
+
+            int finalWidth = _sidePanelResizePreviewWidth > 0
+                ? _sidePanelResizePreviewWidth
+                : GetSidePanelResizeWidthFromMouse();
+
+            HideSidePanelResizePreview();
             _resizingSidePanel = false;
             panel1.Capture = false;
             panel1.Cursor = Cursors.Default;
-            UpdateResponsiveLayout();
+
+            finalWidth = ClampSidePanelWidth(finalWidth);
+            if (panel1.Width != finalWidth)
+            {
+                panel1.Width = finalWidth;
+                _sidePanelExpandedWidth = panel1.Width;
+                UpdateResponsiveLayout();
+            }
+        }
+
+        private int GetSidePanelResizeWidthFromMouse()
+        {
+            int delta = _sidePanelResizeStartMouseX - Cursor.Position.X;
+            return ClampSidePanelWidth(_sidePanelResizeStartWidth + delta);
+        }
+
+        private void UpdateSidePanelResizePreview(int width)
+        {
+            width = ClampSidePanelWidth(width);
+            if (_sidePanelResizePreviewVisible && _sidePanelResizePreviewWidth == width) return;
+
+            HideSidePanelResizePreview();
+            _sidePanelResizePreviewWidth = width;
+            ShowSidePanelResizePreview(width);
+        }
+
+        private void ShowSidePanelResizePreview(int width)
+        {
+            if (_sidePanelResizePreviewVisible) return;
+
+            _sidePanelResizePreviewScreenX = GetSidePanelResizePreviewScreenX(width);
+            DrawSidePanelResizePreview(_sidePanelResizePreviewScreenX);
+            _sidePanelResizePreviewVisible = true;
+        }
+
+        private void HideSidePanelResizePreview()
+        {
+            if (!_sidePanelResizePreviewVisible) return;
+
+            DrawSidePanelResizePreview(_sidePanelResizePreviewScreenX);
+            _sidePanelResizePreviewVisible = false;
+        }
+
+        private int GetSidePanelResizePreviewScreenX(int width)
+        {
+            int clientX = this.ClientSize.Width - ClampSidePanelWidth(width);
+            return this.PointToScreen(new Point(clientX, 0)).X;
+        }
+
+        private void DrawSidePanelResizePreview(int screenX)
+        {
+            int screenTop = this.PointToScreen(Point.Empty).Y;
+            int screenBottom = this.PointToScreen(new Point(0, this.ClientSize.Height)).Y;
+            ControlPaint.DrawReversibleLine(
+                new Point(screenX, screenTop),
+                new Point(screenX, screenBottom),
+                Color.Gray);
         }
 
         private void UpdateResponsiveLayout()
