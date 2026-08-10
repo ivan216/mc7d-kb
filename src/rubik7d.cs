@@ -84,6 +84,7 @@ namespace _3dedit
             HookMenuReleaseHandlers(viewToolStripMenuItem);
             InitializeStatusScrollHost();
             InitializeMenuOverflow();
+            InitializeSidePanelResize();
             UpdateMenuOverflowLayout();
             panel1.VisibleChanged += (s, me) => { UpdateMenuOverflowLayout(); RefreshStatusScrollHost(); };
             panel2.SizeChanged += (s, me) => { UpdateMenuOverflowLayout(); RefreshStatusScrollHost(); };
@@ -95,10 +96,14 @@ namespace _3dedit
             Application.AddMessageFilter(new WheelGuard(this));
             // Catch ALL key up/down messages before any control filters them
             Application.AddMessageFilter(new KeybindsRefreshFilter(this));
-            // Ensure the DirectX control has focus at startup so keybinds work immediately
-            this.Shown += (s, me) => dxControl2.Focus();
+            this.Shown += (s, me) =>
+            {
+                CaptureInitialSidePanelWidth();
+                // Ensure the DirectX control has focus at startup so keybinds work immediately
+                dxControl2.Focus();
+            };
             // Click sidebar background → move focus away from sidebar controls
-            panel1.MouseDown += (s, me) => dxControl2.Focus();
+            panel1.MouseDown += (s, me) => { if (!IsSidePanelResizeHit(me.Location)) dxControl2.Focus(); };
 
             // Release grip/key state when menu is opened (dxControl2 loses focus
             // but keyboard events may not fire cleanly during menu navigation).
@@ -166,6 +171,13 @@ namespace _3dedit
         ToolStripMenuItem _menuOverflowItem;
         List<ToolStripMenuItem> _topMenuItems;
         bool _menuOverflowLayoutBusy;
+        const int SidePanelResizeGripWidth = 6;
+        const int SidePanelMinWidth = 160;
+        int _sidePanelMaxWidth;
+        bool _resizingSidePanel;
+        int _sidePanelResizeStartMouseX;
+        int _sidePanelResizeStartWidth;
+        int _sidePanelExpandedWidth;
 
         /// <summary>Tracks actions activated by currently held keys.
         /// Used for consumed-modifier calculation and KeyUp dispatch.</summary>
@@ -2089,25 +2101,119 @@ namespace _3dedit
         }
         private void SetPanelCollapsed(bool collapsed) {
             m_panelCollapsed = collapsed;
+            if (collapsed)
+                _sidePanelExpandedWidth = panel1.Width;
+            else if (_sidePanelExpandedWidth > 0)
+                panel1.Width = ClampSidePanelWidth(_sidePanelExpandedWidth);
             panel1.Visible = !collapsed;
             btnTogglePanel.Text = collapsed ? "‹" : "›";
             mi_ShowSidePanel.Checked = !collapsed;
 
-            // Update button position
-            UpdateToggleButtonPosition();
+            UpdateResponsiveLayout();
+        }
 
-            // Force layout refresh to ensure 3D area resizes correctly
+        private void InitializeSidePanelResize()
+        {
+            _sidePanelExpandedWidth = panel1.Width;
+            panel1.MinimumSize = new Size(SidePanelMinWidth, 0);
+            panel1.MouseMove += panel1_ResizeMouseMove;
+            panel1.MouseDown += panel1_ResizeMouseDown;
+            panel1.MouseUp += panel1_ResizeMouseUp;
+            panel1.MouseLeave += panel1_ResizeMouseLeave;
+            UpdateSidePanelScrollBounds();
+        }
+
+        private void CaptureInitialSidePanelWidth()
+        {
+            if (_sidePanelMaxWidth > 0) return;
+
+            _sidePanelMaxWidth = panel1.Width;
+            _sidePanelExpandedWidth = panel1.Width;
+            panel1.MaximumSize = new Size(_sidePanelMaxWidth, 0);
+        }
+
+        private bool IsSidePanelResizeHit(Point point)
+        {
+            return panel1.Visible && point.X >= 0 && point.X <= SidePanelResizeGripWidth;
+        }
+
+        private int ClampSidePanelWidth(int width)
+        {
+            int maxWidth = _sidePanelMaxWidth > 0 ? _sidePanelMaxWidth : Math.Max(panel1.Width, width);
+            return Math.Max(SidePanelMinWidth, Math.Min(maxWidth, width));
+        }
+
+        private void panel1_ResizeMouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left || !IsSidePanelResizeHit(e.Location)) return;
+
+            _resizingSidePanel = true;
+            _sidePanelResizeStartMouseX = Cursor.Position.X;
+            _sidePanelResizeStartWidth = panel1.Width;
+            panel1.Capture = true;
+        }
+
+        private void panel1_ResizeMouseMove(object sender, MouseEventArgs e)
+        {
+            if (_resizingSidePanel)
+            {
+                int delta = _sidePanelResizeStartMouseX - Cursor.Position.X;
+                panel1.Width = ClampSidePanelWidth(_sidePanelResizeStartWidth + delta);
+                _sidePanelExpandedWidth = panel1.Width;
+                UpdateResponsiveLayout();
+                return;
+            }
+
+            panel1.Cursor = IsSidePanelResizeHit(e.Location) ? Cursors.SizeWE : Cursors.Default;
+        }
+
+        private void panel1_ResizeMouseUp(object sender, MouseEventArgs e)
+        {
+            StopSidePanelResize();
+        }
+
+        private void panel1_ResizeMouseLeave(object sender, EventArgs e)
+        {
+            if (!_resizingSidePanel)
+                panel1.Cursor = Cursors.Default;
+        }
+
+        private void StopSidePanelResize()
+        {
+            if (!_resizingSidePanel) return;
+            _resizingSidePanel = false;
+            panel1.Capture = false;
+            panel1.Cursor = Cursors.Default;
+            UpdateResponsiveLayout();
+        }
+
+        private void UpdateResponsiveLayout()
+        {
+            UpdateSidePanelScrollBounds();
+            UpdateToggleButtonPosition();
             panel2.PerformLayout();
             this.PerformLayout();
             UpdateMenuOverflowLayout();
             RefreshStatusScrollHost();
+            if (dxControl2 != null)
+                dxControl2.Invalidate();
+        }
+
+        private void UpdateSidePanelScrollBounds()
+        {
+            int maxRight = 0;
+            int maxBottom = 0;
+            foreach (Control control in panel1.Controls)
+            {
+                maxRight = Math.Max(maxRight, control.Right + control.Margin.Right);
+                maxBottom = Math.Max(maxBottom, control.Bottom + control.Margin.Bottom);
+            }
+            panel1.AutoScrollMinSize = new Size(maxRight + 8, maxBottom + 8);
         }
 
         private void Form1_Load(object sender, EventArgs e) {
             // Initialize button position on form load
-            UpdateToggleButtonPosition();
-            UpdateMenuOverflowLayout();
-            RefreshStatusScrollHost();
+            UpdateResponsiveLayout();
 
             // Rebuild orbit chips after form is fully initialized (fixes AutoSize layout on first load)
             if(m_orbChipMap != null && m_orbChipMap.Count > 0) RebuildOrbitChips();
@@ -2115,9 +2221,7 @@ namespace _3dedit
 
         private void Form1_Resize(object sender, EventArgs e) {
             // Update button position when window resizes
-            UpdateToggleButtonPosition();
-            UpdateMenuOverflowLayout();
-            RefreshStatusScrollHost();
+            UpdateResponsiveLayout();
         }
 
         private void InitializeStatusScrollHost()
