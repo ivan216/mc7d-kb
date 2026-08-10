@@ -191,6 +191,33 @@
     <Compile Include="src\rubik7d.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="src\rubik7d.Input.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Layout.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Macros.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Highlight.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Persistence.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Puzzle.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.UiActions.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Appearance.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Click.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
     <Compile Include="src\rubik7d.Designer.cs">
       <DependentUpon>rubik7d.cs</DependentUpon>
     </Compile>
