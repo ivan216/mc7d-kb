@@ -176,7 +176,30 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="src\Keybindings.cs" />
+    <Compile Include="src\Keybindings.Defaults.cs">
+      <DependentUpon>Keybindings.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Keybindings.Types.cs">
+      <DependentUpon>Keybindings.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Keybindings.Actions.cs">
+      <DependentUpon>Keybindings.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\ActionDisplay.cs" />
     <Compile Include="src\KeybindsReference.cs" />
+    <Compile Include="src\KeybindsReference.Layout.cs">
+      <DependentUpon>KeybindsReference.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\KeybindsReference.Windowing.cs">
+      <DependentUpon>KeybindsReference.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\KeybindsReference.Rendering.cs">
+      <DependentUpon>KeybindsReference.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\KeybindsReference.Resolve.cs">
+      <DependentUpon>KeybindsReference.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\GraphicsExtensions.cs" />
     <Compile Include="src\KeyCombo.cs" />
     <Compile Include="src\ChordUtils.cs" />
     <Compile Include="src\CMacroFile.cs" />
@@ -184,6 +207,33 @@
     <Compile Include="src\StructuredMacroFile.cs" />
     <Compile Include="src\StructuredMacroWindow.cs" />
     <Compile Include="src\Cube7D.cs" />
+    <Compile Include="src\Cube7D.Geometry.cs">
+      <DependentUpon>Cube7D.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Cube7D.Highlight.cs">
+      <DependentUpon>Cube7D.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Cube7D.Macro.cs">
+      <DependentUpon>Cube7D.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Cube7D.Orbit.cs">
+      <DependentUpon>Cube7D.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Cube7D.Orientation.cs">
+      <DependentUpon>Cube7D.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Cube7D.Persistence.cs">
+      <DependentUpon>Cube7D.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Cube7D.Picking.cs">
+      <DependentUpon>Cube7D.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Cube7D.Sequence.cs">
+      <DependentUpon>Cube7D.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Cube7D.Twist.cs">
+      <DependentUpon>Cube7D.cs</DependentUpon>
+    </Compile>
     <Compile Include="src\ImportMC4D.cs" />
     <Compile Include="src\KeybindSetup.cs">
       <SubType>Form</SubType>
@@ -193,6 +243,36 @@
     </Compile>
     <Compile Include="src\rubik7d.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="src\rubik7d.Input.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Layout.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Macros.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.StructuredMacros.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Highlight.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Persistence.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Puzzle.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.UiActions.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Appearance.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.Click.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
     </Compile>
     <Compile Include="src\rubik7d.Designer.cs">
       <DependentUpon>rubik7d.cs</DependentUpon>
