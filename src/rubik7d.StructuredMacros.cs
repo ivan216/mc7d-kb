@@ -27,33 +27,6 @@ namespace _3dedit
             StructuredRecorder.RecordCubeTwistCode(gripAxis,fromAxis,toAxis,mask,Cube.N);
         }
 
-        void InitStructuredMacroMenu() {
-            ToolStripMenuItem structured = new ToolStripMenuItem("Structured Macros");
-            ToolStripMenuItem manage = new ToolStripMenuItem("Manage");
-            ToolStripMenuItem load = new ToolStripMenuItem("Load");
-            ToolStripMenuItem save = new ToolStripMenuItem("Save");
-            ToolStripMenuItem saveAs = new ToolStripMenuItem("Save As");
-            ToolStripMenuItem record = new ToolStripMenuItem("Start/Stop Recording");
-            ToolStripMenuItem cancel = new ToolStripMenuItem("Cancel Recording");
-            manage.Click += new EventHandler(manageStructuredMacros_Click);
-            load.Click += new EventHandler(loadStructuredMacros_Click);
-            save.Click += new EventHandler(saveStructuredMacros_Click);
-            saveAs.Click += new EventHandler(saveStructuredMacrosAs_Click);
-            record.Click += new EventHandler(recordStructuredMacroRecording_Click);
-            cancel.Click += new EventHandler(cancelStructuredMacroRecording_Click);
-            structured.DropDownItems.Add(manage);
-            structured.DropDownItems.Add(new ToolStripSeparator());
-            structured.DropDownItems.Add(load);
-            structured.DropDownItems.Add(save);
-            structured.DropDownItems.Add(saveAs);
-            structured.DropDownItems.Add(new ToolStripSeparator());
-            structured.DropDownItems.Add(record);
-            structured.DropDownItems.Add(cancel);
-            int helpIndex = menuStrip1.Items.IndexOf(helpToolStripMenuItem);
-            if(helpIndex >= 0) menuStrip1.Items.Insert(helpIndex, structured);
-            else menuStrip1.Items.Add(structured);
-        }
-
         private void manageStructuredMacros_Click(object sender,EventArgs e) {
             ShowStructuredMacroWindow(null);
         }

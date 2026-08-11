@@ -353,6 +353,7 @@ namespace _3dedit
                 viewToolStripMenuItem,
                 puzzleToolStripMenuItem,
                 macroToolStripMenuItem,
+                structuredMacrosToolStripMenuItem,
                 helpToolStripMenuItem
             };
 

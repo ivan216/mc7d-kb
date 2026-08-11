@@ -86,7 +86,6 @@ namespace _3dedit
 
             // Wire up macro hotkey execution
             Keybindings.ExecuteMacroById = ExecuteMacroByIdCmd;
-            InitStructuredMacroMenu();
 
             // Block wheel on TrackBar/NumericUpDown; redirect to parent panel for scrolling
             Application.AddMessageFilter(new WheelGuard(this));
