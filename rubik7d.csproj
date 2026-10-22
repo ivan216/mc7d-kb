@@ -203,6 +203,9 @@
     <Compile Include="src\KeyCombo.cs" />
     <Compile Include="src\ChordUtils.cs" />
     <Compile Include="src\CMacroFile.cs" />
+    <Compile Include="src\StructuredMacro.cs" />
+    <Compile Include="src\StructuredMacroFile.cs" />
+    <Compile Include="src\StructuredMacroWindow.cs" />
     <Compile Include="src\Cube7D.cs" />
     <Compile Include="src\Cube7D.Geometry.cs">
       <DependentUpon>Cube7D.cs</DependentUpon>
@@ -248,6 +251,9 @@
       <DependentUpon>rubik7d.cs</DependentUpon>
     </Compile>
     <Compile Include="src\rubik7d.Macros.cs">
+      <DependentUpon>rubik7d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\rubik7d.StructuredMacros.cs">
       <DependentUpon>rubik7d.cs</DependentUpon>
     </Compile>
     <Compile Include="src\rubik7d.Highlight.cs">

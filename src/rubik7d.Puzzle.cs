@@ -80,6 +80,7 @@ namespace _3dedit
             m_pendingOrbitChipStates.Clear();
             Cube=new Cube7D();
             Cube.Init(GetSize(),GetDim());
+            BindCube(Cube);
             qSolved=true;
 
             if(rebuildOrbitChips) RebuildOrbitChips(false);
@@ -88,9 +89,12 @@ namespace _3dedit
                 Macros=new CMacroFile(GetDim(),GetSize());
                 InitMacroList();
             }
+            EnsureStructuredMacrosMatchCurrentSize();
             NClicks=0; ClickQual=true;
             LRevStack=0;
             RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
+            ClearPendingStructuredMacroState();
+            StructuredRecorder.Cancel();
 
             m_TRun=false;
             ShowCube();
@@ -186,9 +190,17 @@ namespace _3dedit
 
         private void mi_Reset_Click(object sender,EventArgs e) {
             NewScene(false);
+            RedrawClickStatus();
+        }
+
+        bool BlockStructuredRecordingUndoRedo() {
+            if(!StructuredRecorder.IsRecording) return false;
+            MessageBox.Show("Structured macro recording is active. Ordinary undo/redo is disabled.");
+            return true;
         }
 
         private void mi_Undo_Click(object sender,EventArgs e) {
+            if(BlockStructuredRecordingUndoRedo()) return;
             bool r=Cube.Undo();
             if(r) {
                 if(AltHighlight) Redraw();
@@ -197,6 +209,7 @@ namespace _3dedit
         }
 
         private void mi_Redo_Click(object sender,EventArgs e) {
+            if(BlockStructuredRecordingUndoRedo()) return;
             bool r=Cube.Redo();
             if(r) {
                 if(AltHighlight) Redraw();
@@ -230,6 +243,7 @@ namespace _3dedit
 
         void Scramble(int N) {
             if(Cube!=null) Cube.partialTwist3c.Reset();
+            StructuredRecorder.Cancel();
             dxControl2.ClearMeshes();
             CubeView=null;
             GC.Collect();
@@ -242,6 +256,7 @@ namespace _3dedit
         }
 
         private void mi_FullUndo_Click(object sender,EventArgs e) {
+            if(BlockStructuredRecordingUndoRedo()) return;
             m_runUndo=true;
             int frameSkip=Math.Max(1,(int)nudUndoFrameSkip.Value);
             int frameCount=0;
@@ -274,6 +289,7 @@ namespace _3dedit
         }
 
         private void mi_FullRedo_Click(object sender,EventArgs e) {
+            if(BlockStructuredRecordingUndoRedo()) return;
             m_runUndo=true;
             int frameSkip=Math.Max(1,(int)nudUndoFrameSkip.Value);
             int frameCount=0;

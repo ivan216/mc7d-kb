@@ -39,6 +39,7 @@ namespace _3dedit {
         public Keybindings.Twist partialTwist;
         public PartialTwist3c partialTwist3c;
         public HashSet<Keybindings.Layer> LayerOverrides;
+        public event Action<int,int,int,int> TwistExecuted;
 
         public int[] Seq;
         public int LSeq,LPtr,LShuffle;

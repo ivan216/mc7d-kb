@@ -27,6 +27,10 @@ namespace _3dedit
         string m_macroName;
 
         private void mi_StartRecordig_Click(object sender,EventArgs e) {
+            if(StructuredRecorder.IsRecording || StructuredRecordCandidate != null) {
+                MessageBox.Show("Finish or cancel structured macro recording before recording an ordinary macro.");
+                return;
+            }
             if(RecordingMacroStatus!=REC_MACRO_CODE) {
 //                MessageBox.Show("Click Reference Stickers");
                 RecordingMacroStatus=REC_MACRO_STICKERS;
@@ -108,6 +112,7 @@ namespace _3dedit
                 Cube.ApplyMacro(cmap,CurMacro.Code,CurMacro.LMacro,qrev);
                 ProcessHighLights();
                 TestBuild();
+                RedrawClickStatus();
                 Redraw();
                 return;
             }

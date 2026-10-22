@@ -44,9 +44,19 @@ namespace _3dedit
                     ms_MacroStatus.Text="  Ready"; break;
                 case REC_MACRO_STICKERS:
                 case REC_MACRO_APPLY:
-                    ms_MacroStatus.Text="  Select Stickers: "+LMacroStickers; break;
+                    if(StructuredRecordCandidate != null)
+                        ms_MacroStatus.Text="  Select structured rec stickers: "+LMacroStickers;
+                    else if(CurStructuredMacro != null)
+                        ms_MacroStatus.Text="  Select structured macro stickers: "+LMacroStickers;
+                    else
+                        ms_MacroStatus.Text="  Select Stickers: "+LMacroStickers;
+                    break;
                 case REC_MACRO_CODE:
                     ms_MacroStatus.Text="  Enter macro: "+Cube.GetNTwists(MacroStart,Cube.LPtr); break;
+            }
+            if(StructuredRecorder.IsRecording && CurStructuredMacro == null) {
+                string expr = StructuredRecorder.CurrentExpression();
+                ms_MacroStatus.Text = "  Structured rec: " + (expr.Length == 0 ? "0" : expr);
             }
             UpdateTime(null);
         }

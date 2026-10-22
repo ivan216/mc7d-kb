@@ -18,6 +18,8 @@ namespace _3dedit
                 if(Cube!=null) Cube.partialTwist3c.Reset();
                 // Exit macro sticker selection when loading a different puzzle
                 RecordingMacroStatus=OldRecMacroStatus=REC_MACRO_NONE;
+                ClearPendingStructuredMacroState();
+                StructuredRecorder.Cancel();
                 m_pendingOrbitChipStates.Clear();
                 m_FileName=sf.FileName;
                 Text=m_FileName+" - MC7D";
@@ -36,6 +38,7 @@ namespace _3dedit
                     Macros=new CMacroFile(GetDim(),GetSize());
                     InitMacroList();
                 }
+                EnsureStructuredMacrosMatchCurrentSize();
             }
         }
 
@@ -180,6 +183,7 @@ namespace _3dedit
                 m_pendingOrbitChipStates.Clear();
                 Cube=new Cube7D();
                 Cube.Load(m_FileName);
+                BindCube(Cube);
                 RebuildOrbitChips(false);
                 ShowCube();
                 SetDim(Cube.D); SetSize(Cube.N);
@@ -187,6 +191,7 @@ namespace _3dedit
                 NClicks=0; ClickQual=true;
                 LRevStack=0;
                 qSolved=Cube.CheckCube();
+                EnsureStructuredMacrosMatchCurrentSize();
 
 
             }

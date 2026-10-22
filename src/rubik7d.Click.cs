@@ -27,7 +27,12 @@ namespace _3dedit
                 // Clear Twist3c state when clicking empty area
                 Cube.partialTwist3c.Reset();
                 switch (RecordingMacroStatus) {
-                    case REC_MACRO_STICKERS: RecordingMacroStatus = OldRecMacroStatus = REC_MACRO_NONE; break;
+                    case REC_MACRO_STICKERS:
+                        if(StructuredRecordCandidate != null)
+                            CancelStructuredMacroReferenceSelection();
+                        else
+                            RecordingMacroStatus = OldRecMacroStatus = REC_MACRO_NONE;
+                        break;
                     case REC_MACRO_APPLY: RecordingMacroStatus = OldRecMacroStatus; break;
                 }
                 RedrawClickStatus();
@@ -101,22 +106,44 @@ namespace _3dedit
                                         MStickers = new int[LMStickers];
                                         Buffer.BlockCopy(MacroStickers, 0, MStickers, 0, LMStickers * 4);
 
-                                        RecordingMacroStatus = REC_MACRO_CODE;
-                                        MacroStart = Cube.LPtr;
+                                        if(StructuredRecordCandidate != null) {
+                                            StructuredRecordCandidate.NStickers = LMStickers;
+                                            StructuredRecordCandidate.Stickers = new int[LMStickers];
+                                            Buffer.BlockCopy(MStickers, 0, StructuredRecordCandidate.Stickers, 0, LMStickers * 4);
+                                            LRevStack = 0;
+                                            ShowRevStack();
+                                            StructuredRecorder.Begin(StructuredRecordCandidate);
+                                            StructuredRecordCandidate = null;
+                                            RecordingMacroStatus = OldRecMacroStatus = REC_MACRO_NONE;
+                                        } else {
+                                            RecordingMacroStatus = REC_MACRO_CODE;
+                                            MacroStart = Cube.LPtr;
+                                        }
                                     }
                                 } else {
-                                    if (LMacroStickers == CurMacro.NStickers) {
-                                        int[] cmap = Cube.CmpStickerSet(CurMacro.Stickers, MacroStickers, LMacroStickers);
+                                    int requiredStickers = CurStructuredMacro != null ? CurStructuredMacro.NStickers : CurMacro.NStickers;
+                                    if (LMacroStickers == requiredStickers) {
+                                        int[] sourceStickers = CurStructuredMacro != null ? CurStructuredMacro.Stickers : CurMacro.Stickers;
+                                        int[] cmap = Cube.CmpStickerSet(sourceStickers, MacroStickers, LMacroStickers);
                                         if (cmap == null) {
                                             ClickQual = false;
                                             CurMacro = null;
+                                            CurStructuredMacro = null;
                                         } else {
-                                            Cube.ApplyMacro(cmap, CurMacro.Code, CurMacro.LMacro, MacroReverse);
-                                            ProcessHighLights();
-                                            TestBuild();
-                                            Redraw();
+                                            if(CurStructuredMacro != null) {
+                                                ExecuteStructuredMacroMapped(CurStructuredMacro, CurStructuredOverrideMasks,
+                                                    StructuredMacroReverse, cmap);
+                                            } else {
+                                                Cube.ApplyMacro(cmap, CurMacro.Code, CurMacro.LMacro, MacroReverse);
+                                                ProcessHighLights();
+                                                TestBuild();
+                                                Redraw();
+                                            }
                                         }
+                                        CurStructuredMacro = null;
+                                        CurStructuredOverrideMasks = null;
                                         RecordingMacroStatus = OldRecMacroStatus;
+                                        RedrawClickStatus();
                                     }
                                 }
                             } else {

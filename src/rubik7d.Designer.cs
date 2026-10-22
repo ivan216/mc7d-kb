@@ -155,6 +155,15 @@ namespace _3dedit
         private ToolStripMenuItem stopExtraTurnsToolStripMenuItem;
         private ToolStripMenuItem undoExtraTurnsToolStripMenuItem;
         private ToolStripMenuItem commutatorToolStripMenuItem;
+        private ToolStripMenuItem structuredMacrosToolStripMenuItem;
+        private ToolStripMenuItem manageStructuredMacrosToolStripMenuItem;
+        private ToolStripSeparator structuredMacrosToolStripSeparator1;
+        private ToolStripMenuItem loadStructuredMacrosToolStripMenuItem;
+        private ToolStripMenuItem saveStructuredMacrosToolStripMenuItem;
+        private ToolStripMenuItem saveStructuredMacrosAsToolStripMenuItem;
+        private ToolStripSeparator structuredMacrosToolStripSeparator2;
+        private ToolStripMenuItem recordStructuredMacroToolStripMenuItem;
+        private ToolStripMenuItem cancelStructuredMacroToolStripMenuItem;
         private ToolStripStatusLabel ms_MacroStatus;
         private ToolStripSeparator toolStripMenuItem4;
         private ToolStripMenuItem recalculateToolStripMenuItem;
@@ -342,6 +351,15 @@ namespace _3dedit
             this.stopExtraTurnsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.undoExtraTurnsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.commutatorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.structuredMacrosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.manageStructuredMacrosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.structuredMacrosToolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.loadStructuredMacrosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveStructuredMacrosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveStructuredMacrosAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.structuredMacrosToolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.recordStructuredMacroToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.cancelStructuredMacroToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.usageGuideToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -1513,6 +1531,7 @@ namespace _3dedit
             this.viewToolStripMenuItem,
             this.puzzleToolStripMenuItem,
             this.macroToolStripMenuItem,
+            this.structuredMacrosToolStripMenuItem,
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
@@ -1936,6 +1955,73 @@ namespace _3dedit
             this.commutatorToolStripMenuItem.Size = new System.Drawing.Size(222, 22);
             this.commutatorToolStripMenuItem.Text = "Commutator";
             this.commutatorToolStripMenuItem.Click += new System.EventHandler(this.commutatorToolStripMenuItem_Click);
+            // 
+            // structuredMacrosToolStripMenuItem
+            // 
+            this.structuredMacrosToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.manageStructuredMacrosToolStripMenuItem,
+            this.structuredMacrosToolStripSeparator1,
+            this.loadStructuredMacrosToolStripMenuItem,
+            this.saveStructuredMacrosToolStripMenuItem,
+            this.saveStructuredMacrosAsToolStripMenuItem,
+            this.structuredMacrosToolStripSeparator2,
+            this.recordStructuredMacroToolStripMenuItem,
+            this.cancelStructuredMacroToolStripMenuItem});
+            this.structuredMacrosToolStripMenuItem.Name = "structuredMacrosToolStripMenuItem";
+            this.structuredMacrosToolStripMenuItem.Size = new System.Drawing.Size(119, 20);
+            this.structuredMacrosToolStripMenuItem.Text = "Structured Macros";
+            // 
+            // manageStructuredMacrosToolStripMenuItem
+            // 
+            this.manageStructuredMacrosToolStripMenuItem.Name = "manageStructuredMacrosToolStripMenuItem";
+            this.manageStructuredMacrosToolStripMenuItem.Size = new System.Drawing.Size(183, 22);
+            this.manageStructuredMacrosToolStripMenuItem.Text = "Manage";
+            this.manageStructuredMacrosToolStripMenuItem.Click += new System.EventHandler(this.manageStructuredMacros_Click);
+            // 
+            // structuredMacrosToolStripSeparator1
+            // 
+            this.structuredMacrosToolStripSeparator1.Name = "structuredMacrosToolStripSeparator1";
+            this.structuredMacrosToolStripSeparator1.Size = new System.Drawing.Size(180, 6);
+            // 
+            // loadStructuredMacrosToolStripMenuItem
+            // 
+            this.loadStructuredMacrosToolStripMenuItem.Name = "loadStructuredMacrosToolStripMenuItem";
+            this.loadStructuredMacrosToolStripMenuItem.Size = new System.Drawing.Size(183, 22);
+            this.loadStructuredMacrosToolStripMenuItem.Text = "Load";
+            this.loadStructuredMacrosToolStripMenuItem.Click += new System.EventHandler(this.loadStructuredMacros_Click);
+            // 
+            // saveStructuredMacrosToolStripMenuItem
+            // 
+            this.saveStructuredMacrosToolStripMenuItem.Name = "saveStructuredMacrosToolStripMenuItem";
+            this.saveStructuredMacrosToolStripMenuItem.Size = new System.Drawing.Size(183, 22);
+            this.saveStructuredMacrosToolStripMenuItem.Text = "Save";
+            this.saveStructuredMacrosToolStripMenuItem.Click += new System.EventHandler(this.saveStructuredMacros_Click);
+            // 
+            // saveStructuredMacrosAsToolStripMenuItem
+            // 
+            this.saveStructuredMacrosAsToolStripMenuItem.Name = "saveStructuredMacrosAsToolStripMenuItem";
+            this.saveStructuredMacrosAsToolStripMenuItem.Size = new System.Drawing.Size(183, 22);
+            this.saveStructuredMacrosAsToolStripMenuItem.Text = "Save As";
+            this.saveStructuredMacrosAsToolStripMenuItem.Click += new System.EventHandler(this.saveStructuredMacrosAs_Click);
+            // 
+            // structuredMacrosToolStripSeparator2
+            // 
+            this.structuredMacrosToolStripSeparator2.Name = "structuredMacrosToolStripSeparator2";
+            this.structuredMacrosToolStripSeparator2.Size = new System.Drawing.Size(180, 6);
+            // 
+            // recordStructuredMacroToolStripMenuItem
+            // 
+            this.recordStructuredMacroToolStripMenuItem.Name = "recordStructuredMacroToolStripMenuItem";
+            this.recordStructuredMacroToolStripMenuItem.Size = new System.Drawing.Size(183, 22);
+            this.recordStructuredMacroToolStripMenuItem.Text = "Start/Stop Recording";
+            this.recordStructuredMacroToolStripMenuItem.Click += new System.EventHandler(this.recordStructuredMacroRecording_Click);
+            // 
+            // cancelStructuredMacroToolStripMenuItem
+            // 
+            this.cancelStructuredMacroToolStripMenuItem.Name = "cancelStructuredMacroToolStripMenuItem";
+            this.cancelStructuredMacroToolStripMenuItem.Size = new System.Drawing.Size(183, 22);
+            this.cancelStructuredMacroToolStripMenuItem.Text = "Cancel Recording";
+            this.cancelStructuredMacroToolStripMenuItem.Click += new System.EventHandler(this.cancelStructuredMacroRecording_Click);
             // 
             // helpToolStripMenuItem
             // 

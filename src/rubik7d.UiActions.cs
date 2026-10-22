@@ -12,7 +12,9 @@ namespace _3dedit
 
         static string GetBuildDate() {
             var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            return new DateTime(2000, 1, 1).AddDays(v.Build).ToString("yyyy.MM.dd");
+            DateTime build = new DateTime(2000, 1, 1).AddDays(v.Build);
+            if(v.Revision >= 0) build = build.AddSeconds(v.Revision * 2);
+            return build.ToString("yyyy.MM.dd HH:00");
         }
 
         private void aboutToolStripMenuItem_Click(object sender,EventArgs e) {
@@ -36,7 +38,11 @@ namespace _3dedit
             tb.WordWrap = true;
             tb.Font = new System.Drawing.Font("Segoe UI", 10f);
             tb.Padding = new Padding(10);
-            tb.Text = Properties.Resources.UsageGuideText;
+            string usageText = Properties.Resources.UsageGuideText
+                .Replace("\r\n", "\n")
+                .Replace("\r", "\n")
+                .Replace("\n", Environment.NewLine);
+            tb.Text = usageText;
             tb.Select(0, 0);
 
             guideForm.Controls.Add(tb);
@@ -44,6 +50,7 @@ namespace _3dedit
         }
 
         private void startExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
+            StructuredRecorder.BeginFrame();
             if(LRevStack>=RevStack.GetLength(0)) {
                 int[,] stk=new int[2*LRevStack,2];
                 Buffer.BlockCopy(RevStack,0,stk,0,8*LRevStack);
@@ -53,45 +60,67 @@ namespace _3dedit
             RevStack[LRevStack,1]=-1;
             LRevStack++;
             ShowRevStack();
+            RedrawClickStatus();
         }
 
         private void stopExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
+            string error;
+            if(!StructuredRecorder.SplitFrame(out error) && StructuredRecorder.IsRecording) {
+                MessageBox.Show(error);
+            }
             if(LRevStack>0) {
                 if(RevStack[LRevStack-1,1]>=0 || Cube.LPtr<=RevStack[LRevStack-1,0]) LRevStack--;
                 else RevStack[LRevStack-1,1]=Cube.LPtr;
             }
             ShowRevStack();
+            RedrawClickStatus();
         }
 
         private void undoExtraTurnsToolStripMenuItem_Click(object sender,EventArgs e) {
+            string error;
+            StructuredRecorder.EndConjugate(out error);
+            if(error != null && StructuredRecorder.IsRecording) {
+                MessageBox.Show(error);
+            }
             if(LRevStack>0) {
                 int r=RevStack[LRevStack-1,1];
                 if(r>=0) {
                     int p=Cube.LPtr;
                     if(p>=r) {
-                        Cube.ApplySeqReverse(RevStack[LRevStack-1,0],r);
+                        using(StructuredRecorder.Suppress()) {
+                            Cube.ApplySeqReverse(RevStack[LRevStack-1,0],r);
+                        }
                         if(cb_HighlightByColors.CheckState!=CheckState.Unchecked)
                             Cube.FindStickersByMask(FaceMask,cb_HighlightByColors.CheckState==CheckState.Checked);
                     }
                 }
                 LRevStack--;
             }
+            RedrawClickStatus();
             Redraw();
         }
 
         private void commutatorToolStripMenuItem_Click(object sender,EventArgs e) {
+            string error;
+            StructuredRecorder.EndCommutator(out error);
+            if(error != null && StructuredRecorder.IsRecording) {
+                MessageBox.Show(error);
+            }
             if(LRevStack>0) {
                 int r=RevStack[LRevStack-1,1];
                 if(r>=0) {
                     int p=Cube.LPtr;
                     if(p>=r) {
-                        Cube.ApplySeqReverse(RevStack[LRevStack-1,0],r);
-                        Cube.ApplySeqReverse(r,p);
+                        using(StructuredRecorder.Suppress()) {
+                            Cube.ApplySeqReverse(RevStack[LRevStack-1,0],r);
+                            Cube.ApplySeqReverse(r,p);
+                        }
                         ProcessHighLights();
                     }
                 }
                 LRevStack--;
             }
+            RedrawClickStatus();
             Redraw();
         }
 
